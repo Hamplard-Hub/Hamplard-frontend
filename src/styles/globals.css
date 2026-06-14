@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --progress: 0%;
+  }
+
+  body {
+    @apply bg-ink-50 text-ink-900 antialiased;
+    font-family: 'DM Sans', system-ui, sans-serif;
+  }
+
+  h1, h2, h3 {
+    @apply font-display font-semibold;
+  }
+}
+
+@layer components {
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-saffron-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98];
+  }
+  .btn-primary   { @apply btn bg-saffron-600 text-white hover:bg-saffron-700 shadow-warm; }
+  .btn-secondary { @apply btn bg-white text-ink-700 border border-ink-200 hover:bg-ink-50; }
+  .btn-ghost     { @apply btn text-ink-600 hover:bg-ink-100; }
+  .btn-danger    { @apply btn bg-red-600 text-white hover:bg-red-700; }
+  .btn-leaf      { @apply btn bg-leaf-600 text-white hover:bg-leaf-700; }
+
+  /* Cards */
+  .card         { @apply bg-white rounded-2xl border border-ink-100 shadow-card; }
+  .card-lifted  { @apply bg-white rounded-2xl border border-ink-100 shadow-lifted; }
+
+  /* Form elements */
+  .input        { @apply w-full rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 text-sm placeholder:text-ink-500 focus:border-saffron-500 focus:outline-none focus:ring-2 focus:ring-saffron-500/20 transition-all; }
+  .label        { @apply block text-sm font-medium text-ink-700 mb-1.5; }
+  .select       { @apply input appearance-none cursor-pointer; }
+  .textarea     { @apply input resize-none; }
+
+  /* Badges */
+  .badge          { @apply inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-medium; }
+  .badge-active   { @apply badge bg-leaf-50 text-leaf-700; }
+  .badge-pending  { @apply badge bg-saffron-50 text-saffron-700; }
+  .badge-draft    { @apply badge bg-ink-100 text-ink-600; }
+  .badge-paused   { @apply badge bg-orange-50 text-orange-700; }
+  .badge-archived { @apply badge bg-ink-100 text-ink-500; }
+  .badge-free     { @apply badge bg-leaf-50 text-leaf-700; }
+
+  /* Level chips */
+  .chip-beginner     { @apply badge bg-blue-50 text-blue-700; }
+  .chip-intermediate { @apply badge bg-purple-50 text-purple-700; }
+  .chip-advanced     { @apply badge bg-red-50 text-red-700; }
+
+  /* Progress bar */
+  .progress-bar {
+    @apply w-full h-2 bg-ink-100 rounded-full overflow-hidden;
+  }
+  .progress-fill {
+    @apply h-full bg-saffron-500 rounded-full transition-all duration-700;
+  }
+
+  /* Section heading with display font */
+  .section-heading {
+    @apply font-display text-2xl font-semibold text-ink-900 tracking-tight;
+  }
+
+  /* Course grid */
+  .course-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5;
+  }
+}
