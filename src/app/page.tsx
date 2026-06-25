@@ -1,26 +1,11 @@
 import Link from 'next/link';
 import { CourseBrowser } from '@/components/courses/CourseBrowser';
+import { TopBar } from '@/components/layout/TopBar';
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-ink-50">
-      {/* Nav */}
-      <nav className="bg-white border-b border-ink-100 sticky top-0 z-30">
-        <div className="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between">
-          <Link href="/" className="font-display text-xl font-semibold text-ink-900">
-            Hamplard
-          </Link>
-          <div className="flex items-center gap-2">
-            <Link href="/auth/login" className="btn-ghost text-sm">Sign in</Link>
-            <Link href="/auth/login?role=INSTRUCTOR" className="btn-secondary text-sm">
-              Teach
-            </Link>
-            <Link href="/auth/login" className="btn-primary text-sm">
-              Start learning
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <TopBar />
 
       {/* Hero */}
       <section className="max-w-6xl mx-auto px-5 pt-16 pb-12">
