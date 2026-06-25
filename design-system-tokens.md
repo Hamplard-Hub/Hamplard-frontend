@@ -54,9 +54,12 @@ Defined in `src/styles/tokens.css`.
 ## Typography Tokens
 
 - Families: `--font-family-sans`, `--font-family-display`, `--font-family-mono`
-- Sizes: `--font-size-xs` through `--font-size-3xl`
+- Scale primitives: `--font-size-xs` through `--font-size-5xl`
+- Semantic type levels: `--type-h1-*` through `--type-overline-*`
 - Weights: `--font-weight-regular` through `--font-weight-bold`
-- Line heights: `--line-height-tight`, `--line-height-base`, `--line-height-relaxed`
+- Line heights: `--line-height-tight`, `--line-height-base`, `--line-height-relaxed`, `--line-height-loose`
+- Tracking: `--letter-spacing-tight`, `--letter-spacing-normal`, `--letter-spacing-wide`, `--letter-spacing-wider`
+- Full specification: `typography-system.md`
 
 ## WCAG 2.1 AA Contrast Verification
 

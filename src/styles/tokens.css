@@ -71,6 +71,7 @@
   --font-family-display: 'Playfair Display', Georgia, serif;
   --font-family-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
+  /* Modular type scale primitives (all rem for accessibility) */
   --font-size-xs: 0.75rem; /* 12px */
   --font-size-sm: 0.875rem; /* 14px */
   --font-size-md: 1rem; /* 16px */
@@ -78,15 +79,90 @@
   --font-size-xl: 1.25rem; /* 20px */
   --font-size-2xl: 1.5rem; /* 24px */
   --font-size-3xl: 1.875rem; /* 30px */
+  --font-size-4xl: 2.25rem; /* 36px */
+  --font-size-5xl: 2.75rem; /* 44px */
 
   --line-height-tight: 1.2;
   --line-height-base: 1.5;
   --line-height-relaxed: 1.65;
+  --line-height-loose: 1.75;
+
+  --letter-spacing-tight: -0.015em;
+  --letter-spacing-normal: 0em;
+  --letter-spacing-wide: 0.04em;
+  --letter-spacing-wider: 0.08em;
 
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
+
+  /* Semantic typography levels */
+  --type-h1-family: var(--font-family-display);
+  --type-h1-size: var(--font-size-5xl);
+  --type-h1-line-height: 1.1;
+  --type-h1-letter-spacing: -0.02em;
+  --type-h1-font-weight: var(--font-weight-bold);
+
+  --type-h2-family: var(--font-family-display);
+  --type-h2-size: var(--font-size-4xl);
+  --type-h2-line-height: 1.15;
+  --type-h2-letter-spacing: -0.018em;
+  --type-h2-font-weight: var(--font-weight-bold);
+
+  --type-h3-family: var(--font-family-display);
+  --type-h3-size: var(--font-size-3xl);
+  --type-h3-line-height: 1.2;
+  --type-h3-letter-spacing: var(--letter-spacing-tight);
+  --type-h3-font-weight: var(--font-weight-semibold);
+
+  --type-h4-family: var(--font-family-sans);
+  --type-h4-size: var(--font-size-2xl);
+  --type-h4-line-height: 1.3;
+  --type-h4-letter-spacing: var(--letter-spacing-normal);
+  --type-h4-font-weight: var(--font-weight-semibold);
+
+  --type-h5-family: var(--font-family-sans);
+  --type-h5-size: var(--font-size-xl);
+  --type-h5-line-height: 1.35;
+  --type-h5-letter-spacing: var(--letter-spacing-normal);
+  --type-h5-font-weight: var(--font-weight-semibold);
+
+  --type-h6-family: var(--font-family-sans);
+  --type-h6-size: var(--font-size-lg);
+  --type-h6-line-height: 1.4;
+  --type-h6-letter-spacing: var(--letter-spacing-normal);
+  --type-h6-font-weight: var(--font-weight-semibold);
+
+  --type-body-family: var(--font-family-sans);
+  --type-body-size: var(--font-size-md);
+  --type-body-line-height: var(--line-height-relaxed);
+  --type-body-letter-spacing: var(--letter-spacing-normal);
+  --type-body-font-weight: var(--font-weight-regular);
+
+  --type-body-strong-size: var(--font-size-md);
+  --type-body-strong-line-height: var(--line-height-base);
+  --type-body-strong-letter-spacing: var(--letter-spacing-normal);
+  --type-body-strong-font-weight: var(--font-weight-medium);
+
+  --type-caption-family: var(--font-family-sans);
+  --type-caption-size: var(--font-size-sm);
+  --type-caption-line-height: var(--line-height-base);
+  --type-caption-letter-spacing: 0.01em;
+  --type-caption-font-weight: var(--font-weight-regular);
+
+  --type-label-family: var(--font-family-sans);
+  --type-label-size: var(--font-size-sm);
+  --type-label-line-height: 1.4;
+  --type-label-letter-spacing: 0.02em;
+  --type-label-font-weight: var(--font-weight-semibold);
+
+  --type-overline-family: var(--font-family-sans);
+  --type-overline-size: var(--font-size-xs);
+  --type-overline-line-height: 1.4;
+  --type-overline-letter-spacing: var(--letter-spacing-wider);
+  --type-overline-font-weight: var(--font-weight-semibold);
+  --type-overline-transform: uppercase;
 
   /* --------------------------------------------------------------------------
    * Radius scale
@@ -159,4 +235,134 @@
 .ds-btn-primary:focus-visible {
   outline: none;
   box-shadow: var(--shadow-focus);
+}
+
+/* Typography primitives */
+.type-h1,
+.type-h2,
+.type-h3,
+.type-h4,
+.type-h5,
+.type-h6,
+.type-body,
+.type-body-strong,
+.type-caption,
+.type-label,
+.type-overline {
+  color: var(--color-text-body);
+  margin: 0;
+}
+
+.type-h1 {
+  font-family: var(--type-h1-family);
+  font-size: var(--type-h1-size);
+  line-height: var(--type-h1-line-height);
+  letter-spacing: var(--type-h1-letter-spacing);
+  font-weight: var(--type-h1-font-weight);
+}
+
+.type-h2 {
+  font-family: var(--type-h2-family);
+  font-size: var(--type-h2-size);
+  line-height: var(--type-h2-line-height);
+  letter-spacing: var(--type-h2-letter-spacing);
+  font-weight: var(--type-h2-font-weight);
+}
+
+.type-h3 {
+  font-family: var(--type-h3-family);
+  font-size: var(--type-h3-size);
+  line-height: var(--type-h3-line-height);
+  letter-spacing: var(--type-h3-letter-spacing);
+  font-weight: var(--type-h3-font-weight);
+}
+
+.type-h4 {
+  font-family: var(--type-h4-family);
+  font-size: var(--type-h4-size);
+  line-height: var(--type-h4-line-height);
+  letter-spacing: var(--type-h4-letter-spacing);
+  font-weight: var(--type-h4-font-weight);
+}
+
+.type-h5 {
+  font-family: var(--type-h5-family);
+  font-size: var(--type-h5-size);
+  line-height: var(--type-h5-line-height);
+  letter-spacing: var(--type-h5-letter-spacing);
+  font-weight: var(--type-h5-font-weight);
+}
+
+.type-h6 {
+  font-family: var(--type-h6-family);
+  font-size: var(--type-h6-size);
+  line-height: var(--type-h6-line-height);
+  letter-spacing: var(--type-h6-letter-spacing);
+  font-weight: var(--type-h6-font-weight);
+}
+
+.type-body {
+  font-family: var(--type-body-family);
+  font-size: var(--type-body-size);
+  line-height: var(--type-body-line-height);
+  letter-spacing: var(--type-body-letter-spacing);
+  font-weight: var(--type-body-font-weight);
+}
+
+.type-body-strong {
+  font-family: var(--type-body-family);
+  font-size: var(--type-body-strong-size);
+  line-height: var(--type-body-strong-line-height);
+  letter-spacing: var(--type-body-strong-letter-spacing);
+  font-weight: var(--type-body-strong-font-weight);
+}
+
+.type-caption {
+  font-family: var(--type-caption-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-line-height);
+  letter-spacing: var(--type-caption-letter-spacing);
+  font-weight: var(--type-caption-font-weight);
+}
+
+.type-label {
+  font-family: var(--type-label-family);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-line-height);
+  letter-spacing: var(--type-label-letter-spacing);
+  font-weight: var(--type-label-font-weight);
+}
+
+.type-overline {
+  font-family: var(--type-overline-family);
+  font-size: var(--type-overline-size);
+  line-height: var(--type-overline-line-height);
+  letter-spacing: var(--type-overline-letter-spacing);
+  font-weight: var(--type-overline-font-weight);
+  text-transform: var(--type-overline-transform);
+}
+
+/* Hamplard semantic UI text roles */
+.type-course-title {
+  font-family: var(--type-h4-family);
+  font-size: var(--type-h4-size);
+  line-height: var(--type-h4-line-height);
+  letter-spacing: var(--type-h4-letter-spacing);
+  font-weight: var(--type-h4-font-weight);
+}
+
+.type-instructor-name {
+  font-family: var(--type-label-family);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-line-height);
+  letter-spacing: var(--type-label-letter-spacing);
+  font-weight: var(--type-label-font-weight);
+}
+
+.type-ui-text {
+  font-family: var(--type-caption-family);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-line-height);
+  letter-spacing: var(--type-caption-letter-spacing);
+  font-weight: var(--type-caption-font-weight);
 }

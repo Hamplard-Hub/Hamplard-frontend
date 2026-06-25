@@ -13,15 +13,25 @@
   body {
     background-color: var(--color-bg-page);
     color: var(--color-text-body);
-    font-family: var(--font-family-sans);
+    font-family: var(--type-body-family);
+    font-size: var(--type-body-size);
+    line-height: var(--type-body-line-height);
+    letter-spacing: var(--type-body-letter-spacing);
+    font-weight: var(--type-body-font-weight);
     @apply antialiased;
   }
 
-  h1, h2, h3 {
-    font-family: var(--font-family-display);
+  h1, h2, h3, h4, h5, h6 {
     color: var(--color-text-heading);
-    font-weight: var(--font-weight-semibold);
+    margin: 0;
   }
+
+  h1 { font-family: var(--type-h1-family); font-size: var(--type-h1-size); line-height: var(--type-h1-line-height); letter-spacing: var(--type-h1-letter-spacing); font-weight: var(--type-h1-font-weight); }
+  h2 { font-family: var(--type-h2-family); font-size: var(--type-h2-size); line-height: var(--type-h2-line-height); letter-spacing: var(--type-h2-letter-spacing); font-weight: var(--type-h2-font-weight); }
+  h3 { font-family: var(--type-h3-family); font-size: var(--type-h3-size); line-height: var(--type-h3-line-height); letter-spacing: var(--type-h3-letter-spacing); font-weight: var(--type-h3-font-weight); }
+  h4 { font-family: var(--type-h4-family); font-size: var(--type-h4-size); line-height: var(--type-h4-line-height); letter-spacing: var(--type-h4-letter-spacing); font-weight: var(--type-h4-font-weight); }
+  h5 { font-family: var(--type-h5-family); font-size: var(--type-h5-size); line-height: var(--type-h5-line-height); letter-spacing: var(--type-h5-letter-spacing); font-weight: var(--type-h5-font-weight); }
+  h6 { font-family: var(--type-h6-family); font-size: var(--type-h6-size); line-height: var(--type-h6-line-height); letter-spacing: var(--type-h6-letter-spacing); font-weight: var(--type-h6-font-weight); }
 }
 
 @layer components {
@@ -49,7 +59,7 @@
   .input        { @apply w-full rounded-xl border px-3.5 py-2.5 text-sm transition-all focus:outline-none; border-color: var(--color-border-default); background-color: var(--color-bg-page); color: var(--color-text-body); }
   .input::placeholder { color: var(--color-text-muted); }
   .input:focus { border-color: var(--color-focus-ring); box-shadow: var(--shadow-focus); }
-  .label        { @apply mb-1.5 block text-sm; color: var(--color-text-heading); font-weight: var(--font-weight-medium); }
+  .label        { @apply mb-1.5 block; color: var(--color-text-heading); font-family: var(--type-label-family); font-size: var(--type-label-size); line-height: var(--type-label-line-height); letter-spacing: var(--type-label-letter-spacing); font-weight: var(--type-label-font-weight); }
   .select       { @apply input appearance-none cursor-pointer; }
   .textarea     { @apply input resize-none; }
 
@@ -76,7 +86,7 @@
   }
 
   /* Section heading with display font */
-  .section-heading { @apply text-2xl tracking-tight; font-family: var(--font-family-display); color: var(--color-text-heading); font-weight: var(--font-weight-semibold); }
+  .section-heading { color: var(--color-text-heading); font-family: var(--type-h3-family); font-size: var(--type-h3-size); line-height: var(--type-h3-line-height); letter-spacing: var(--type-h3-letter-spacing); font-weight: var(--type-h3-font-weight); }
 
   /* Course grid */
   .course-grid {

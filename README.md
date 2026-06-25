@@ -35,6 +35,7 @@ Hamplard's foundational token system is documented in:
 
 - `src/styles/tokens.css` (source of truth for CSS variables)
 - `design-system-tokens.md` (hex/RGB usage notes + WCAG checks)
+- `typography-system.md` (modular type scale and semantic text roles)
 
 **Typography:**
 - Display headings: Playfair Display (serif)
