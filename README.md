@@ -31,18 +31,14 @@ This is **Repo 3 of 3** in the Hamplard project:
 
 ## Design System
 
-Hamplard uses a warm earthy palette inspired by West African textiles:
+Hamplard's foundational token system is documented in:
 
-| Token | Hex | Usage |
-|---|---|---|
-| `saffron-600` | `#d97706` | Primary CTA buttons, accents, category labels |
-| `ink-900` | `#1a1208` | Headings, body text |
-| `ink-50` | `#f8f7f4` | Page background |
-| `leaf-600` | `#16a34a` | Success states, completion, certificates |
+- `src/styles/tokens.css` (source of truth for CSS variables)
+- `design-system-tokens.md` (hex/RGB usage notes + WCAG checks)
 
 **Typography:**
-- Display headings: Playfair Display (serif) — brings warmth and craft
-- Body: DM Sans — clean and readable at small sizes
+- Display headings: Playfair Display (serif)
+- Body: DM Sans
 - Code/IDs: JetBrains Mono
 
 ---

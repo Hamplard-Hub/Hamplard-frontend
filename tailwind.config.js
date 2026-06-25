@@ -4,6 +4,31 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        hamplard: {
+          deep: '#26215C',
+          primary: '#7F77DD',
+          lilac: '#EEEDFE',
+          white: '#FFFFFF',
+          mid: '#3C3489',
+        },
+        semantic: {
+          bg: {
+            page: 'var(--color-bg-page)',
+            surface: 'var(--color-bg-surface)',
+            subtle: 'var(--color-bg-subtle)',
+            primary: 'var(--color-bg-primary)',
+          },
+          text: {
+            body: 'var(--color-text-body)',
+            heading: 'var(--color-text-heading)',
+            muted: 'var(--color-text-muted)',
+            link: 'var(--color-text-link)',
+          },
+          border: {
+            DEFAULT: 'var(--color-border-default)',
+            strong: 'var(--color-border-strong)',
+          },
+        },
         // Warm saffron — primary brand colour, inspired by West African textiles
         saffron: {
           50:  '#fffbeb',
@@ -39,9 +64,25 @@ module.exports = {
         mono:    ['JetBrains Mono', 'monospace'],
       },
       borderRadius: {
+        sm: 'var(--radius-sm)',
+        md: 'var(--radius-md)',
+        lg: 'var(--radius-lg)',
         xl:  '0.875rem',
         '2xl': '1.25rem',
         '3xl': '1.75rem',
+        pill: 'var(--radius-pill)',
+      },
+      spacing: {
+        1: 'var(--space-1)',
+        2: 'var(--space-2)',
+        3: 'var(--space-3)',
+        4: 'var(--space-4)',
+        5: 'var(--space-5)',
+        6: 'var(--space-6)',
+        8: 'var(--space-8)',
+        10: 'var(--space-10)',
+        12: 'var(--space-12)',
+        16: 'var(--space-16)',
       },
       animation: {
         'fade-in':  'fadeIn 0.25s ease-out',
@@ -57,6 +98,10 @@ module.exports = {
         progress: { from: { width: '0%' }, to: { width: 'var(--progress)' } },
       },
       boxShadow: {
+        'sm': 'var(--shadow-sm)',
+        'md': 'var(--shadow-md)',
+        'lg': 'var(--shadow-lg)',
+        'focus': 'var(--shadow-focus)',
         'warm':  '0 2px 16px 0 rgba(180,83,9,0.08)',
         'card':  '0 1px 4px 0 rgba(26,18,8,0.06), 0 4px 16px 0 rgba(26,18,8,0.04)',
         'lifted':'0 8px 32px 0 rgba(26,18,8,0.12)',

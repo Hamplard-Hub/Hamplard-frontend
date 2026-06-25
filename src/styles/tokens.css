@@ -1,0 +1,162 @@
+/**
+ * Hamplard Design Tokens
+ * Baseline: light mode
+ * Extension hook: [data-theme='dark']
+ */
+
+:root {
+  /* --------------------------------------------------------------------------
+   * Primitive color tokens (brand palette)
+   * -------------------------------------------------------------------------- */
+  --color-brand-deep: #26215c;
+  --color-brand-deep-rgb: 38 33 92;
+  --color-brand-primary: #7f77dd;
+  --color-brand-primary-rgb: 127 119 221;
+  --color-brand-lilac: #eeedfe;
+  --color-brand-lilac-rgb: 238 237 254;
+  --color-brand-white: #ffffff;
+  --color-brand-white-rgb: 255 255 255;
+  --color-brand-mid: #3c3489;
+  --color-brand-mid-rgb: 60 52 137;
+
+  /* --------------------------------------------------------------------------
+   * Semantic color aliases (default light mode)
+   * -------------------------------------------------------------------------- */
+  --color-bg-page: var(--color-brand-white);
+  --color-bg-surface: #f8f8ff;
+  --color-bg-subtle: var(--color-brand-lilac);
+  --color-bg-inverse: var(--color-brand-deep);
+  --color-bg-primary: var(--color-brand-primary);
+  --color-bg-primary-hover: var(--color-brand-mid);
+
+  --color-text-body: var(--color-brand-deep);
+  --color-text-heading: var(--color-brand-deep);
+  --color-text-muted: #554f99;
+  --color-text-link: var(--color-brand-mid);
+  --color-text-on-primary: var(--color-brand-white);
+  --color-text-on-inverse: var(--color-brand-white);
+
+  --color-border-default: #d3d0f2;
+  --color-border-strong: #b3addf;
+  --color-focus-ring: var(--color-brand-primary);
+
+  /* --------------------------------------------------------------------------
+   * WCAG 2.1 AA contrast pairs (normal text >= 4.5:1)
+   * Verified:
+   * - #26215C on #FFFFFF
+   * - #3C3489 on #FFFFFF
+   * - #26215C on #EEEDFE
+   * - #FFFFFF on #3C3489
+   * -------------------------------------------------------------------------- */
+
+  /* --------------------------------------------------------------------------
+   * Spacing scale (4px base)
+   * -------------------------------------------------------------------------- */
+  --space-0: 0;
+  --space-1: 0.25rem; /* 4px */
+  --space-2: 0.5rem; /* 8px */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem; /* 16px */
+  --space-5: 1.25rem; /* 20px */
+  --space-6: 1.5rem; /* 24px */
+  --space-8: 2rem; /* 32px */
+  --space-10: 2.5rem; /* 40px */
+  --space-12: 3rem; /* 48px */
+  --space-16: 4rem; /* 64px */
+
+  /* --------------------------------------------------------------------------
+   * Typography tokens
+   * -------------------------------------------------------------------------- */
+  --font-family-sans: 'DM Sans', system-ui, sans-serif;
+  --font-family-display: 'Playfair Display', Georgia, serif;
+  --font-family-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --font-size-xs: 0.75rem; /* 12px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-md: 1rem; /* 16px */
+  --font-size-lg: 1.125rem; /* 18px */
+  --font-size-xl: 1.25rem; /* 20px */
+  --font-size-2xl: 1.5rem; /* 24px */
+  --font-size-3xl: 1.875rem; /* 30px */
+
+  --line-height-tight: 1.2;
+  --line-height-base: 1.5;
+  --line-height-relaxed: 1.65;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* --------------------------------------------------------------------------
+   * Radius scale
+   * -------------------------------------------------------------------------- */
+  --radius-none: 0;
+  --radius-sm: 0.375rem; /* 6px */
+  --radius-md: 0.5rem; /* 8px */
+  --radius-lg: 0.75rem; /* 12px */
+  --radius-xl: 1rem; /* 16px */
+  --radius-2xl: 1.25rem; /* 20px */
+  --radius-pill: 999px;
+
+  /* --------------------------------------------------------------------------
+   * Shadow scale
+   * -------------------------------------------------------------------------- */
+  --shadow-sm: 0 1px 2px rgb(38 33 92 / 0.08);
+  --shadow-md: 0 4px 12px rgb(38 33 92 / 0.12);
+  --shadow-lg: 0 12px 28px rgb(38 33 92 / 0.18);
+  --shadow-focus: 0 0 0 3px rgb(var(--color-brand-primary-rgb) / 0.35);
+}
+
+/* Dark mode hook (placeholder defaults for future extension) */
+[data-theme='dark'] {
+  --color-bg-page: #161337;
+  --color-bg-surface: #1b1841;
+  --color-bg-subtle: #242056;
+  --color-bg-inverse: var(--color-brand-white);
+
+  --color-text-body: #f6f5ff;
+  --color-text-heading: #ffffff;
+  --color-text-muted: #cbc8ee;
+  --color-text-link: #b9b3ff;
+  --color-text-on-primary: #ffffff;
+  --color-text-on-inverse: #161337;
+
+  --color-border-default: #423d7d;
+  --color-border-strong: #5a54a5;
+}
+
+/* Primitive component classes for consistent early UI implementation */
+.ds-card {
+  background: var(--color-bg-page);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-md);
+}
+
+.ds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  transition: background-color 150ms ease, box-shadow 150ms ease, transform 120ms ease;
+}
+
+.ds-btn-primary {
+  background: var(--color-bg-primary-hover);
+  color: var(--color-text-on-primary);
+}
+
+.ds-btn-primary:hover {
+  background: #322b73;
+}
+
+.ds-btn-primary:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
