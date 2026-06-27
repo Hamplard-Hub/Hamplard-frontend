@@ -82,6 +82,10 @@ export interface Course {
   };
   modules: CourseModule[];
   _count: { enrollments: number };
+  rating?: number;
+  reviewCount?: number;
+  originalPrice?: number;
+  badge?: 'bestseller' | 'new' | 'hot';
 }
 
 export interface LessonProgress {

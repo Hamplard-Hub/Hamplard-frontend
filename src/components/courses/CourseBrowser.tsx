@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, Loader2 } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { coursesApi } from '@/lib/api/services';
-import { CourseCard } from './CourseCard';
+import { CourseCardGrid } from './CourseCardGrid';
 import type { Course, Category } from '@/types';
 
 interface Props {
@@ -60,19 +60,13 @@ export function CourseBrowser({ showFilters = true }: Props) {
       )}
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-6 h-6 text-saffron-500 animate-spin" />
-        </div>
+        <CourseCardGrid courses={[]} loading />
       ) : courses.length === 0 ? (
         <div className="text-center py-12 text-ink-400">
           <p className="text-sm">No courses found. Try a different search.</p>
         </div>
       ) : (
-        <div className="course-grid">
-          {courses.map((course) => (
-            <CourseCard key={course.id} course={course} />
-          ))}
-        </div>
+        <CourseCardGrid courses={courses} />
       )}
     </div>
   );
