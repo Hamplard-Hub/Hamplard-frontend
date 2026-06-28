@@ -1,165 +1,232 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
-const footerSections = [
+// ─── Data ────────────────────────────────────────────────────────────────────
+
+const FOOTER_COLUMNS = [
   {
-    title: 'About',
-    description:
-      'Hamplard empowers ambitious learners across Africa with practical online courses in tailoring, makeup, baking, and photography.',
+    title: 'About Hamplard',
     links: [
       { label: 'Our story', href: '/#about' },
       { label: 'Careers', href: '/#careers' },
       { label: 'Partner with us', href: '/#partners' },
+      { label: 'Blog', href: '/#blog' },
     ],
   },
   {
     title: 'Courses',
     links: [
       { label: 'All courses', href: '/dashboard/courses' },
-      { label: 'Tailoring', href: '/dashboard/courses/1' },
-      { label: 'Makeup', href: '/dashboard/courses/2' },
-      { label: 'Baking', href: '/dashboard/courses/3' },
-      { label: 'Photography', href: '/dashboard/courses/4' },
+      { label: 'Tailoring', href: '/dashboard/courses?category=tailoring' },
+      { label: 'Makeup Artistry', href: '/dashboard/courses?category=makeup' },
+      { label: 'Baking', href: '/dashboard/courses?category=baking' },
+      { label: 'Photography', href: '/dashboard/courses?category=photography' },
     ],
   },
   {
     title: 'Support',
     links: [
-      { label: 'Help center', href: '#' },
-      { label: 'Community', href: '#' },
-      { label: 'Contact us', href: '#' },
-      { label: 'FAQs', href: '#' },
+      { label: 'Help center', href: '/#help' },
+      { label: 'Community', href: '/#community' },
+      { label: 'Contact us', href: '/#contact' },
+      { label: 'FAQs', href: '/#faqs' },
     ],
   },
   {
     title: 'Legal',
     links: [
-      { label: 'Terms of service', href: '#' },
-      { label: 'Privacy policy', href: '#' },
-      { label: 'Cookie policy', href: '#' },
-      { label: 'Accessibility', href: '#' },
+      { label: 'Terms of service', href: '/#terms' },
+      { label: 'Privacy policy', href: '/#privacy' },
+      { label: 'Cookie policy', href: '/#cookies' },
+      { label: 'Accessibility', href: '/#accessibility' },
     ],
   },
-];
+] as const;
 
-const socialLinks = [
-  { label: 'Twitter', href: '#', icon: 'M22.46 6c-.77.35-1.6.58-2.46.69a4.28 4.28 0 0 0 1.88-2.37 8.51 8.51 0 0 1-2.7 1.03 4.26 4.26 0 0 0-7.27 3.88A12.1 12.1 0 0 1 3.16 4.3a4.25 4.25 0 0 0 1.32 5.68 4.2 4.2 0 0 1-1.93-.53v.05a4.26 4.26 0 0 0 3.42 4.17 4.28 4.28 0 0 1-1.92.07 4.26 4.26 0 0 0 3.98 2.96A8.54 8.54 0 0 1 2 19.54a12.05 12.05 0 0 0 6.56 1.92c7.87 0 12.17-6.52 12.17-12.17 0-.19 0-.38-.01-.57A8.7 8.7 0 0 0 24 4.56a8.35 8.35 0 0 1-2.4.66 4.2 4.2 0 0 0 1.84-2.32z' },
-  { label: 'Instagram', href: '#', icon: 'M17 2H7a5 5 0 0 0-5 5v10a5 5 0 0 0 5 5h10a5 5 0 0 0 5-5V7a5 5 0 0 0-5-5Zm-5 14a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm5.5-9.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z' },
-  { label: 'Facebook', href: '#', icon: 'M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3.2l.8-4H14V7a1 1 0 0 1 1-1h3V2Z' },
-];
+const SOCIAL_LINKS = [
+  {
+    label: 'LinkedIn',
+    href: 'https://linkedin.com/company/hamplard',
+    // LinkedIn logo path
+    icon: 'M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z M4 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
+  },
+  {
+    label: 'X (Twitter)',
+    href: 'https://x.com/hamplard',
+    // X / Twitter logo
+    icon: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z',
+  },
+  {
+    label: 'YouTube',
+    href: 'https://youtube.com/@hamplard',
+    // YouTube logo path
+    icon: 'M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29.94 29.94 0 0 0 1 12a29.94 29.94 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29.94 29.94 0 0 0 23 12a29.94 29.94 0 0 0-.46-5.58zM9.75 15.02V8.98L15.5 12l-5.75 3.02z',
+  },
+  {
+    label: 'Instagram',
+    href: 'https://instagram.com/hamplard',
+    // Instagram logo path
+    icon: 'M17 2H7a5 5 0 0 0-5 5v10a5 5 0 0 0 5 5h10a5 5 0 0 0 5-5V7a5 5 0 0 0-5-5Zm-5 14a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm5.5-9.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z',
+  },
+] as const;
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export function Footer() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-  const [language, setLanguage] = useState('English');
+
+  const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#26215C] text-white">
-      <div className="mx-auto max-w-7xl px-6 py-12 sm:px-8 lg:px-10">
-        <div className="grid gap-10 lg:grid-cols-4">
-            <div className="space-y-6">
-              <div className="space-y-3">
-                <p className="text-sm font-semibold uppercase tracking-[0.28em] text-saffron-300">Hamplard</p>
-                <p className="text-sm leading-7 text-slate-200">
-                  Hamplard empowers ambitious learners across Africa with practical online courses in tailoring, makeup, baking, and photography.
-                </p>
-              </div>
-              <div className="space-y-3">
-                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-100">Follow us</p>
-                <div className="flex flex-wrap gap-3">
-                  {socialLinks.map((social) => (
-                    <a
-                      key={social.label}
-                      href={social.href}
-                      aria-label={social.label}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-slate-100 transition hover:border-saffron-300 hover:bg-saffron-500/10 hover:text-saffron-300"
+    <footer className="bg-[#26215C] text-white" aria-label="Site footer">
+      <div className="mx-auto max-w-7xl px-6 py-14 sm:px-8 lg:px-10">
+
+        {/* ── Brand + Social column (always visible, above columns on mobile) ── */}
+        <div className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between lg:hidden">
+          <div className="space-y-1">
+            <p className="font-display text-xl font-semibold tracking-tight text-white">
+              Hamplard
+            </p>
+            <p className="max-w-xs text-sm leading-relaxed text-slate-300">
+              Empowering ambitious learners across Africa with practical online courses.
+            </p>
+          </div>
+          <SocialRow />
+        </div>
+
+        {/* ── Desktop 4-column grid ── */}
+        <div className="hidden lg:grid lg:grid-cols-[2fr_1fr_1fr_1fr] lg:gap-10">
+          {/* Brand column */}
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <p className="font-display text-xl font-semibold tracking-tight text-white">
+                Hamplard
+              </p>
+              <p className="text-sm leading-7 text-slate-300">
+                Hamplard empowers ambitious learners across Africa with practical online courses
+                in tailoring, makeup, baking, and photography.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                Follow us
+              </p>
+              <SocialRow />
+            </div>
+          </div>
+
+          {/* Link columns */}
+          {FOOTER_COLUMNS.map((col) => (
+            <div key={col.title} className="space-y-4">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+                {col.title}
+              </h2>
+              <ul className="space-y-3">
+                {col.links.map((link) => (
+                  <li key={link.label}>
+                    <Link
+                      href={link.href}
+                      className="text-sm text-slate-300 transition-colors hover:text-white"
                     >
-                      <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
-                        <path d={social.icon} />
-                      </svg>
-                    </a>
-                  ))}
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Mobile accordion ── */}
+        <div className="space-y-0 divide-y divide-white/10 lg:hidden">
+          {FOOTER_COLUMNS.map((col, index) => {
+            const isOpen = openIndex === index;
+            return (
+              <div key={col.title}>
+                <button
+                  type="button"
+                  aria-expanded={isOpen}
+                  aria-controls={`footer-section-${index}`}
+                  className="flex w-full items-center justify-between gap-4 py-4 text-left"
+                  onClick={() => setOpenIndex(isOpen ? null : index)}
+                >
+                  <span className="text-sm font-semibold text-white">{col.title}</span>
+                  <span
+                    className="text-lg leading-none text-slate-400 transition-transform duration-300"
+                    aria-hidden="true"
+                    style={{ transform: isOpen ? 'rotate(45deg)' : 'rotate(0deg)' }}
+                  >
+                    +
+                  </span>
+                </button>
+                <div
+                  id={`footer-section-${index}`}
+                  className="overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out"
+                  style={{
+                    maxHeight: isOpen ? '16rem' : '0',
+                    opacity: isOpen ? 1 : 0,
+                  }}
+                >
+                  <ul className="space-y-3 pb-5">
+                    {col.links.map((link) => (
+                      <li key={link.label}>
+                        <Link
+                          href={link.href}
+                          className="text-sm text-slate-300 transition-colors hover:text-white"
+                        >
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </div>
-            </div>
+            );
+          })}
+        </div>
 
-            {footerSections.map((section, index) => {
-              const isOpen = openIndex === index;
-              return (
-                <div key={section.title} className="space-y-3 border-t border-white/10 py-4 md:border-none md:py-0">
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between gap-4 text-left md:hidden"
-                    onClick={() => setOpenIndex(isOpen ? null : index)}
-                  >
-                    <span className="text-sm font-semibold uppercase tracking-[0.24em] text-white">{section.title}</span>
-                    <span className="text-xl text-slate-300">{isOpen ? '−' : '+'}</span>
-                  </button>
-
-                  <div className="hidden md:block">
-                    <h2 className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-100">{section.title}</h2>
-                    {section.description ? (
-                      <p className="mt-4 text-sm leading-7 text-slate-200">{section.description}</p>
-                    ) : null}
-                    <ul className="mt-4 space-y-3">
-                      {section.links.map((link) => (
-                        <li key={link.label}>
-                          <a
-                            href={link.href}
-                            className="text-sm text-slate-200 transition hover:text-saffron-300"
-                          >
-                            {link.label}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className={`md:hidden overflow-hidden transition-[max-height,opacity] duration-300 ${isOpen ? 'max-h-72 opacity-100' : 'max-h-0 opacity-0'}`}>
-                    <div className="mt-3">
-                      {section.description ? (
-                        <p className="text-sm leading-7 text-slate-200">{section.description}</p>
-                      ) : null}
-                      <ul className="space-y-3 pt-4">
-                        {section.links.map((link) => (
-                          <li key={link.label}>
-                            <a
-                              href={link.href}
-                              className="text-sm text-slate-200 transition hover:text-saffron-300"
-                            >
-                              {link.label}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        <div className="mt-10 border-t border-white/10 pt-8 sm:flex sm:items-center sm:justify-between">
-          <div className="space-y-2 text-sm text-slate-300">
-            <p>© {new Date().getFullYear()} Hamplard. All rights reserved.</p>
-            <p className="text-xs text-slate-400">Designed for learners, creators, and small businesses across Africa.</p>
-          </div>
-          <div className="mt-6 flex flex-col gap-4 sm:mt-0 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-3 text-sm text-slate-300">
-              <span className="text-sm font-medium uppercase tracking-[0.24em] text-slate-300">Language</span>
-              <select
-                value={language}
-                onChange={(event) => setLanguage(event.target.value)}
-                className="rounded-2xl border border-white/10 bg-[#1d1a4c] px-3 py-2 text-sm text-white transition hover:border-saffron-300 focus:outline-none focus:ring-2 focus:ring-saffron-400/60"
-              >
-                <option>English</option>
-                <option>Français</option>
-                <option>Español</option>
-                <option>Português</option>
-              </select>
-            </div>
+        {/* ── Bottom bar ── */}
+        <div className="mt-12 border-t border-white/10 pt-8 sm:flex sm:items-center sm:justify-between">
+          <p className="text-sm text-slate-400">
+            © {currentYear} Hamplard. All rights reserved.
+          </p>
+          {/* Social row visible on mobile bottom bar */}
+          <div className="mt-6 sm:mt-0 lg:hidden">
+            <SocialRow />
           </div>
         </div>
       </div>
     </footer>
+  );
+}
+
+// ─── Social icon row ──────────────────────────────────────────────────────────
+
+function SocialRow() {
+  return (
+    <div className="flex items-center gap-3" role="list" aria-label="Social media links">
+      {SOCIAL_LINKS.map((social) => (
+        <a
+          key={social.label}
+          href={social.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Follow Hamplard on ${social.label}`}
+          role="listitem"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/5 text-slate-300 transition hover:border-[#7F77DD] hover:bg-[#7F77DD]/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7F77DD]"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="h-4 w-4 fill-current"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path d={social.icon} />
+          </svg>
+        </a>
+      ))}
+    </div>
   );
 }
