@@ -21,8 +21,7 @@
     "date-fns": "^3.3.0",
     "lucide-react": "^0.383.0",
     "tailwind-merge": "^2.2.0",
-    "zustand": "^4.5.0",
-    "recharts": "^3.9.0"
+    "zustand": "^4.5.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
