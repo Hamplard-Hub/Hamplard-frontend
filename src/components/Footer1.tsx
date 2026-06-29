@@ -20,6 +20,7 @@ const columns: Column[] = [
       { label: "From the Blog", href: "/blog" },
     ],
   },
+  
   {
     heading: "Courses",
     links: [
@@ -479,7 +480,7 @@ export default function Footer() {
           </Link>
           <p className="footer-brand-tagline">Where ambition meets education.</p>
           <p className="footer-brand-desc">
-            Hamplard Hub is your launchpad for world-class courses,
+            Hamplard-Hub is your launchpad for world-class courses,
             industry-recognised certifications, and a community of learners who
             refuse to stand still.
           </p>
