@@ -200,6 +200,12 @@
 
   --color-border-default: #423d7d;
   --color-border-strong: #5a54a5;
+  
+  /* Brand color parity */
+  --color-brand-deep: #e6e3ff;
+  --color-brand-primary: #7f77dd;
+  --color-brand-lilac: #17122f;
+  --color-brand-white: #000000;
 }
 
 /* Primitive component classes for consistent early UI implementation */

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
   Bell, ChevronDown, Menu, Search, ShoppingCart, UserCircle2, X,
 } from 'lucide-react';
+import ThemeToggle from '@/components/layout/ThemeToggle';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { shortAddress } from '@/lib/utils';
 
@@ -105,6 +106,7 @@ export function TopBar() {
         </form>
 
         <div className="ml-auto hidden items-center gap-2 lg:flex">
+          <ThemeToggle />
           {!isConnected ? (
             <>
               <Link href="/login" className="rounded-lg px-4 py-2 text-sm font-medium text-white hover:bg-[#3C3489]">
@@ -133,7 +135,7 @@ export function TopBar() {
           )}
         </div>
 
-        <div className="ml-auto lg:hidden">
+        <div className="ml-2 lg:ml-auto lg:hidden">
           {isConnected ? (
             <Link href="/dashboard/courses" aria-label="Account" className="inline-flex rounded-full bg-[#3C3489] p-2 text-white hover:bg-[#7F77DD]">
               <UserCircle2 className="h-5 w-5" />
