@@ -9,7 +9,6 @@
   :root {
     --progress: 0%;
   }
-
   body {
     background-color: var(--color-bg-page);
     color: var(--color-text-body);
@@ -20,7 +19,6 @@
     font-weight: var(--type-body-font-weight);
     @apply antialiased;
   }
-
   h1,
   h2,
   h3,
@@ -30,7 +28,6 @@
     color: var(--color-text-heading);
     margin: 0;
   }
-
   h1 {
     font-family: var(--type-h1-family);
     font-size: var(--type-h1-size);
@@ -76,7 +73,6 @@
 }
 
 @layer components {
-  /* Buttons */
   .btn {
     @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm transition-all duration-150 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98];
     border-radius: var(--radius-xl);
@@ -116,8 +112,6 @@
   .btn-leaf {
     @apply btn bg-leaf-600 text-white hover:bg-leaf-700;
   }
-
-  /* Cards */
   .card {
     @apply rounded-2xl border;
     background-color: var(--color-bg-page);
@@ -130,8 +124,6 @@
     border-color: var(--color-border-default);
     box-shadow: var(--shadow-lg);
   }
-
-  /* Form elements */
   .input {
     @apply w-full rounded-xl border px-3.5 py-2.5 text-sm transition-all focus:outline-none;
     border-color: var(--color-border-default);
@@ -160,8 +152,6 @@
   .textarea {
     @apply input resize-none;
   }
-
-  /* Badges */
   .badge {
     @apply inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-medium;
   }
@@ -183,8 +173,6 @@
   .badge-free {
     @apply badge bg-leaf-50 text-leaf-700;
   }
-
-  /* Level chips */
   .chip-beginner {
     @apply badge bg-blue-50 text-blue-700;
   }
@@ -194,16 +182,12 @@
   .chip-advanced {
     @apply badge bg-red-50 text-red-700;
   }
-
-  /* Progress bar */
   .progress-bar {
     @apply w-full h-2 bg-ink-100 rounded-full overflow-hidden;
   }
   .progress-fill {
     @apply h-full bg-saffron-500 rounded-full transition-all duration-700;
   }
-
-  /* Section heading with display font */
   .section-heading {
     color: var(--color-text-heading);
     font-family: var(--type-h3-family);
@@ -212,9 +196,73 @@
     letter-spacing: var(--type-h3-letter-spacing);
     font-weight: var(--type-h3-font-weight);
   }
-
-  /* Course grid */
   .course-grid {
     @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5;
+  }
+}
+
+/* Hero animations */
+@keyframes heroFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes floatBadge1 {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@keyframes floatBadge2 {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+@keyframes floatBadge3 {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-fade-up,
+  .hero-right {
+    animation: none !important;
+  }
+}
+
+/* Category pill marquee */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  animation: marquee 28s linear infinite;
+}
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
   }
 }
