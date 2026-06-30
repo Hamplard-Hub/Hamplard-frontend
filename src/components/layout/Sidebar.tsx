@@ -3,14 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  BookOpen,
-  Video,
-  BarChart2,
-  Bell,
-  Award,
-  LogOut,
-  User,
-  Settings,
+  BookOpen, Video, BarChart2, Bell, Award, LogOut,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { shortAddress, cn } from '@/lib/utils';
@@ -18,11 +11,8 @@ import { shortAddress, cn } from '@/lib/utils';
 const STUDENT_NAV = [
   { href: '/dashboard/courses',     label: 'My Courses',     icon: BookOpen },
   { href: '/dashboard/certificates',label: 'Certificates',   icon: Award },
-  { href: '/dashboard/profile',    label: 'Profile',        icon: User },
-  { href: '/dashboard/settings',   label: 'Settings',       icon: Settings },
   { href: '/notifications',         label: 'Notifications',  icon: Bell },
 ];
-
 
 const INSTRUCTOR_NAV = [
   { href: '/dashboard/instructor',  label: 'Dashboard',      icon: BarChart2 },
