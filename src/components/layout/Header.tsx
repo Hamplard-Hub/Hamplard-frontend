@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useMobileDrawerFocusTrap } from '@/lib/hooks/use-focus-trap';
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
@@ -80,6 +81,8 @@ export function Header() {
 
   const megaRef = useRef<HTMLDivElement>(null);
   const avatarRef = useRef<HTMLDivElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const hamburgerRef = useRef<HTMLButtonElement>(null);
 
   // Sticky scroll shadow
   useEffect(() => {
@@ -109,6 +112,14 @@ export function Header() {
       document.body.style.overflow = '';
     };
   }, [mobileOpen]);
+
+  // Focus trap + Escape-to-close + return focus to hamburger on close
+  useMobileDrawerFocusTrap({
+    isOpen: mobileOpen,
+    containerRef: drawerRef,
+    triggerRef: hamburgerRef,
+    onClose: () => setMobileOpen(false),
+  });
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -323,20 +334,51 @@ export function Header() {
 
         {/* ── Mobile hamburger ── */}
         <button
+          ref={hamburgerRef}
           type="button"
           className="ml-auto rounded-lg p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white md:hidden"
           onClick={() => setMobileOpen((v) => !v)}
           aria-expanded={mobileOpen}
+          aria-controls="mobile-nav-drawer"
           aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
         >
           {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
 
-      {/* ── Mobile menu ── */}
+      {/* ── Mobile overlay ── */}
       {mobileOpen && (
-        <nav className="border-t border-white/10 bg-[#26215C] md:hidden animate-fade-in">
-          <div className="mx-auto max-w-7xl space-y-1 px-4 pb-6 pt-4">
+        <div
+          className="fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 md:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* ── Mobile slide-in drawer ── */}
+      <nav
+        id="mobile-nav-drawer"
+        ref={drawerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mobile navigation"
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 w-[85%] max-w-sm overflow-y-auto bg-[#26215C] shadow-2xl transition-transform duration-300 ease-in-out md:hidden',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full',
+        )}
+      >
+          <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
+            <span className="font-display text-lg font-semibold text-white">Hamplard</span>
+            <button
+              type="button"
+              onClick={() => setMobileOpen(false)}
+              className="rounded-lg p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+              aria-label="Close menu"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="space-y-1 px-4 pb-6 pt-4">
             {/* Mobile search */}
             <form onSubmit={handleSearch} className="relative mb-4">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -443,8 +485,7 @@ export function Header() {
               </div>
             )}
           </div>
-        </nav>
-      )}
+      </nav>
     </header>
   );
 }
