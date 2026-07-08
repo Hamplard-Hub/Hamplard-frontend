@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMobileDrawerFocusTrap } from '@/lib/hooks/use-focus-trap';
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
@@ -225,13 +226,7 @@ export function Header() {
           {isConnected ? (
             <>
               {/* Notifications */}
-              <Link
-                href="/notifications"
-                className="relative rounded-lg p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-                aria-label="Notifications"
-              >
-                <Bell className="h-5 w-5" />
-              </Link>
+              <NotificationDropdown />
 
               {/* Cart */}
               <Link
