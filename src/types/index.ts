@@ -161,3 +161,46 @@ export interface Category {
   name: string;
   count: number;
 }
+
+// ── Review & Rating ────────────────────────────────────────────────
+
+export type ReviewSortOption = 'most_recent' | 'most_helpful' | 'highest_rated' | 'lowest_rated';
+
+export interface InstructorReply {
+  /** Instructor's display name */
+  name: string;
+  /** Instructor avatar URL */
+  avatarUrl: string | null;
+  /** Reply body text */
+  text: string;
+  /** ISO timestamp of the reply */
+  repliedAt: string;
+}
+
+export interface Review {
+  id: string;
+  courseId: string;
+  /** Author display name */
+  authorName: string;
+  /** Author avatar URL — null falls back to initials avatar */
+  authorAvatarUrl: string | null;
+  /** 1–5 integer star rating */
+  rating: number;
+  /** Review body text */
+  text: string;
+  /** ISO timestamp */
+  createdAt: string;
+  /** Number of "helpful" votes */
+  helpfulVotes: number;
+  /** Whether the current viewer has voted this helpful */
+  viewerVoted?: boolean;
+  /** Optional instructor reply nested under this review */
+  instructorReply?: InstructorReply;
+}
+
+export interface RatingDistribution {
+  /** Star value (1–5) */
+  stars: number;
+  /** Number of reviews with this star value */
+  count: number;
+}

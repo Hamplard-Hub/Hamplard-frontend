@@ -1,311 +1,248 @@
-import React, { useState, useEffect } from "react";
+'use client';
 
-// ── Inline StarRating ──────────────────────────────────────────────
+import { useState } from 'react';
+import { Star, CheckCircle, Loader2, Pencil } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-const STAR_COLOR = "#7F77DD";
-const STAR_EMPTY_FILL = "#f5f5f5";
-const STAR_EMPTY_STROKE = "rgba(0,0,0,0.35)";
-const STAR_LABELS = ["", "Awful", "Poor", "Okay", "Good", "Excellent"];
+// ── Inline star selector ───────────────────────────────────────────────────────
 
-function StarIcon({ filled }: { filled: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 40 40"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-      style={{ display: "block", width: 36, height: 36 }}
-    >
-      <polygon
-        points="20,3 24.9,14.6 37.6,15.6 28.3,24.4 31.1,37 20,30.4 8.9,37 11.7,24.4 2.4,15.6 15.1,14.6"
-        style={{
-          fill: filled ? STAR_COLOR : STAR_EMPTY_FILL,
-          stroke: filled ? STAR_COLOR : STAR_EMPTY_STROKE,
-          strokeWidth: filled ? 0 : 1.8,
-          strokeLinejoin: "round",
-          transition: "fill .13s, stroke .13s",
-        }}
-      />
-    </svg>
-  );
-}
+const STAR_LABELS: Record<number, string> = {
+  1: 'Awful',
+  2: 'Poor',
+  3: 'Okay',
+  4: 'Good',
+  5: 'Excellent',
+};
 
-interface StarRatingProps {
+interface StarSelectorProps {
   value: number;
   onChange: (rating: number) => void;
+  hasError?: boolean;
 }
 
-function StarRating({ value, onChange }: StarRatingProps) {
-  const [hov, setHov] = useState(0);
-  const active = hov || value;
+function StarSelector({ value, onChange, hasError }: StarSelectorProps) {
+  const [hovered, setHovered] = useState(0);
+  const active = hovered || value;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+    <div className="flex flex-col items-center gap-2">
       <div
         role="radiogroup"
-        aria-label="Star rating"
-        style={{ display: "flex", alignItems: "center", gap: 4 }}
+        aria-label="Course star rating"
+        aria-required="true"
+        className="flex items-center gap-1"
       >
-        {[1, 2, 3, 4, 5].map((i) => (
+        {[1, 2, 3, 4, 5].map((s) => (
           <button
-            key={i}
+            key={s}
             type="button"
             role="radio"
-            aria-label={`${i} star${i > 1 ? "s" : ""}`}
-            aria-checked={value === i}
-            onMouseEnter={() => setHov(i)}
-            onMouseLeave={() => setHov(0)}
-            onClick={() => onChange(value === i ? 0 : i)}
-            onMouseDown={(e: React.MouseEvent<HTMLButtonElement>) =>
-              (e.currentTarget.style.transform = "scale(.92)")
-            }
-            onMouseUp={(e: React.MouseEvent<HTMLButtonElement>) =>
-              (e.currentTarget.style.transform = "scale(1)")
-            }
-            style={{
-              background: "none",
-              border: "none",
-              padding: 4,
-              cursor: "pointer",
-              borderRadius: 4,
-              outline: "none",
-              lineHeight: 1,
-              transition: "transform .12s cubic-bezier(.34,1.56,.64,1)",
-            }}
+            aria-label={`${s} star${s !== 1 ? 's' : ''} — ${STAR_LABELS[s]}`}
+            aria-checked={value === s}
+            onMouseEnter={() => setHovered(s)}
+            onMouseLeave={() => setHovered(0)}
+            onClick={() => onChange(value === s ? 0 : s)}
+            className={cn(
+              'p-1 rounded-md transition-transform duration-100 active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary',
+              hasError && value === 0 && 'ring-1 ring-rose-400 rounded-md',
+            )}
           >
-            <StarIcon filled={i <= active} />
+            <Star
+              className={cn(
+                'w-8 h-8 transition-colors duration-100',
+                s <= active
+                  ? 'fill-amber-400 text-amber-400'
+                  : 'fill-gray-100 text-gray-300',
+              )}
+              aria-hidden="true"
+            />
           </button>
         ))}
       </div>
-      {active > 0 && (
-        <span style={{ fontSize: 13, color: STAR_COLOR, fontWeight: 600 }}>
-          {STAR_LABELS[active]}
-        </span>
-      )}
+
+      {/* Label pill */}
+      <span
+        className={cn(
+          'inline-flex items-center gap-1.5 px-3 py-0.5 rounded-pill text-xs font-semibold transition-all duration-150',
+          active > 0
+            ? 'bg-hamplard-lilac text-hamplard-mid border border-hamplard-primary/30'
+            : 'bg-gray-50 text-gray-400 border border-gray-200',
+        )}
+      >
+        <span
+          className={cn(
+            'w-1.5 h-1.5 rounded-full transition-colors',
+            active > 0 ? 'bg-hamplard-primary' : 'bg-gray-300',
+          )}
+        />
+        {active > 0 ? `${active} — ${STAR_LABELS[active]}` : 'No rating yet'}
+      </span>
     </div>
   );
 }
 
-// ── CourseReviewForm ───────────────────────────────────────────────
+// ── Main form ─────────────────────────────────────────────────────────────────
 
-export interface ExistingReview {
-  rating: number;
-  text: string;
-  author: string;
-  date: string;
-}
-
-export interface CourseReviewFormProps {
+export interface ReviewFormProps {
   courseName?: string;
-  existingReview?: ExistingReview;
+  /** If present, renders as edit mode with pre-filled values */
+  existingReview?: {
+    rating: number;
+    text: string;
+    authorName: string;
+    date: string;
+  };
   onSubmit?: (rating: number, text: string) => Promise<void>;
+  className?: string;
 }
 
 const MIN_CHARS = 50;
 const MAX_CHARS = 500;
 
-export default function CourseReviewForm({
-  courseName = "Advanced React Patterns",
+type FormState = 'empty' | 'filled' | 'submitted';
+
+/**
+ * ReviewForm
+ *
+ * Three interactive states:
+ *
+ * 1. Empty   — star selector at 0, empty textarea. Submit is disabled / shows
+ *              inline validation when attempted.
+ * 2. Filled  — star selected + text ≥ MIN_CHARS. Submit button is active.
+ * 3. Submitted — success confirmation showing the submitted review preview,
+ *               with an "Edit review" button to return to the form.
+ *
+ * Also handles edit mode when `existingReview` prop is provided (pre-filled).
+ */
+export function ReviewForm({
+  courseName = 'This Course',
   existingReview,
   onSubmit,
-}: CourseReviewFormProps) {
-  const isEdit = !!existingReview;
+  className,
+}: ReviewFormProps) {
+  const isEditMode = !!existingReview;
 
   const [rating, setRating] = useState(existingReview?.rating ?? 0);
-  const [text, setText] = useState(existingReview?.text ?? "");
+  const [text, setText] = useState(existingReview?.text ?? '');
   const [errors, setErrors] = useState<{ rating?: string; text?: string }>({});
   const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [isEditing, setIsEditing] = useState(!isEdit);
-
-  useEffect(() => {
-    if (existingReview) {
-      setRating(existingReview.rating);
-      setText(existingReview.text);
-    }
-  }, [existingReview]);
+  const [formState, setFormState] = useState<FormState>(isEditMode ? 'filled' : 'empty');
 
   const charCount = text.length;
   const charOver = charCount > MAX_CHARS;
   const charNearLimit = charCount >= MAX_CHARS * 0.85;
 
+  // Derive current state
+  const isFilled = rating > 0 && text.trim().length >= MIN_CHARS && !charOver;
+
+  function handleRatingChange(r: number) {
+    setRating(r);
+    setErrors((prev) => ({ ...prev, rating: undefined }));
+    updateFormState(r, text);
+  }
+
+  function handleTextChange(val: string) {
+    setText(val);
+    if (errors.text) setErrors((prev) => ({ ...prev, text: undefined }));
+    updateFormState(rating, val);
+  }
+
+  function updateFormState(r: number, t: string) {
+    const filled = r > 0 && t.trim().length >= MIN_CHARS && t.length <= MAX_CHARS;
+    setFormState(filled ? 'filled' : 'empty');
+  }
+
   function validate(): boolean {
-    const newErrors: { rating?: string; text?: string } = {};
-    if (rating === 0) newErrors.rating = "Please select a rating.";
+    const errs: { rating?: string; text?: string } = {};
+    if (rating === 0) errs.rating = 'Please select a star rating.';
     if (text.trim().length < MIN_CHARS)
-      newErrors.text = `Write at least ${MIN_CHARS} characters (${MIN_CHARS - text.trim().length} more needed).`;
-    if (charOver) newErrors.text = `Trim your review to ${MAX_CHARS} characters.`;
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+      errs.text = `Write at least ${MIN_CHARS} characters (${MIN_CHARS - text.trim().length} more needed).`;
+    if (charOver) errs.text = `Shorten your review to ${MAX_CHARS} characters or fewer.`;
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
   }
 
   async function handleSubmit() {
     if (!validate()) return;
     setLoading(true);
     try {
-      if (onSubmit) {
-        await onSubmit(rating, text);
-      }
-      setSubmitted(true);
-      setIsEditing(false);
+      await onSubmit?.(rating, text);
+      setFormState('submitted');
     } finally {
       setLoading(false);
     }
   }
 
   function handleEdit() {
-    setSubmitted(false);
-    setIsEditing(true);
+    setFormState(isFilled ? 'filled' : 'empty');
     setErrors({});
   }
 
-  const containerStyle: React.CSSProperties = {
-    fontFamily: "Inter, system-ui, -apple-system, sans-serif",
-    minHeight: "100vh",
-    background: "linear-gradient(135deg, #F0EFFA 0%, #E8E6F8 50%, #EEF0FF 100%)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "24px",
-  };
-
-  const cardStyle: React.CSSProperties = {
-    background: "#FFFFFF",
-    borderRadius: "20px",
-    padding: "40px",
-    width: "100%",
-    maxWidth: "520px",
-    boxShadow: "0 4px 6px -1px rgba(127,119,221,0.08), 0 20px 48px -8px rgba(127,119,221,0.18)",
-    position: "relative",
-    overflow: "hidden",
-  };
-
-  const accentBarStyle: React.CSSProperties = {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: "4px",
-    background: "linear-gradient(90deg, #7F77DD 0%, #A8A3E8 50%, #C5C2F0 100%)",
-  };
-
-  // ── Success State ────────────────────────────────────────────────
-  if (submitted && !isEditing) {
+  // ── Submitted state ────────────────────────────────────────────────────────
+  if (formState === 'submitted') {
     return (
-      <div style={containerStyle}>
-        <div style={cardStyle}>
-          <div style={accentBarStyle} />
-          <div style={{ textAlign: "center", marginBottom: "32px" }}>
-            <div
-              style={{
-                width: "64px",
-                height: "64px",
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, #7F77DD, #A8A3E8)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto 20px",
-                boxShadow: "0 8px 24px rgba(127,119,221,0.35)",
-              }}
-            >
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                <path
-                  d="M6 14l5.5 5.5L22 9"
-                  stroke="white"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+      <div
+        className={cn(
+          'rounded-2xl border border-hamplard-primary/30 bg-white overflow-hidden',
+          className,
+        )}
+      >
+        {/* Accent bar */}
+        <div className="h-1 bg-gradient-to-r from-hamplard-primary via-hamplard-primary/70 to-hamplard-lilac" />
+
+        <div className="p-6">
+          {/* Success icon + message */}
+          <div className="flex flex-col items-center text-center mb-6">
+            <div className="w-14 h-14 rounded-full bg-hamplard-primary flex items-center justify-center shadow-md mb-4">
+              <CheckCircle className="w-7 h-7 text-white" aria-hidden="true" />
             </div>
-            <h2
-              style={{
-                fontSize: "22px",
-                fontWeight: 700,
-                color: "#1A1830",
-                margin: "0 0 8px",
-                letterSpacing: "-0.3px",
-              }}
-            >
-              {isEdit ? "Review updated!" : "Thank you for your review!"}
+            <h2 className="text-lg font-semibold text-hamplard-deep">
+              {isEditMode ? 'Review updated!' : 'Thank you for your review!'}
             </h2>
-            <p style={{ fontSize: "14px", color: "#7B78A8", margin: 0, lineHeight: 1.6 }}>
-              Your feedback helps others decide if{" "}
-              <strong style={{ color: "#4A4770" }}>{courseName}</strong> is right for them.
+            <p className="mt-1 text-sm text-semantic-text-muted">
+              Your feedback helps others decide if{' '}
+              <strong className="text-hamplard-deep">{courseName}</strong> is right for them.
             </p>
           </div>
 
-          <div
-            style={{
-              background: "#F8F7FE",
-              border: "1px solid #E4E2F7",
-              borderRadius: "14px",
-              padding: "20px",
-              marginBottom: "24px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
-              <div
-                style={{
-                  width: "36px",
-                  height: "36px",
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg, #7F77DD, #C5C2F0)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  color: "white",
-                  flexShrink: 0,
-                }}
-              >
-                {existingReview?.author?.charAt(0) ?? "Y"}
+          {/* Review preview card */}
+          <div className="rounded-xl bg-hamplard-lilac/40 border border-hamplard-primary/20 p-4 mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-full bg-hamplard-primary flex items-center justify-center text-white text-xs font-bold shrink-0">
+                {(existingReview?.authorName ?? 'Y')[0].toUpperCase()}
               </div>
               <div>
-                <div style={{ fontSize: "13px", fontWeight: 600, color: "#1A1830" }}>
-                  {existingReview?.author ?? "You"}
-                </div>
-                <div style={{ fontSize: "11px", color: "#A8A5C4" }}>Just now</div>
+                <p className="text-xs font-semibold text-hamplard-deep">
+                  {existingReview?.authorName ?? 'You'}
+                </p>
+                <p className="text-[10px] text-semantic-text-muted">Just now</p>
               </div>
-              <div style={{ marginLeft: "auto", display: "flex", gap: "2px" }}>
+              <div className="ml-auto flex items-center gap-0.5" aria-label={`${rating} stars`}>
                 {[1, 2, 3, 4, 5].map((s) => (
-                  <svg key={s} width="16" height="16" viewBox="0 0 44 44" fill="none">
-                    <path
-                      d="M22 4l4.9 9.9 10.9 1.6-7.9 7.7 1.9 10.8L22 29.1l-9.8 5.1 1.9-10.8L6.2 15.5l10.9-1.6L22 4z"
-                      fill={s <= rating ? "#7F77DD" : "#E4E2F7"}
-                    />
-                  </svg>
+                  <Star
+                    key={s}
+                    className={cn(
+                      'w-3.5 h-3.5',
+                      s <= rating ? 'fill-amber-400 text-amber-400' : 'text-gray-200',
+                    )}
+                    aria-hidden="true"
+                  />
                 ))}
               </div>
             </div>
-            <p style={{ fontSize: "14px", color: "#3D3A60", lineHeight: 1.65, margin: 0 }}>
-              {text}
-            </p>
+            <p className="text-sm text-hamplard-deep/80 leading-relaxed">{text}</p>
           </div>
 
+          {/* Edit button */}
           <button
+            type="button"
             onClick={handleEdit}
-            onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) =>
-              (e.currentTarget.style.background = "#F0EFFA")
-            }
-            onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) =>
-              (e.currentTarget.style.background = "transparent")
-            }
-            style={{
-              width: "100%",
-              padding: "13px",
-              borderRadius: "10px",
-              border: "1.5px solid #D4D1F0",
-              background: "transparent",
-              color: "#7F77DD",
-              fontSize: "14px",
-              fontWeight: 600,
-              cursor: "pointer",
-              fontFamily: "inherit",
-              transition: "background 0.15s, border-color 0.15s",
-            }}
+            className={cn(
+              'w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl border border-semantic-border text-sm font-medium text-hamplard-primary',
+              'hover:bg-hamplard-lilac hover:border-hamplard-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary',
+            )}
           >
+            <Pencil className="w-4 h-4" aria-hidden="true" />
             Edit review
           </button>
         </div>
@@ -313,194 +250,141 @@ export default function CourseReviewForm({
     );
   }
 
-  // ── Form State ───────────────────────────────────────────────────
+  // ── Empty / Filled form state ──────────────────────────────────────────────
   return (
-    <div style={containerStyle}>
-      <div style={cardStyle}>
-        <div style={accentBarStyle} />
+    <div
+      className={cn(
+        'rounded-2xl border bg-white overflow-hidden transition-shadow duration-200',
+        isFilled
+          ? 'border-hamplard-primary/40 shadow-md'
+          : 'border-semantic-border',
+        className,
+      )}
+    >
+      {/* Accent bar */}
+      <div
+        className={cn(
+          'h-1 transition-all duration-300',
+          isFilled
+            ? 'bg-gradient-to-r from-hamplard-primary via-hamplard-primary/70 to-hamplard-lilac'
+            : 'bg-gray-100',
+        )}
+      />
 
-        <div style={{ marginBottom: "28px" }}>
-          <p
-            style={{
-              fontSize: "11px",
-              fontWeight: 700,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: "#7F77DD",
-              margin: "0 0 6px",
-            }}
-          >
-            {isEdit ? "Edit your review" : "Rate this course"}
+      <div className="p-6">
+        {/* Header */}
+        <div className="mb-5">
+          <p className="text-[11px] font-bold tracking-widest uppercase text-hamplard-primary mb-1">
+            {isEditMode ? 'Edit your review' : 'Rate this course'}
           </p>
-          <h1
-            style={{
-              fontSize: "22px",
-              fontWeight: 700,
-              color: "#1A1830",
-              margin: 0,
-              letterSpacing: "-0.3px",
-              lineHeight: 1.25,
-            }}
-          >
+          <h2 className="text-lg font-semibold text-hamplard-deep leading-snug">
             {courseName}
-          </h1>
+          </h2>
         </div>
 
-        <div style={{ height: "1px", background: "#EFEDFA", marginBottom: "28px" }} />
+        <div className="h-px bg-semantic-border mb-5" />
 
-        <div style={{ marginBottom: errors.rating ? "8px" : "28px" }}>
-          <StarRating
+        {/* Star selector */}
+        <div className={cn('mb-5', errors.rating && 'mb-2')}>
+          <StarSelector
             value={rating}
-            onChange={(r: number) => {
-              setRating(r);
-              setErrors((prev) => ({ ...prev, rating: undefined }));
-            }}
+            onChange={handleRatingChange}
+            hasError={!!errors.rating}
           />
           {errors.rating && (
-            <p style={{ margin: "10px 0 0", fontSize: "12px", color: "#E05A5A", textAlign: "center" }}>
+            <p role="alert" className="mt-2 text-center text-xs text-rose-500">
               {errors.rating}
             </p>
           )}
         </div>
 
-        <div style={{ marginBottom: "20px" }}>
+        {/* Textarea */}
+        <div className="mb-5">
           <label
-            style={{
-              display: "block",
-              fontSize: "13px",
-              fontWeight: 600,
-              color: "#3D3A60",
-              marginBottom: "8px",
-            }}
+            htmlFor="review-text"
+            className="block text-sm font-semibold text-hamplard-deep mb-1.5"
           >
             Share your experience
           </label>
-          <div style={{ position: "relative" }}>
+
+          <div className="relative">
             <textarea
+              id="review-text"
               value={text}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-                setText(e.target.value);
-                if (errors.text) setErrors((prev) => ({ ...prev, text: undefined }));
-              }}
-              onFocus={(e: React.FocusEvent<HTMLTextAreaElement>) => {
-                if (!errors.text && !charOver) e.currentTarget.style.borderColor = "#7F77DD";
-              }}
-              onBlur={(e: React.FocusEvent<HTMLTextAreaElement>) => {
-                if (!errors.text && !charOver) e.currentTarget.style.borderColor = "#D4D1F0";
-              }}
+              onChange={(e) => handleTextChange(e.target.value)}
               placeholder="What did you learn? What would you tell a friend considering this course?"
               rows={5}
-              style={{
-                width: "100%",
-                padding: "14px",
-                paddingBottom: "36px",
-                borderRadius: "12px",
-                border: `1.5px solid ${errors.text ? "#E05A5A" : charOver ? "#E05A5A" : "#D4D1F0"}`,
-                fontSize: "14px",
-                color: "#1A1830",
-                lineHeight: 1.65,
-                resize: "vertical",
-                fontFamily: "inherit",
-                outline: "none",
-                background: "#FDFCFF",
-                boxSizing: "border-box",
-                transition: "border-color 0.15s",
-              }}
+              aria-describedby={errors.text ? 'review-text-error' : 'review-text-hint'}
+              aria-invalid={!!errors.text}
+              className={cn(
+                'w-full resize-y rounded-xl border px-4 py-3 pb-8 text-sm text-hamplard-deep leading-relaxed bg-white placeholder:text-gray-300 transition-colors duration-150',
+                'focus:outline-none focus:ring-2 focus:ring-hamplard-primary focus:border-hamplard-primary',
+                errors.text || charOver
+                  ? 'border-rose-400'
+                  : isFilled
+                  ? 'border-hamplard-primary/50'
+                  : 'border-semantic-border',
+              )}
             />
-            <div
-              style={{
-                position: "absolute",
-                bottom: "12px",
-                right: "14px",
-                fontSize: "11px",
-                fontWeight: 600,
-                color: charOver ? "#E05A5A" : charNearLimit ? "#D4914A" : "#A8A5C4",
-                transition: "color 0.15s",
-                pointerEvents: "none",
-              }}
+            {/* Character counter */}
+            <span
+              className={cn(
+                'absolute bottom-3 right-3 text-[11px] font-semibold pointer-events-none tabular-nums',
+                charOver ? 'text-rose-500' : charNearLimit ? 'text-amber-500' : 'text-gray-300',
+              )}
+              aria-live="polite"
+              aria-atomic="true"
             >
               {charCount}/{MAX_CHARS}
-            </div>
+            </span>
           </div>
 
+          {/* Hint / error */}
           {errors.text ? (
-            <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#E05A5A" }}>{errors.text}</p>
-          ) : charCount > 0 && charCount < MIN_CHARS ? (
-            <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#A8A5C4" }}>
-              {MIN_CHARS - charCount} more characters needed
+            <p id="review-text-error" role="alert" className="mt-1.5 text-xs text-rose-500">
+              {errors.text}
             </p>
-          ) : null}
+          ) : charCount > 0 && charCount < MIN_CHARS ? (
+            <p id="review-text-hint" className="mt-1.5 text-xs text-semantic-text-muted">
+              {MIN_CHARS - charCount} more character{MIN_CHARS - charCount !== 1 ? 's' : ''} needed
+            </p>
+          ) : (
+            <p id="review-text-hint" className="sr-only">
+              Minimum {MIN_CHARS} characters required
+            </p>
+          )}
         </div>
 
+        {/* Submit button */}
         <button
+          type="button"
           onClick={handleSubmit}
           disabled={loading}
-          onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
-            if (!loading) {
-              e.currentTarget.style.transform = "translateY(-1px)";
-              e.currentTarget.style.boxShadow = "0 6px 20px rgba(127,119,221,0.5)";
-            }
-          }}
-          onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = "0 4px 16px rgba(127,119,221,0.4)";
-          }}
-          style={{
-            width: "100%",
-            padding: "14px",
-            borderRadius: "12px",
-            border: "none",
-            background: loading
-              ? "linear-gradient(135deg, #A8A3E8, #C5C2F0)"
-              : "linear-gradient(135deg, #7F77DD 0%, #9B94E8 100%)",
-            color: "white",
-            fontSize: "15px",
-            fontWeight: 700,
-            cursor: loading ? "not-allowed" : "pointer",
-            fontFamily: "inherit",
-            letterSpacing: "0.01em",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "10px",
-            transition: "transform 0.1s, box-shadow 0.15s, background 0.2s",
-            boxShadow: loading ? "none" : "0 4px 16px rgba(127,119,221,0.4)",
-          }}
+          className={cn(
+            'w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all duration-200',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-hamplard-primary',
+            isFilled && !loading
+              ? 'bg-hamplard-primary text-white hover:bg-hamplard-mid active:bg-hamplard-deep shadow-md hover:shadow-lg hover:-translate-y-px'
+              : 'bg-gray-100 text-gray-400 cursor-not-allowed',
+          )}
+          aria-disabled={!isFilled || loading}
         >
           {loading ? (
             <>
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                style={{ animation: "spin 0.8s linear infinite" }}
-              >
-                <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="2.5" />
-                <path
-                  d="M12 2a10 10 0 0 1 10 10"
-                  stroke="white"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-              </svg>
+              <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
               Submitting…
             </>
           ) : (
-            <>{isEdit ? "Update review" : "Submit review"}</>
+            <>{isEditMode ? 'Update review' : 'Submit review'}</>
           )}
         </button>
 
-        {isEdit && !submitted && (
-          <p style={{ textAlign: "center", margin: "14px 0 0", fontSize: "12px", color: "#B0ADCC" }}>
-            Last reviewed {existingReview?.date}
+        {/* Edit mode — last reviewed date */}
+        {isEditMode && existingReview?.date && (
+          <p className="mt-3 text-center text-xs text-semantic-text-muted">
+            Last reviewed {existingReview.date}
           </p>
         )}
-
-        <style>{`
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-          @keyframes spin { to { transform: rotate(360deg); } }
-        `}</style>
       </div>
     </div>
   );
