@@ -217,7 +217,7 @@ export interface RatingDistribution {
 
 // ── Lesson Q&A ────────────────────────────────────────────────────
 
-export type QnaSortOption = 'most_recent' | 'most_upvoted';
+export type QnaSortOption = 'most_recent' | 'most_upvoted' | 'unanswered';
 export type QnaFilterOption = 'all' | 'mine' | 'unanswered';
 
 export interface QnaReply {

@@ -2,11 +2,13 @@ import { apiClient } from './client';
 import type {
   ApiResponse, PaginatedResponse, Course, Enrollment,
   Certificate, Notification, User, Category, Announcement,
+  QnaQuestion, QnaReply,
 } from '@/types';
 
 const isBrowser = typeof window !== 'undefined';
 const ANNOUNCEMENTS_STORAGE_KEY = 'hamplard_announcements';
 const NOTIFICATIONS_STORAGE_KEY = 'hamplard_notifications';
+const QNA_STORAGE_PREFIX = 'hamplard_qna';
 
 const readStorage = <T,>(key: string, fallback: T): T => {
   if (!isBrowser) return fallback;
@@ -201,6 +203,105 @@ export const lessonsApi = {
   }) => {
     const { data } = await apiClient.post('/lessons', payload);
     return data.data;
+  },
+};
+
+// ----------------------------------------------------------
+// Lesson Q&A
+// ----------------------------------------------------------
+const qnaStorageKey = (lessonId: string) => `${QNA_STORAGE_PREFIX}_${lessonId}`;
+
+export const qnaApi = {
+  list: async (lessonId: string): Promise<QnaQuestion[]> => {
+    try {
+      const { data } = await apiClient.get<ApiResponse<QnaQuestion[]>>(
+        `/lessons/${lessonId}/questions`,
+      );
+      return data.data;
+    } catch {
+      return readStorage<QnaQuestion[]>(qnaStorageKey(lessonId), []);
+    }
+  },
+
+  create: async (
+    lessonId: string,
+    payload: { title: string; body: string },
+  ): Promise<QnaQuestion> => {
+    try {
+      const { data } = await apiClient.post<ApiResponse<QnaQuestion>>(
+        `/lessons/${lessonId}/questions`, payload,
+      );
+      return data.data;
+    } catch {
+      const question: QnaQuestion = {
+        id: `question-${Date.now()}`,
+        lessonId,
+        authorName: 'You',
+        authorAvatarUrl: null,
+        isViewerAuthor: true,
+        title: payload.title,
+        body: payload.body,
+        createdAt: new Date().toISOString(),
+        upvotes: 0,
+        viewerUpvoted: false,
+        replies: [],
+      };
+      const stored = readStorage<QnaQuestion[]>(qnaStorageKey(lessonId), []);
+      writeStorage(qnaStorageKey(lessonId), [question, ...stored]);
+      return question;
+    }
+  },
+
+  reply: async (
+    lessonId: string,
+    questionId: string,
+    text: string,
+  ): Promise<QnaReply> => {
+    try {
+      const { data } = await apiClient.post<ApiResponse<QnaReply>>(
+        `/questions/${questionId}/replies`, { text },
+      );
+      return data.data;
+    } catch {
+      const reply: QnaReply = {
+        id: `reply-${Date.now()}`,
+        authorName: 'You',
+        authorAvatarUrl: null,
+        isInstructor: false,
+        text,
+        createdAt: new Date().toISOString(),
+      };
+      const stored = readStorage<QnaQuestion[]>(qnaStorageKey(lessonId), []);
+      const updated = stored.map((q) =>
+        q.id === questionId ? { ...q, replies: [...q.replies, reply] } : q,
+      );
+      writeStorage(qnaStorageKey(lessonId), updated);
+      return reply;
+    }
+  },
+
+  upvote: async (
+    lessonId: string,
+    questionId: string,
+  ): Promise<{ upvotes: number; viewerUpvoted: boolean }> => {
+    try {
+      const { data } = await apiClient.post<
+        ApiResponse<{ upvotes: number; viewerUpvoted: boolean }>
+      >(`/questions/${questionId}/upvote`);
+      return data.data;
+    } catch {
+      const stored = readStorage<QnaQuestion[]>(qnaStorageKey(lessonId), []);
+      let result = { upvotes: 0, viewerUpvoted: false };
+      const updated = stored.map((q) => {
+        if (q.id !== questionId) return q;
+        const viewerUpvoted = !q.viewerUpvoted;
+        const upvotes = q.upvotes + (viewerUpvoted ? 1 : -1);
+        result = { upvotes, viewerUpvoted };
+        return { ...q, viewerUpvoted, upvotes };
+      });
+      writeStorage(qnaStorageKey(lessonId), updated);
+      return result;
+    }
   },
 };
 

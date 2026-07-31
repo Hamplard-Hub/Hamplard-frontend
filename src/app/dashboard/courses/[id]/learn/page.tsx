@@ -26,6 +26,7 @@ import { coursesApi, enrollmentsApi, lessonsApi } from "@/lib/api/services";
 import type { Course, Enrollment, Lesson } from "@/types";
 
 import NotesPanel from "@/components/learn/NotesPanel";
+import QAPanel from "@/components/learn/QAPanel";
 import CourseCompletionModal from "@/components/learn/CourseCompletionModal";
 import { VideoPlayer } from "@/components/learn/VideoPlayer";
 
@@ -608,33 +609,8 @@ export default function LearnPage() {
             )}
 
             {/* Q&A */}
-            {rightTab === "qa" && (
-              <div className="flex h-full flex-col p-6">
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-white">
-                    Questions & Answers
-                  </h3>
-
-                  <p className="mt-2 text-sm text-zinc-400">
-                    Ask questions about this lecture.
-                  </p>
-                </div>
-
-                <textarea
-                  placeholder="Ask a question..."
-                  className="min-h-32 rounded-lg border border-zinc-700 bg-zinc-950 p-4 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-saffron-500"
-                />
-
-                <button className="mt-4 rounded-lg bg-saffron-500 px-4 py-3 font-medium text-white hover:bg-saffron-600 transition">
-                  Submit Question
-                </button>
-
-                <div className="mt-10 flex flex-1 items-center justify-center">
-                  <p className="text-center text-sm text-zinc-500">
-                    No questions yet.
-                  </p>
-                </div>
-              </div>
+            {rightTab === "qa" && activeLesson && (
+              <QAPanel lessonId={activeLesson.id} />
             )}
 
             {/* RESOURCES */}
