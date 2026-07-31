@@ -3,6 +3,7 @@ import { coursesApi } from '@/lib/api/services';
 import { formatUsdc, courseTotalMins } from '@/lib/utils';
 import type { Course } from '@/types';
 import RecentlyViewedTracker from '@/components/courses/RecentlyViewedTracker';
+import { Breadcrumb } from '@/components/ui';
 
 // Metadata and JSON-LD are handled by the server layout at
 // src/app/courses/[id]/layout.tsx — no need to duplicate them here.
@@ -49,12 +50,14 @@ export default async function CoursePage({ params }: Props) {
     <div className="min-h-screen bg-ink-50 px-5 py-16">
       <RecentlyViewedTracker courseId={course.id} />
       <div className="mx-auto max-w-6xl space-y-10">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-sm text-ink-500 hover:text-ink-900 transition-colors"
-        >
-          ← Back to Hamplard
-        </Link>
+        <Breadcrumb
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'Courses', href: '/courses' },
+            { label: course.title },
+          ]}
+          className="mb-2"
+        />
 
         <div className="grid gap-10 lg:grid-cols-[1.7fr_0.9fr]">
           <div className="space-y-6">

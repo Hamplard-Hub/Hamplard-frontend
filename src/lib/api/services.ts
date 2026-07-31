@@ -2,7 +2,7 @@ import { apiClient } from './client';
 import type {
   ApiResponse, PaginatedResponse, Course, Enrollment,
   Certificate, Notification, User, Category, Announcement,
-  QnaQuestion, QnaReply,
+  QnaQuestion, QnaReply, Bundle, StudentEnrollmentRow, StudentDetail,
 } from '@/types';
 
 const isBrowser = typeof window !== 'undefined';

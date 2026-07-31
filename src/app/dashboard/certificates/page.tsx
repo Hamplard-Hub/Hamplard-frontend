@@ -7,6 +7,7 @@ import { certificatesApi } from '@/lib/api/services';
 import { formatDate, shortAddress, copyToClipboard } from '@/lib/utils';
 import type { Certificate } from '@/types';
 import { SocialShare } from '@/components/ui/SocialShare';
+import { Breadcrumb } from '@/components/ui';
 
 export default function CertificatesPage() {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
@@ -33,6 +34,13 @@ export default function CertificatesPage() {
   return (
     <div>
       <div className="mb-6">
+        <Breadcrumb
+          items={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Certificates' },
+          ]}
+          className="mb-3"
+        />
         <h1 className="section-heading">My Certificates</h1>
         <p className="text-sm text-ink-500 mt-0.5">
           {certificates.length} certificate{certificates.length !== 1 ? 's' : ''} earned

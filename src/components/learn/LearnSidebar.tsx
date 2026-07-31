@@ -12,14 +12,14 @@ import type { CourseModule, Lesson } from '@/types';
 function formatSectionDuration(totalSecs: number): string {
   const h = Math.floor(totalSecs / 3600);
   const m = Math.floor((totalSecs % 3600) / 60);
-  if (h > 0) return ${h}h m;
-  return ${m}min;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}min`;
 }
 
 function formatLectureDuration(secs: number): string {
   const m = Math.floor(secs / 60);
   const s = secs % 60;
-  return ${m}:;
+  return `${m}:${String(s).padStart(2, '0')}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -166,7 +166,7 @@ export function LearnSidebar({
                     {mod.title}
                   </span>
                   <span className="text-xs text-ink-500">
-                    {mod.lessons.length} lectures · {formatSectionDuration(sectionSecs)}
+                    {mod.lessons.length} lectures â€¢ {formatSectionDuration(sectionSecs)}
                   </span>
                 </div>
                 {sectionCompleted && (

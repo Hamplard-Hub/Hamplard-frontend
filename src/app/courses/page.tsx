@@ -7,9 +7,7 @@ import { coursesApi } from '@/lib/api/services';
 import { CourseCard } from '@/components/courses/CourseCard';
 import { CourseCardSkeleton } from '@/components/skeletons';
 import { FilterSidebar } from '@/components/courses/FilterSidebar';
-import { Pagination } from '@/components/ui/Pagination';
 import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll';
-import { cn } from '@/lib/utils';
 import type { Course, Category } from '@/types';
 
 // ── Constants ─────────────────────────────────────────────────────
@@ -40,8 +38,6 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
 
 // ── Main page ─────────────────────────────────────────────────────
 export default function CourseBrowsePage() {
-  const router       = useRouter();
-  const pathname     = usePathname();
   return (
     <Suspense
       fallback={
@@ -151,10 +147,10 @@ function CourseBrowsePageContent() {
     })
       .then((res) => {
         if (cancelled) return;
-        const filtered = applyClientFilters(res.courses);
+        const filtered = applyClientFilters(res.data);
         setCourses(filtered);
-        setTotal(res.total);
-        setHasMore(res.courses.length === PAGE_SIZE && filtered.length < res.total);
+        setTotal(res.meta.total);
+        setHasMore(res.data.length === PAGE_SIZE && filtered.length < res.meta.total);
       })
       .catch(() => {
         if (cancelled) return;
@@ -167,11 +163,6 @@ function CourseBrowsePageContent() {
 
     return () => { cancelled = true; };
   }, [urlCategory, urlLevel, urlSearch, applyClientFilters]);
-
-  // Read current page from URL parameter
-  const urlPageParam = searchParams.get('page');
-  const urlPage = urlPageParam ? parseInt(urlPageParam, 10) : 1;
-  const totalPages = Math.ceil(total / PAGE_SIZE) || 1;
 
   // Load next page and append
   const fetchNextPage = useCallback(async () => {
@@ -370,28 +361,14 @@ function CourseBrowsePageContent() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                {courses.map((course, index) => (
-                  <CourseCard
-                    key={course.id}
-                    course={course}
-                    priority={index < 4}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Pagination */}
-            <Pagination
-              currentPage={urlPage}
-              totalPages={totalPages}
-              onPageChange={p => updateParams({ page: String(p) })}
-              className="mt-10"
-            />
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                  {courses.map((course) => (
-                    <CourseCard key={course.id} course={course} />
+                  {courses.map((course, index) => (
+                    <CourseCard
+                      key={course.id}
+                      course={course}
+                      priority={index < 4}
+                    />
                   ))}
                 </div>
 
@@ -411,7 +388,7 @@ function CourseBrowsePageContent() {
                 {/* End-of-list message */}
                 {!hasMore && !loadingMore && (
                   <p className="text-center text-sm text-ink-400 py-10 select-none">
-                    You've seen all courses
+                    You&apos;ve seen all courses
                   </p>
                 )}
 

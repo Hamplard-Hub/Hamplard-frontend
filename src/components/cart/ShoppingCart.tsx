@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState} from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShoppingBag, X, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
@@ -15,12 +15,9 @@ interface ShoppingCartProps {
   onClose?: () => void;
 }
 
-export function ShoppingCart({ isOpen = true, onClose }: ShoppingCartProps) {
+function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
   const router = useRouter();
   const { items, removeItem, clearCart, getTotalPrice } = useCartStore();
-function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
-  const { items, removeItem, clearCart, getTotalPrice } = useCartStore();
-  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   const [appliedPromo, setAppliedPromo] = useState<any>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
@@ -51,7 +48,7 @@ function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
     try {
       // Validate promo code - using first course ID for validation
       if (items.length === 0) return;
-      
+
       const result = await promoCodesApi.validate(promoCode.toUpperCase(), items[0].courseId);
       setAppliedPromo(result);
       setPromoCode('');

@@ -180,7 +180,6 @@ export default function LearnPage() {
   return (
     <>
       <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden bg-zinc-950">
-        {/* <div className="grid h-full lg:grid-cols-[320px_1fr_360px]"> */}
         {/* LEFT SIDEBAR — COURSE CURRICULUM */}
         <aside
           className={cn(
@@ -664,7 +663,6 @@ export default function LearnPage() {
           courseId={course.id}
           onClose={() => setShowCompletionModal(false)}
         />
-        {/* </div> */}
       </div>
     </>
   );

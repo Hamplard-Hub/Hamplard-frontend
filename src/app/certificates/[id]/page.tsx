@@ -4,8 +4,7 @@ import { formatDate, shortAddress } from '@/lib/utils';
 import { Award, CheckCircle2, XCircle, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import { SocialShare } from '@/components/ui/SocialShare';
-
-const DEFAULT_OG_IMAGE = '/hamplard-og.svg';
+import { absoluteUrl } from '@/lib/seo';
 
 const DEFAULT_OG_IMAGE = '/hamplard-og.svg';
 
@@ -32,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       openGraph: {
         title,
         description,
-        url: `https://hamplard.app/certificates/${params.id}`,
+        url: absoluteUrl(`/certificates/${params.id}`),
         siteName: 'Hamplard',
         type: 'article',
         images: [{ url: DEFAULT_OG_IMAGE, alt: title }],
@@ -51,7 +50,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       openGraph: {
         title: defaultTitle,
         description: defaultDescription,
-        url: `https://hamplard.app/certificates/${params.id}`,
+        url: absoluteUrl(`/certificates/${params.id}`),
         siteName: 'Hamplard',
         type: 'article',
         images: [{ url: DEFAULT_OG_IMAGE, alt: 'Hamplard Certificate' }],

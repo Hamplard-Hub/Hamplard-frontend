@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Bell, Shield, Save, Loader2 } from 'lucide-react';
+import { Breadcrumb } from '@/components/ui';
 
 export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
@@ -43,6 +44,13 @@ export default function SettingsPage() {
   return (
     <div>
       <div className="mb-6">
+        <Breadcrumb
+          items={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Settings' },
+          ]}
+          className="mb-3"
+        />
         <h1 className="section-heading">Settings</h1>
         <p className="text-sm text-ink-500 mt-1">Notification and security preferences.</p>
       </div>
