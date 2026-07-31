@@ -4,21 +4,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
-import { useEffect, useState, useRef } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import {
-  CheckCircle2, Circle, ChevronDown, ChevronRight,
-  Download, Loader2, ArrowLeft, MessageSquare, FileText, Award,
-} from 'lucide-react';
-import { coursesApi, enrollmentsApi, lessonsApi } from '@/lib/api/services';
-import { formatDuration, cn } from '@/lib/utils';
-import type { Course, Enrollment, Lesson } from '@/types';
-import NotesPanel from '@/components/learn/NotesPanel';
-import CourseCompletionModal from '@/components/learn/CourseCompletionModal';
-import { Breadcrumb } from '@/components/ui';
-
-type SidebarTab = 'lessons' | 'notes' | 'qa';
 import {
   ArrowLeft,
   Award,
@@ -41,6 +26,7 @@ import { coursesApi, enrollmentsApi, lessonsApi } from "@/lib/api/services";
 import type { Course, Enrollment, Lesson } from "@/types";
 
 import NotesPanel from "@/components/learn/NotesPanel";
+import QAPanel from "@/components/learn/QAPanel";
 import CourseCompletionModal from "@/components/learn/CourseCompletionModal";
 import { VideoPlayer } from "@/components/learn/VideoPlayer";
 
@@ -49,41 +35,6 @@ type RightTab = "notes" | "qa" | "resources";
 export default function LearnPage() {
   const { id } = useParams<{ id: string }>();
 
-  const [course,       setCourse]       = useState<Course | null>(null);
-  const [enrollment,   setEnrollment]   = useState<Enrollment | null>(null);
-  const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
-  const [expanded,     setExpanded]     = useState<Record<string, boolean>>({});
-  const [loading,      setLoading]      = useState(true);
-  const [marking,      setMarking]      = useState(false);
-  const [sidebarTab,   setSidebarTab]   = useState<SidebarTab>('lessons');
-  const [showCompletionModal, setShowCompletionModal] = useState(false);
-
-  const videoRef                      = useRef<HTMLVideoElement | null>(null);
-  const progressRef                   = useRef<NodeJS.Timeout | null>(null);
-  const previousCompletedCountRef     = useRef<number | null>(null);
-  const hasInitializedCompletionState = useRef(false);
-
-  useEffect(() => {
-    Promise.all([
-      coursesApi.get(id),
-      enrollmentsApi.get(id),
-    ]).then(([c, e]) => {
-      setCourse(c);
-      setEnrollment(e);
-      // Open first module by default
-      if (c.modules?.[0]) setExpanded({ [c.modules[0].id]: true });
-      // Start from first incomplete lesson
-      const allLessons  = c.modules?.flatMap((m) => m.lessons) ?? [];
-      const completedIds = new Set(
-        e.lessonProgress?.filter((p) => p.completed).map((p) => p.lessonId),
-      );
-      const first = allLessons.find((l) => !completedIds.has(l.id)) ?? allLessons[0];
-      if (first) setActiveLesson(first);
-    })
-    .catch(console.error)
-    .finally(() => setLoading(false));
-
-    return () => { if (progressRef.current) clearInterval(progressRef.current); };
   const [course, setCourse] = useState<Course | null>(null);
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
 
@@ -140,15 +91,6 @@ export default function LearnPage() {
       (p) => p.lessonId === lessonId && p.completed,
     ) ?? false;
 
-    const totalLessons    = course.modules?.flatMap((m) => m.lessons).length ?? 0;
-    const completedCount  = enrollment.lessonProgress?.filter((p) => p.completed).length ?? 0;
-    const isComplete      = totalLessons > 0 && completedCount >= totalLessons;
-    const prevIncomplete  = previousCompletedCountRef.current === null
-      || previousCompletedCountRef.current < totalLessons;
-    const newlyCompleted  = hasInitializedCompletionState.current && prevIncomplete && isComplete;
-
-    previousCompletedCountRef.current    = completedCount;
-    hasInitializedCompletionState.current = true;
   const allLessons = useMemo(
     () => course?.modules?.flatMap((m) => m.lessons) ?? [],
     [course],
@@ -158,9 +100,6 @@ export default function LearnPage() {
 
   const previousLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
 
-    const storageKey  = `course-completion:${course.id}`;
-    const hasSeenModal = typeof window !== 'undefined'
-      && window.localStorage.getItem(storageKey) === 'true';
   const nextLesson =
     currentIndex >= 0 && currentIndex < allLessons.length - 1
       ? allLessons[currentIndex + 1]
@@ -193,72 +132,6 @@ export default function LearnPage() {
   useEffect(() => {
     if (!course || !enrollment) return;
 
-  if (loading) return (
-    <div className="flex justify-center py-16">
-      <Loader2 className="w-6 h-6 text-saffron-500 animate-spin" />
-    </div>
-  );
-
-  if (!course) return (
-    <div className="text-center py-16 text-ink-500">Course not found.</div>
-  );
-
-  return (
-    <div className="-m-6 flex h-[calc(100vh-3.5rem)] overflow-hidden">
-      {course && (
-        <CourseCompletionModal
-          open={showCompletionModal}
-          courseTitle={course.title}
-          courseId={course.id}
-          onClose={() => setShowCompletionModal(false)}
-        />
-      )}
-
-      {/* ── Left sidebar ── */}
-      <aside className="w-72 bg-white border-r border-ink-100 flex flex-col flex-shrink-0">
-        {/* Tab bar */}
-        <div className="flex border-b border-ink-100">
-          {([
-            { tab: 'lessons' as SidebarTab, icon: <Circle className="w-3.5 h-3.5" />,       label: 'Lessons' },
-            { tab: 'notes'   as SidebarTab, icon: <FileText className="w-3.5 h-3.5" />,     label: 'Notes'   },
-            { tab: 'qa'      as SidebarTab, icon: <MessageSquare className="w-3.5 h-3.5" />, label: 'Q&A'    },
-          ] as const).map(({ tab, icon, label }) => (
-            <button
-              key={tab}
-              onClick={() => setSidebarTab(tab)}
-              className={cn(
-                'flex-1 flex items-center justify-center gap-1.5 text-xs font-medium py-3 transition-colors',
-                sidebarTab === tab
-                  ? 'text-saffron-600 border-b-2 border-saffron-500'
-                  : 'text-ink-400 hover:text-ink-600',
-              )}
-            >
-              {icon}
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Lessons tab */}
-        {sidebarTab === 'lessons' && (
-          <div className="flex flex-col flex-1 overflow-hidden">
-            <div className="p-4 border-b border-ink-100">
-              <Link
-                href={`/dashboard/courses/${id}`}
-                className="flex items-center gap-1.5 text-xs text-ink-400 hover:text-ink-700 mb-2 transition-colors"
-              >
-                <ArrowLeft className="w-3 h-3" />
-                Back to overview
-              </Link>
-              <h2 className="text-sm font-semibold text-ink-900 line-clamp-2">{course.title}</h2>
-              <div className="mt-2.5">
-                <div className="flex justify-between text-xs text-ink-400 mb-1">
-                  <span>{completedCount}/{totalLessons} lessons</span>
-                  <span>{progress}%</span>
-                </div>
-                <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: `${progress}%` }} />
-                </div>
     const completed =
       enrollment.lessonProgress?.filter((p) => p.completed).length ?? 0;
 
@@ -307,7 +180,6 @@ export default function LearnPage() {
   return (
     <>
       <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden bg-zinc-950">
-        {/* <div className="grid h-full lg:grid-cols-[320px_1fr_360px]"> */}
         {/* LEFT SIDEBAR — COURSE CURRICULUM */}
         <aside
           className={cn(
@@ -365,9 +237,6 @@ export default function LearnPage() {
                 <div key={module.id} className="border-b border-zinc-900">
                   {/* Module */}
 
-            <div className="flex-1 overflow-y-auto">
-              {course.modules?.map((module, mi) => (
-                <div key={module.id} className="border-b border-ink-50">
                   <button
                     onClick={() =>
                       setExpanded((prev) => ({
@@ -399,8 +268,6 @@ export default function LearnPage() {
                   {expanded[module.id] && (
                     <div>
                       {module.lessons.map((lesson) => {
-                        const done   = isLessonCompleted(lesson.id);
-                        const active = activeLesson?.id === lesson.id;
                         const completed = isLessonCompleted(lesson.id);
 
                         const active = lesson.id === activeLesson?.id;
@@ -454,8 +321,6 @@ export default function LearnPage() {
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
               );
             })}
           </div>
@@ -473,47 +338,6 @@ export default function LearnPage() {
                 Courses
               </Link>
 
-        {/* Notes tab */}
-        {sidebarTab === 'notes' && activeLesson && (
-          <div className="flex-1 overflow-hidden">
-            <NotesPanel
-              courseId={id}
-              lectureId={activeLesson.id}
-              videoRef={videoRef}
-            />
-          </div>
-        )}
-
-        {/* Q&A tab */}
-        {sidebarTab === 'qa' && (
-          <div className="flex-1 flex items-center justify-center text-ink-400 px-4">
-            <div className="text-center">
-              <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-40" />
-              <p className="text-xs">Q&A coming soon</p>
-            </div>
-          </div>
-        )}
-      </aside>
-
-      {/* ── Main lesson content ── */}
-      <div className="flex-1 overflow-y-auto p-6">
-        {activeLesson ? (
-          <div className="max-w-3xl mx-auto">
-            {/* Breadcrumb — sits above the lesson content */}
-            <Breadcrumb
-              items={[
-                { label: 'Dashboard', href: '/dashboard' },
-                { label: 'My Courses', href: '/dashboard/courses' },
-                { label: course.title, href: `/dashboard/courses/${id}` },
-                { label: activeLesson.title },
-              ]}
-              className="mb-5"
-            />
-
-            {/* Video */}
-            {activeLesson.videoUrl && (
-              <div className="aspect-video rounded-2xl overflow-hidden bg-black mb-5">
-                <video
               <span>/</span>
 
               <Link
@@ -784,33 +608,8 @@ export default function LearnPage() {
             )}
 
             {/* Q&A */}
-            {rightTab === "qa" && (
-              <div className="flex h-full flex-col p-6">
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-white">
-                    Questions & Answers
-                  </h3>
-
-                  <p className="mt-2 text-sm text-zinc-400">
-                    Ask questions about this lecture.
-                  </p>
-                </div>
-
-                <textarea
-                  placeholder="Ask a question..."
-                  className="min-h-32 rounded-lg border border-zinc-700 bg-zinc-950 p-4 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-saffron-500"
-                />
-
-                <button className="mt-4 rounded-lg bg-saffron-500 px-4 py-3 font-medium text-white hover:bg-saffron-600 transition">
-                  Submit Question
-                </button>
-
-                <div className="mt-10 flex flex-1 items-center justify-center">
-                  <p className="text-center text-sm text-zinc-500">
-                    No questions yet.
-                  </p>
-                </div>
-              </div>
+            {rightTab === "qa" && activeLesson && (
+              <QAPanel lessonId={activeLesson.id} />
             )}
 
             {/* RESOURCES */}
@@ -864,7 +663,6 @@ export default function LearnPage() {
           courseId={course.id}
           onClose={() => setShowCompletionModal(false)}
         />
-        {/* </div> */}
       </div>
     </>
   );

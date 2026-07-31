@@ -187,7 +187,7 @@ export function Quiz({
         <p className="mt-1 text-sm text-ink-500">
           {passed
             ? 'You passed the quiz!'
-            : You need % to pass.}
+            : `You need ${passPercentage}% to pass.`}
         </p>
 
         <div className="mt-6 flex w-full max-w-xs gap-4">
@@ -271,7 +271,7 @@ export function Quiz({
           <div
             className="h-full rounded-full bg-hamplard-primary transition-all duration-300"
             style={{
-              width: ${((currentIndex + 1) / total) * 100}%,
+              width: `${((currentIndex + 1) / total) * 100}%`,
             }}
           />
         </div>
