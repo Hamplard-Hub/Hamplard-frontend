@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Bell, Shield, Save, Loader2 } from 'lucide-react';
 import { Breadcrumb } from '@/components/ui';
+import { StudyReminder } from '@/components/dashboard/StudyReminder';
 
 export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
@@ -133,6 +134,15 @@ export default function SettingsPage() {
         <span className="text-xs text-ink-400">
           Preferences will be updated once backend endpoints are available.
         </span>
+      </div>
+
+      {/* Study reminder scheduler */}
+      <div className="mt-8">
+        <h2 className="section-heading mb-1 text-base">Study schedule</h2>
+        <p className="mb-4 text-sm text-ink-500">
+          Set daily learning reminders. The tab must be open for the reminder to fire.
+        </p>
+        <StudyReminder />
       </div>
     </div>
   );

@@ -291,6 +291,44 @@ export interface BundleSummary {
   courseCount: number;
 }
 
+// ── Gift ─────────────────────────────────────────────────────────────────
+
+export type GiftStatus = 'PENDING' | 'CLAIMED' | 'EXPIRED';
+
+export interface Gift {
+  id: string;
+  courseId: string;
+  senderEmail: string | null;
+  recipientEmail: string;
+  message: string | null;
+  deliveryDate: string;
+  claimToken: string;
+  status: GiftStatus;
+  claimedAt: string | null;
+  createdAt: string;
+  course?: Course;
+}
+
+// ── Leaderboard ───────────────────────────────────────────────────────────
+
+export type LeaderboardPeriod = 'week' | 'month' | 'all';
+
+export interface LeaderboardEntry {
+  rank: number;
+  userId: string;
+  name: string | null;
+  avatarUrl: string | null;
+  coursesCompleted: number;
+  hoursLearned: number;
+  streakDays: number;
+}
+
+export interface LeaderboardResponse {
+  entries: LeaderboardEntry[];
+  currentUser: LeaderboardEntry | null;
+  period: LeaderboardPeriod;
+}
+
 // ── Instructor Student Analytics ─────────────────────────────────────────
 
 export interface StudentEnrollmentRow {
