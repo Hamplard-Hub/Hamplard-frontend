@@ -17,6 +17,7 @@ import {
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { useWishlistCount } from '@/lib/hooks/use-wishlist-store';
 import { shortAddress, cn } from '@/lib/utils';
+import { ProfileCompletion } from '@/components/dashboard/ProfileCompletion';
 
 interface NavItem {
   href:  string;
@@ -35,8 +36,7 @@ const STUDENT_NAV: NavItem[] = [
   { href: '/notifications',         label: 'Notifications',  icon: Bell },
 ];
 
-
-const INSTRUCTOR_NAV: NavItem[] = [
+const INSTRUCTOR_NAV = [
   { href: '/dashboard/instructor',  label: 'Dashboard',      icon: BarChart2 },
   { href: '/dashboard/courses',     label: 'My Courses',     icon: BookOpen },
   { href: '/dashboard/courses/create', label: 'New Course',  icon: Video },
@@ -115,6 +115,11 @@ export function Sidebar() {
           <LogOut className="w-4 h-4" />
           Sign out
         </button>
+
+        {/* Profile Completion for Students */}
+        {user && user.role === 'STUDENT' && (
+          <ProfileCompletion variant="sidebar" className="mt-0 pt-4 px-0 border-t" />
+        )}
       </div>
     </aside>
   );
