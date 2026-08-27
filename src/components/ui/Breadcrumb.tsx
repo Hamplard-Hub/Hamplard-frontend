@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { absoluteUrl } from '@/lib/seo';
 
 export interface BreadcrumbItem {
   label: string;
@@ -35,6 +36,12 @@ const buildMobileItems = (items: BreadcrumbItem[]): RenderBreadcrumbItem[] => {
 const toRenderItems = (items: BreadcrumbItem[]): RenderBreadcrumbItem[] =>
   items.map((item, index) => ({ ...item, originalIndex: index }));
 
+/**
+ * Schema.org BreadcrumbList requires absolute URLs for the `item` property
+ * (relative paths fail Rich Results validation). We resolve each href via
+ * `absoluteUrl` from the seo helper so the origin is taken from
+ * NEXT_PUBLIC_SITE_URL and falls back to `https://hamplard.com`.
+ */
 const buildSchemaData = (items: BreadcrumbItem[]) => ({
   '@context': 'https://schema.org',
   '@type': 'BreadcrumbList',
@@ -42,7 +49,7 @@ const buildSchemaData = (items: BreadcrumbItem[]) => ({
     '@type': 'ListItem',
     position: index + 1,
     name: item.label,
-    ...(item.href ? { item: item.href } : {}),
+    ...(item.href ? { item: absoluteUrl(item.href) } : {}),
   })),
 });
 

@@ -511,3 +511,22 @@ export const promoCodesApi = {
     return data.data;
   },
 };
+
+// ----------------------------------------------------------
+// Contact
+// ----------------------------------------------------------
+export const contactApi = {
+  submitContactForm: async (payload: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+  }) => {
+    const { data } = await apiClient.post<ApiResponse<{ id: string; createdAt: string }>>(
+      '/contact',
+      payload,
+    );
+    return data.data;
+  },
+};
+

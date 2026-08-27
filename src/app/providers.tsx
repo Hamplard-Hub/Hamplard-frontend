@@ -1,56 +1,27 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { CookieConsentBanner } from '@/components/ui/CookieConsentBanner';
 import { ToastProvider } from '@/components/ui/ToastProvider';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
+import { createQueryClient } from '@/lib/query-client';
 
 const THEME_STORAGE_KEY = 'theme-preference';
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(() => createQueryClient());
   const rehydrate = useAuthStore((s) => s.rehydrate);
 
-  useEffect(() => {
-    rehydrate();
-  }, [rehydrate]);
-
-  // Initialize theme on app load
-  useEffect(() => {
-    const initializeTheme = () => {
-      try {
-        // Check localStorage for saved preference
-        const stored = localStorage.getItem(THEME_STORAGE_KEY);
-        if (stored === 'light' || stored === 'dark') {
-          applyTheme(stored);
-          return;
-        }
-      } catch { /* noop */ }
-
-      // Fallback to system preference
-      const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
-      applyTheme(prefersDark ? 'dark' : 'light');
-    };
-
-    const applyTheme = (theme: 'light' | 'dark') => {
-      if (theme === 'dark') {
-        document.documentElement.setAttribute('data-theme', 'dark');
-      } else {
-        document.documentElement.removeAttribute('data-theme');
-      }
-    };
-
-    // Run initialization
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initializeTheme);
-      return () => document.removeEventListener('DOMContentLoaded', initializeTheme);
-    } else {
-      initializeTheme();
-    }
-  }, []);
+  useEffect(() => { rehydrate(); }, [rehydrate]);
 
   return (
-    <ToastProvider>
-      {children}
-      <CookieConsentBanner />
-    </ToastProvider>
+    <QueryClientProvider client={queryClient}>
+      <ToastProvider>
+        {children}
+        <CookieConsentBanner />
+      </ToastProvider>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 }

@@ -9,7 +9,7 @@ const FOOTER_COLUMNS = [
   {
     title: 'About Hamplard',
     links: [
-      { label: 'Our story', href: '/#about' },
+      { label: 'Our story', href: '/about' },
       { label: 'Careers', href: '/#careers' },
       { label: 'Partner with us', href: '/#partners' },
       { label: 'Blog', href: '/#blog' },
@@ -28,18 +28,18 @@ const FOOTER_COLUMNS = [
   {
     title: 'Support',
     links: [
-      { label: 'Help center', href: '/#help' },
+      { label: 'Help center', href: '/help' },
+      { label: 'Contact us', href: '/contact' },
       { label: 'Community', href: '/#community' },
-      { label: 'Contact us', href: '/#contact' },
       { label: 'FAQs', href: '/#faqs' },
     ],
   },
   {
     title: 'Legal',
     links: [
-      { label: 'Terms of service', href: '/#terms' },
-      { label: 'Privacy policy', href: '/#privacy' },
-      { label: 'Cookie policy', href: '/#cookies' },
+      { label: 'Terms of service', href: '/terms' },
+      { label: 'Privacy policy', href: '/privacy' },
+      { label: 'Cookie policy', href: '/privacy#cookies' },
       { label: 'Accessibility', href: '/#accessibility' },
     ],
   },

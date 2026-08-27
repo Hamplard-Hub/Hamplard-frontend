@@ -231,6 +231,13 @@
   transition: background-color 150ms ease, box-shadow 150ms ease, transform 120ms ease;
 }
 
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .ds-btn {
+    transition: none;
+  }
+}
+
 .ds-btn-primary {
   background: var(--color-bg-primary-hover);
   color: var(--color-text-on-primary);
