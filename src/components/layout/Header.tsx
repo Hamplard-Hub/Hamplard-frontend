@@ -18,51 +18,24 @@ import {
 import { cn } from '@/lib/utils';
 import { useMobileDrawerFocusTrap } from '@/lib/hooks/use-focus-trap';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
+import { coursesApi } from '@/lib/api/services';
+import { CATEGORY_META, getCategoryMeta } from '@/components/category/CategoryHero';
+import type { Category } from '@/types';
 
-// ─── Data ────────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────
 
-const CATEGORIES = [
-  {
-    name: 'Tailoring',
-    href: '/search?category=Tailoring',
-    description: 'Learn to sew, design, and create stunning garments.',
-  },
-  {
-    name: 'Makeup Artistry',
-    href: '/search?category=Makeup+Artistry',
-    description: 'Master professional makeup techniques.',
-  },
-  {
-    name: 'Baking',
-    href: '/search?category=Baking',
-    description: 'From pastries to cakes — bake like a pro.',
-  },
-  {
-    name: 'Photography',
-    href: '/search?category=Photography',
-    description: 'Capture stunning photos with expert guidance.',
-  },
-  {
-    name: 'Hairstyling',
-    href: '/search?category=Hairstyling',
-    description: 'Braids, cuts, and styling for every occasion.',
-  },
-  {
-    name: 'Nail Technology',
-    href: '/search?category=Nail+Technology',
-    description: 'Nail art, acrylics, and professional manicure skills.',
-  },
-  {
-    name: 'Catering',
-    href: '/search?category=Catering',
-    description: 'Plan and execute memorable events with great food.',
-  },
-  {
-    name: 'Fashion Design',
-    href: '/search?category=Fashion+Design',
-    description: 'Design, sketch, and produce your own clothing line.',
-  },
-] as const;
+/** Convert a category name to its /categories/[slug] path */
+function categorySlug(name: string) {
+  return name.toLowerCase().replace(/\s+/g, '-');
+}
+
+// ── Static fallback so the header is never empty before the API responds ──
+const STATIC_CATEGORIES = Object.entries(CATEGORY_META).map(([slug, m]) => ({
+  name: m.name,
+  slug,
+  description: m.description,
+  icon: m.icon,
+}));
 
 const NAV_LINKS = [
   { label: 'Courses', href: '/dashboard/courses' },
@@ -85,6 +58,23 @@ export function Header() {
   const [megaOpen, setMegaOpen] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // ── API-backed categories ─────────────────────────────────────────────
+  const [megaCategories, setMegaCategories] = useState(STATIC_CATEGORIES);
+
+  useEffect(() => {
+    coursesApi.getCategories()
+      .then((apiCats: Category[]) => {
+        if (!apiCats?.length) return;
+        const mapped = apiCats.map((c) => {
+          const slug = categorySlug(c.name);
+          const m = getCategoryMeta(slug);
+          return { name: c.name, slug, description: m.description, icon: m.icon };
+        });
+        setMegaCategories(mapped);
+      })
+      .catch(() => {/* keep static fallback */});
+  }, []);
 
   const megaRef = useRef<HTMLDivElement>(null);
   const avatarRef = useRef<HTMLDivElement>(null);
@@ -237,21 +227,32 @@ export function Header() {
                 onMouseLeave={() => setMegaOpen(false)}
               >
                 <div className="grid grid-cols-2 gap-1">
-                  {CATEGORIES.map((cat) => (
+                  {megaCategories.map((cat) => (
                     <Link
-                      key={cat.name}
-                      href={cat.href}
+                      key={cat.slug}
+                      href={`/categories/${cat.slug}`}
                       className="group rounded-lg p-3 transition-colors hover:bg-white/10"
                       onClick={() => setMegaOpen(false)}
                     >
-                      <p className="text-sm font-semibold text-white">
+                      <p className="flex items-center gap-2 text-sm font-semibold text-white">
+                        <span aria-hidden="true">{cat.icon}</span>
                         {cat.name}
                       </p>
-                      <p className="mt-0.5 text-xs text-slate-400 group-hover:text-slate-300">
+                      <p className="mt-0.5 text-xs text-slate-400 group-hover:text-slate-300 line-clamp-1">
                         {cat.description}
                       </p>
                     </Link>
                   ))}
+                </div>
+                {/* View all link */}
+                <div className="mt-3 pt-3 border-t border-white/10">
+                  <Link
+                    href="/courses"
+                    className="text-xs font-medium text-saffron-300 hover:text-saffron-200 transition-colors"
+                    onClick={() => setMegaOpen(false)}
+                  >
+                    Browse all courses →
+                  </Link>
                 </div>
               </div>
             )}
@@ -499,13 +500,14 @@ export function Header() {
             <p className="px-3 pt-2 text-xs font-semibold uppercase tracking-widest text-slate-400">
               Categories
             </p>
-            {CATEGORIES.map((cat) => (
+            {megaCategories.map((cat) => (
               <Link
-                key={cat.name}
-                href={cat.href}
+                key={cat.slug}
+                href={`/categories/${cat.slug}`}
                 onClick={() => setMobileOpen(false)}
-                className="block rounded-lg px-3 py-2.5 text-sm text-white/90 transition-colors hover:bg-white/10"
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-white/90 transition-colors hover:bg-white/10"
               >
+                <span aria-hidden="true">{cat.icon}</span>
                 {cat.name}
               </Link>
             ))}

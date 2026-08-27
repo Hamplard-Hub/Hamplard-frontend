@@ -1,56 +1,40 @@
-import { notFound } from 'next/navigation';
-import type { Metadata } from 'next';
-import Image from 'next/image';
-import Link from 'next/link';
-import { Users, Star, BookOpen, ArrowRight } from 'lucide-react';
+'use client';
+
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useParams, useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { SlidersHorizontal } from 'lucide-react';
 import { coursesApi } from '@/lib/api/services';
 import { CourseCard } from '@/components/courses/CourseCard';
+import { CourseCardSkeleton } from '@/components/courses/CourseCardSkeleton';
+import { FilterSidebar } from '@/components/courses/FilterSidebar';
 import { CategoryHero, getCategoryMeta, CATEGORY_META } from '@/components/category/CategoryHero';
-import { CategorySortSelect } from '@/components/category/CategorySortSelect';
 import { cn } from '@/lib/utils';
+import { notFound } from 'next/navigation';
 import type { Course, Category } from '@/types';
 
-// ── Static params ──────────────────────────────────────────────────────────
+// ── Constants ──────────────────────────────────────────────────────────────
+const PAGE_SIZE = 48; // fetch enough for a static single-page view
 
-export async function generateStaticParams() {
-  try {
-    const categories: Category[] = await coursesApi.getCategories();
-    return categories.map((cat) => ({
-      slug: cat.name.toLowerCase().replace(/\s+/g, '-'),
-    }));
-  } catch {
-    // Fall back to the known set so the build doesn't fail without an API
-    return Object.keys(CATEGORY_META).map((slug) => ({ slug }));
-  }
-}
+// ── Subcategory helpers ────────────────────────────────────────────────────
 
-// ── Metadata ───────────────────────────────────────────────────────────────
-
-export async function generateMetadata({
-  params,
-}: {
-  params: { slug: string };
-}): Promise<Metadata> {
-  const meta = getCategoryMeta(params.slug);
-  return {
-    title: `${meta.name} Courses`,
-    description: meta.description,
-  };
-}
-
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-/** Derive subcategory pills from course titles (first two title words after removing the category name) */
+/**
+ * Derive up-to-8 subcategory pill labels from frequent meaningful words
+ * that appear in ≥2 course titles within this category.
+ */
 function deriveSubcategories(courses: Course[], categoryName: string): string[] {
-  const stop = new Set(['and', 'the', 'of', 'for', 'in', 'a', 'an', 'to', 'with', 'on', categoryName.toLowerCase()]);
-  const counts = new Map<string, number>();
+  const stop = new Set([
+    'and', 'the', 'of', 'for', 'in', 'a', 'an', 'to', 'with',
+    'on', 'how', 'your', 'you', 'from', 'using', 'part',
+    categoryName.toLowerCase(),
+    ...categoryName.toLowerCase().split(' '),
+  ]);
 
+  const counts = new Map<string, number>();
   for (const c of courses) {
-    const words = c.title.toLowerCase().split(/\s+/);
+    const words = c.title.toLowerCase().split(/\W+/);
     for (const word of words) {
-      const clean = word.replace(/[^a-z]/g, '');
-      if (clean.length > 3 && !stop.has(clean)) {
-        counts.set(clean, (counts.get(clean) ?? 0) + 1);
+      if (word.length > 3 && !stop.has(word)) {
+        counts.set(word, (counts.get(word) ?? 0) + 1);
       }
     }
   }
@@ -59,334 +43,309 @@ function deriveSubcategories(courses: Course[], categoryName: string): string[] 
     .filter(([, n]) => n >= 2)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 8)
-    .map(([word]) => word.charAt(0).toUpperCase() + word.slice(1));
-}
-
-/** Top 3 instructors ranked by number of courses, then total enrollments */
-interface InstructorSpot {
-  address: string;
-  name: string | null;
-  avatarUrl: string | null;
-  bio: string | null;
-  courseCount: number;
-  totalEnrollments: number;
-  avgRating: number | null;
-}
-
-function buildInstructorSpotlights(courses: Course[]): InstructorSpot[] {
-  const map = new Map<string, InstructorSpot>();
-
-  for (const c of courses) {
-    const addr = c.instructorAddress;
-    const existing = map.get(addr);
-    const enrols = c._count?.enrollments ?? 0;
-    if (existing) {
-      existing.courseCount += 1;
-      existing.totalEnrollments += enrols;
-      if (c.rating != null) {
-        existing.avgRating =
-          existing.avgRating == null
-            ? c.rating
-            : (existing.avgRating + c.rating) / 2;
-      }
-    } else {
-      map.set(addr, {
-        address: addr,
-        name: c.instructor?.name ?? null,
-        avatarUrl: c.instructor?.avatarUrl ?? null,
-        bio: c.instructor?.bio ?? null,
-        courseCount: 1,
-        totalEnrollments: enrols,
-        avgRating: c.rating ?? null,
-      });
-    }
-  }
-
-  return [...map.values()]
-    .sort(
-      (a, b) =>
-        b.courseCount - a.courseCount ||
-        b.totalEnrollments - a.totalEnrollments,
-    )
-    .slice(0, 3);
-}
-
-/** Related categories — all known categories minus the current one */
-function getRelatedCategories(currentSlug: string): Array<{ slug: string; name: string; icon: string }> {
-  return Object.entries(CATEGORY_META)
-    .filter(([slug]) => slug !== currentSlug)
-    .slice(0, 6)
-    .map(([slug, meta]) => ({ slug, name: meta.name, icon: meta.icon }));
+    .map(([w]) => w.charAt(0).toUpperCase() + w.slice(1));
 }
 
 // ── Page ───────────────────────────────────────────────────────────────────
 
-export default async function CategoryPage({
-  params,
-  searchParams,
-}: {
-  params: { slug: string };
-  searchParams: { sub?: string; sort?: string };
-}) {
-  const { slug } = params;
+export default function CategoryPage() {
+  const params     = useParams<{ slug: string }>();
+  const slug       = params.slug;
+  const router     = useRouter();
+  const pathname   = usePathname();
+  const searchParams = useSearchParams();
+
   const meta = getCategoryMeta(slug);
 
-  // Convert slug back to the API category name
-  const categoryName = meta.name;
+  // ── URL-driven filter state ────────────────────────────────────────────
+  const activeSub      = searchParams.get('sub')      ?? '';
+  const activeSort     = searchParams.get('sort')     ?? 'popular';
+  const activeLevel    = searchParams.get('level')    ?? '';
+  const activePrice    = searchParams.get('price')    ?? '';
+  const activeRating   = searchParams.get('rating')   ?? '';
+  const activeDuration = searchParams.get('duration') ?? '';
 
-  // Fetch all courses in this category (up to 100 for static render)
-  let courses: Course[] = [];
-  try {
-    const res = await coursesApi.list({ category: categoryName, limit: 100 });
-    courses = res.data ?? [];
-  } catch {
-    // Leave courses as [] — will show the empty state
-  }
+  // ── Data ──────────────────────────────────────────────────────────────
+  const [allCourses,  setAllCourses]  = useState<Course[]>([]);
+  const [categories,  setCategories]  = useState<Category[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [invalid,     setInvalid]     = useState(false);
 
-  // 404 for unknown slugs that also have no courses
-  const isKnownSlug = slug in CATEGORY_META;
-  if (!isKnownSlug && courses.length === 0) {
-    notFound();
-  }
+  // Helper: push updated params to the URL without full navigation
+  const updateParams = useCallback((updates: Record<string, string>) => {
+    const p = new URLSearchParams(searchParams.toString());
+    Object.entries(updates).forEach(([k, v]) => {
+      if (v) p.set(k, v);
+      else   p.delete(k);
+    });
+    router.replace(`${pathname}?${p.toString()}`, { scroll: false });
+  }, [router, pathname, searchParams]);
 
-  // ── Derived data ──────────────────────────────────────────────
-  const subcategories = deriveSubcategories(courses, categoryName);
-  const activeSub = searchParams.sub ?? '';
-  const activeSort = searchParams.sort ?? 'popular';
+  // Fetch all courses in this category + the categories list (for sidebar)
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
 
-  // Client-side filtering / sorting is handled below with the URL state
-  let displayed = activeSub
-    ? courses.filter((c) =>
+    Promise.all([
+      coursesApi.list({ category: meta.name, limit: PAGE_SIZE }),
+      coursesApi.getCategories(),
+    ])
+      .then(([res, cats]) => {
+        if (cancelled) return;
+        const courses = res.data ?? [];
+        // 404 for unknown slug with zero courses
+        if (courses.length === 0 && !(slug in CATEGORY_META)) {
+          setInvalid(true);
+          return;
+        }
+        setAllCourses(courses);
+        setCategories(cats);
+      })
+      .catch(() => {
+        if (!cancelled) setInvalid(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  // Re-fetch when the category slug changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
+
+  // Subcategory pills — derived from fetched course titles
+  const subcategories = useMemo(
+    () => deriveSubcategories(allCourses, meta.name),
+    [allCourses, meta.name],
+  );
+
+  // ── Client-side filter + sort ──────────────────────────────────────────
+  const displayed = useMemo(() => {
+    let list = [...allCourses];
+
+    // Subcategory keyword filter
+    if (activeSub) {
+      list = list.filter((c) =>
         c.title.toLowerCase().includes(activeSub.toLowerCase()),
-      )
-    : courses;
+      );
+    }
 
-  if (activeSort === 'newest') {
-    displayed = [...displayed].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
-  } else if (activeSort === 'rated') {
-    displayed = [...displayed].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
-  } else {
-    // popular (default)
-    displayed = [...displayed].sort(
-      (a, b) => (b._count?.enrollments ?? 0) - (a._count?.enrollments ?? 0),
-    );
-  }
+    // Level filter
+    if (activeLevel) {
+      list = list.filter((c) =>
+        c.level?.toLowerCase() === activeLevel.toLowerCase(),
+      );
+    }
 
-  const instructors = buildInstructorSpotlights(courses);
-  const relatedCategories = getRelatedCategories(slug);
+    // Price filter
+    if (activePrice) {
+      list = list.filter((c) => {
+        const p = Number(c.price);
+        if (activePrice === 'free')    return p === 0;
+        if (activePrice === 'under20') return p > 0 && p < 20;
+        if (activePrice === '20to50')  return p >= 20 && p <= 50;
+        if (activePrice === 'over50')  return p > 50;
+        return true;
+      });
+    }
 
-  // ── Render ────────────────────────────────────────────────────
+    // Rating filter
+    if (activeRating) {
+      const min = parseFloat(activeRating);
+      if (!isNaN(min)) list = list.filter((c) => (c.rating ?? 0) >= min);
+    }
+
+    // Duration filter
+    if (activeDuration) {
+      list = list.filter((c) => {
+        const hrs = (c.totalDuration ?? 0) / 3600;
+        if (activeDuration === 'short')  return hrs <= 2;
+        if (activeDuration === 'medium') return hrs > 2 && hrs <= 6;
+        if (activeDuration === 'long')   return hrs > 6;
+        return true;
+      });
+    }
+
+    // Sort
+    if (activeSort === 'newest') {
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } else if (activeSort === 'rated') {
+      list.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+    } else {
+      // popular (default)
+      list.sort((a, b) => (b._count?.enrollments ?? 0) - (a._count?.enrollments ?? 0));
+    }
+
+    return list;
+  }, [allCourses, activeSub, activeLevel, activePrice, activeRating, activeDuration, activeSort]);
+
+  const clearAll = () =>
+    updateParams({ sub: '', level: '', price: '', rating: '', duration: '', sort: '' });
+
+  // ── 404 ───────────────────────────────────────────────────────────────
+  if (invalid) notFound();
+
+  // ── Render ────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-ink-50">
 
-      {/* ── Hero ──────────────────────────────────────────────── */}
-      <CategoryHero slug={slug} courseCount={courses.length} />
+      {/* ── Hero ──────────────────────────────────────────────────────── */}
+      <CategoryHero slug={slug} courseCount={allCourses.length} />
 
-      <main id="category-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        {/* ── Subcategory filter pills + sort ───────────────── */}
-        {(subcategories.length > 0 || true) && (
-          <section aria-label="Filter courses">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-              {/* Pills — horizontally scrollable on mobile */}
-              <div
-                className="flex gap-2 overflow-x-auto pb-1 flex-1 scrollbar-none"
-                role="group"
-                aria-label="Subcategory filters"
-              >
-                {/* "All" pill */}
-                <Link
-                  href={`/categories/${slug}?sort=${activeSort}`}
-                  className={cn(
-                    'flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-colors whitespace-nowrap',
-                    !activeSub
-                      ? 'bg-hamplard-primary text-white border-hamplard-primary shadow-sm'
-                      : 'bg-white text-ink-600 border-ink-200 hover:border-hamplard-primary hover:text-hamplard-primary',
-                  )}
-                  aria-pressed={!activeSub}
-                >
-                  All
-                </Link>
-
-                {subcategories.map((sub) => (
-                  <Link
-                    key={sub}
-                    href={`/categories/${slug}?sub=${encodeURIComponent(sub)}&sort=${activeSort}`}
-                    className={cn(
-                      'flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-colors whitespace-nowrap',
-                      activeSub.toLowerCase() === sub.toLowerCase()
-                        ? 'bg-hamplard-primary text-white border-hamplard-primary shadow-sm'
-                        : 'bg-white text-ink-600 border-ink-200 hover:border-hamplard-primary hover:text-hamplard-primary',
-                    )}
-                    aria-pressed={activeSub.toLowerCase() === sub.toLowerCase()}
-                  >
-                    {sub}
-                  </Link>
-                ))}
-              </div>
-
-              {/* Sort select — client component for router.push navigation */}
-              <CategorySortSelect slug={slug} activeSub={activeSub} activeSort={activeSort} />
-            </div>
-
-            {/* Result count */}
-            <p className="mt-3 text-sm text-ink-500" aria-live="polite">
-              Showing{' '}
-              <span className="font-semibold text-ink-800">{displayed.length}</span>{' '}
-              {displayed.length === 1 ? 'course' : 'courses'}
-              {activeSub && (
-                <>
-                  {' '}matching{' '}
-                  <span className="font-semibold text-hamplard-primary">{activeSub}</span>
-                </>
+        {/* ── Subcategory pills ──────────────────────────────────────── */}
+        {(loading || subcategories.length > 0) && (
+          <div
+            className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none"
+            role="group"
+            aria-label="Subcategory filters"
+          >
+            {/* "All" pill */}
+            <button
+              onClick={() => updateParams({ sub: '' })}
+              className={cn(
+                'flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-colors whitespace-nowrap',
+                !activeSub
+                  ? 'bg-[#26215C] text-white border-[#26215C] shadow-sm'
+                  : 'bg-white text-ink-600 border-ink-200 hover:border-[#26215C] hover:text-[#26215C]',
               )}
-            </p>
-          </section>
-        )}
-
-        {/* ── Course grid ───────────────────────────────────── */}
-        <section aria-label={`${meta.name} courses`}>
-          {displayed.length === 0 ? (
-            <div className="card p-14 text-center">
-              <p className="text-3xl mb-3" aria-hidden="true">🔍</p>
-              <p className="text-sm font-medium text-ink-700">No courses found</p>
-              <p className="text-xs text-ink-400 mt-1">
-                Try a different subcategory filter.
-              </p>
-              <Link
-                href={`/categories/${slug}`}
-                className="btn-primary mt-4 inline-flex"
-              >
-                Clear filter
-              </Link>
-            </div>
-          ) : (
-            /* 2-col mobile → 3-col tablet → 4-col desktop */
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
-              {displayed.map((course, i) => (
-                <CourseCard
-                  key={course.id}
-                  course={course}
-                  priority={i < 4}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* ── Instructor spotlight ──────────────────────────── */}
-        {instructors.length > 0 && (
-          <section aria-labelledby="instructor-spotlight-heading">
-            <div className="flex items-center justify-between mb-5">
-              <h2
-                id="instructor-spotlight-heading"
-                className="section-heading"
-              >
-                Top instructors in {meta.name}
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {instructors.map((inst) => {
-                const initials = inst.name
-                  ? inst.name
-                      .split(' ')
-                      .map((n) => n[0])
-                      .join('')
-                      .toUpperCase()
-                      .slice(0, 2)
-                  : '??';
-
-                return (
-                  <div
-                    key={inst.address}
-                    className="card p-5 flex items-start gap-4 hover:shadow-lifted transition-shadow"
-                  >
-                    {/* Avatar */}
-                    <div className="flex-shrink-0 relative w-12 h-12 rounded-full overflow-hidden bg-hamplard-lilac flex items-center justify-center">
-                      {inst.avatarUrl ? (
-                        <Image
-                          src={inst.avatarUrl}
-                          alt={inst.name ?? 'Instructor'}
-                          fill
-                          sizes="48px"
-                          className="object-cover"
-                        />
-                      ) : (
-                        <span className="text-sm font-bold text-hamplard-deep" aria-hidden="true">
-                          {initials}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-ink-900 truncate">
-                        {inst.name ?? 'Hamplard Instructor'}
-                      </p>
-                      {inst.bio && (
-                        <p className="text-xs text-ink-500 mt-0.5 line-clamp-2">
-                          {inst.bio}
-                        </p>
-                      )}
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
-                        <span className="flex items-center gap-1 text-xs text-ink-500">
-                          <BookOpen className="w-3 h-3" aria-hidden="true" />
-                          {inst.courseCount} {inst.courseCount === 1 ? 'course' : 'courses'}
-                        </span>
-                        <span className="flex items-center gap-1 text-xs text-ink-500">
-                          <Users className="w-3 h-3" aria-hidden="true" />
-                          {inst.totalEnrollments.toLocaleString()} students
-                        </span>
-                        {inst.avgRating != null && (
-                          <span className="flex items-center gap-1 text-xs text-amber-600 font-medium">
-                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" aria-hidden="true" />
-                            {inst.avgRating.toFixed(1)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {/* ── Related categories ────────────────────────────── */}
-        {relatedCategories.length > 0 && (
-          <section aria-labelledby="related-categories-heading">
-            <h2
-              id="related-categories-heading"
-              className="section-heading mb-5"
+              aria-pressed={!activeSub}
             >
-              Explore more categories
-            </h2>
+              All
+            </button>
 
-            {/* Horizontally scrollable on mobile, wrapping grid on md+ */}
-            <div className="flex gap-3 overflow-x-auto pb-2 md:grid md:grid-cols-3 lg:grid-cols-6 md:overflow-visible md:pb-0 scrollbar-none">
-              {relatedCategories.map((cat) => (
-                <Link
-                  key={cat.slug}
-                  href={`/categories/${cat.slug}`}
-                  className="flex-shrink-0 w-36 md:w-auto card p-4 flex flex-col items-center gap-2 text-center hover:shadow-lifted hover:-translate-y-0.5 transition-all group"
-                >
-                  <span className="text-3xl" aria-hidden="true">{cat.icon}</span>
-                  <span className="text-xs font-semibold text-ink-700 group-hover:text-hamplard-primary transition-colors leading-snug">
-                    {cat.name}
-                  </span>
-                  <ArrowRight
-                    className="w-3.5 h-3.5 text-ink-300 group-hover:text-hamplard-primary transition-colors"
+            {loading
+              ? // Skeleton pills while loading
+                Array.from({ length: 5 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex-shrink-0 h-9 w-20 rounded-full bg-ink-100 animate-pulse"
                     aria-hidden="true"
                   />
-                </Link>
-              ))}
-            </div>
-          </section>
+                ))
+              : subcategories.map((sub) => (
+                  <button
+                    key={sub}
+                    onClick={() =>
+                      updateParams({ sub: activeSub === sub ? '' : sub })
+                    }
+                    className={cn(
+                      'flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-colors whitespace-nowrap',
+                      activeSub === sub
+                        ? 'bg-[#26215C] text-white border-[#26215C] shadow-sm'
+                        : 'bg-white text-ink-600 border-ink-200 hover:border-[#26215C] hover:text-[#26215C]',
+                    )}
+                    aria-pressed={activeSub === sub}
+                  >
+                    {sub}
+                  </button>
+                ))}
+          </div>
         )}
-      </main>
+
+        {/* ── Main layout: sidebar + grid ───────────────────────────── */}
+        <div className="flex gap-6 items-start">
+
+          {/* FilterSidebar (desktop sticky / mobile drawer) */}
+          <FilterSidebar
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            categories={categories}
+            activeCategory={meta.name}   // lock to this category
+            activeLevel={activeLevel}
+            activePrice={activePrice}
+            activeRating={activeRating}
+            activeDuration={activeDuration}
+            onCategory={() => {}}        // category locked on this page
+            onLevel={(v)    => updateParams({ level: v })}
+            onPrice={(v)    => updateParams({ price: v })}
+            onRating={(v)   => updateParams({ rating: v })}
+            onDuration={(v) => updateParams({ duration: v })}
+            onClearAll={clearAll}
+          />
+
+          {/* Main content */}
+          <main className="flex-1 min-w-0" id="main-content">
+
+            {/* Toolbar */}
+            <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+              <div className="flex items-center gap-3">
+                {/* Mobile filter button */}
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="lg:hidden btn-secondary flex items-center gap-2 text-sm"
+                  aria-label="Open filters"
+                >
+                  <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
+                  Filters
+                </button>
+
+                {/* Result count */}
+                <p className="text-sm text-ink-500">
+                  {loading ? (
+                    <span className="inline-block w-24 h-4 rounded bg-ink-100 animate-pulse" />
+                  ) : (
+                    <>
+                      <span className="font-semibold text-ink-900">
+                        {displayed.length.toLocaleString()}
+                      </span>{' '}
+                      {displayed.length === 1 ? 'course' : 'courses'}
+                      {activeSub && (
+                        <> matching <span className="text-[#26215C] font-semibold">{activeSub}</span></>
+                      )}
+                    </>
+                  )}
+                </p>
+              </div>
+
+              {/* Sort */}
+              <select
+                value={activeSort}
+                onChange={(e) => updateParams({ sort: e.target.value })}
+                className="select w-auto text-sm"
+                aria-label="Sort courses"
+              >
+                <option value="popular">Most Popular</option>
+                <option value="rated">Highest Rated</option>
+                <option value="newest">Newest</option>
+              </select>
+            </div>
+
+            {/* Grid */}
+            {loading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <CourseCardSkeleton key={i} />
+                ))}
+              </div>
+            ) : displayed.length === 0 ? (
+              <div className="card p-14 text-center">
+                <p className="text-3xl mb-3" aria-hidden="true">🔍</p>
+                <p className="text-sm font-semibold text-ink-700">No courses found</p>
+                <p className="text-xs text-ink-400 mt-1">
+                  Try adjusting your filters.
+                </p>
+                <button onClick={clearAll} className="btn-primary mt-4 inline-flex">
+                  Clear filters
+                </button>
+              </div>
+            ) : (
+              /* 2-col mobile → 3-col tablet → 4-col desktop */
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
+                {displayed.map((course, i) => (
+                  <CourseCard
+                    key={course.id}
+                    course={course}
+                    priority={i < 4}
+                  />
+                ))}
+              </div>
+            )}
+          </main>
+        </div>
+      </div>
     </div>
   );
 }
