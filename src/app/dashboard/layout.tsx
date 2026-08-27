@@ -1,5 +1,13 @@
+import type { Metadata } from 'next';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar }  from '@/components/layout/TopBar';
+
+// Authenticated area. robots.txt disallows /dashboard, and this noindexes any
+// dashboard URL a crawler reaches by other means (a shared or linked one).
+export const metadata: Metadata = {
+  title: 'Dashboard',
+  robots: { index: false, follow: false },
+};
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (

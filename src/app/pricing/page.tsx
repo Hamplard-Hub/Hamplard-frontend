@@ -3,11 +3,13 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { TopBar } from '@/components/layout/TopBar';
 import { PricingPlansSection } from '@/components/pricing/PricingPlansSection';
+import { buildMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: 'Pricing',
   description: 'Choose the right plan for your learning journey on Hamplard.',
-};
+  path: '/pricing',
+});
 
 export default function PricingPage() {
   return (

@@ -19,6 +19,22 @@ export type AssignmentStatus =
 
 export type LessonType = 'VIDEO' | 'TEXT' | 'QUIZ' | 'ASSIGNMENT';
 
+export type QuizType = 'multiple_choice' | 'multi_select' | 'true_false';
+
+export interface QuizOption {
+  id: string;
+  text: string;
+  isCorrect: boolean;
+}
+
+export interface QuizQuestion {
+  id: string;
+  type: QuizType;
+  question: string;
+  options?: QuizOption[];
+  explanation?: string;
+}
+
 export interface User {
   id: string;
   stellarAddress: string;
@@ -52,6 +68,7 @@ export interface Lesson {
   videoDuration: number | null; // seconds
   content: string | null;
   resourceUrl: string | null;
+  quiz?: QuizQuestion[] | null;
   position: number;
   isFree: boolean;
   /** Optional per-resolution URLs. When absent only 'auto' is available. */

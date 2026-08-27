@@ -2,22 +2,26 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Facebook, Mail } from 'lucide-react';
 
 type SignupValues = {
   name: string;
   email: string;
   password: string;
+  confirmPassword: string;
   acceptTerms: boolean;
 };
 
 type SignupErrors = Partial<Record<keyof SignupValues, string>>;
 
 export default function SignupPage() {
+  const router = useRouter();
   const [values, setValues] = useState<SignupValues>({
     name: '',
     email: '',
     password: '',
+    confirmPassword: '',
     acceptTerms: false,
   });
   const [errors, setErrors] = useState<SignupErrors>({});
@@ -42,6 +46,9 @@ export default function SignupPage() {
     } else if (nextValues.password.length < 8) {
       nextErrors.password = 'Password must be at least 8 characters.';
     }
+    if (nextValues.password !== nextValues.confirmPassword) {
+      nextErrors.confirmPassword = 'Passwords do not match.';
+    }
     if (!nextValues.acceptTerms) {
       nextErrors.acceptTerms = 'You must accept the terms to continue.';
     }
@@ -55,8 +62,19 @@ export default function SignupPage() {
     const isValid = validate(values);
     if (!isValid) return;
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 700));
-    setIsSubmitting(false);
+    
+    try {
+      // Simulate API call - replace with actual API call
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      router.push('/dashboard');
+    } catch (error) {
+      setErrors((prev) => ({
+        ...prev,
+        email: 'Email already registered.',
+      }));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -128,6 +146,25 @@ export default function SignupPage() {
                   aria-invalid={!!errors.password}
                 />
                 {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-[#26215C]" htmlFor="confirmPassword">
+                  Confirm Password
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  value={values.confirmPassword}
+                  onChange={(event) => setValues((prev) => ({ ...prev, confirmPassword: event.target.value }))}
+                  onBlur={() => validate(values)}
+                  className={`w-full rounded-xl border px-4 py-2.5 text-sm text-[#26215C] outline-none transition ${
+                    errors.confirmPassword ? 'border-red-400 bg-red-50/40' : 'border-[#D3D0F2] focus:border-[#7F77DD]'
+                  }`}
+                  placeholder="Confirm your password"
+                  aria-invalid={!!errors.confirmPassword}
+                />
+                {errors.confirmPassword && <p className="mt-1 text-xs text-red-600">{errors.confirmPassword}</p>}
               </div>
 
               <label className="inline-flex items-start gap-2 text-sm text-[#26215C]">

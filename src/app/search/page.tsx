@@ -2,18 +2,24 @@
 
 import { Suspense, useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Search, SlidersHorizontal, ChevronDown } from 'lucide-react';
+import { SlidersHorizontal } from 'lucide-react';
 import { SearchBar } from '@/components/search/SearchBar';
+import { FilterPanel } from '@/components/search/FilterPanel';
+import { FilterDrawer } from '@/components/search/FilterDrawer';
+import { ActiveFilterChips } from '@/components/search/ActiveFilterChips';
+import { EmptyResults } from '@/components/search/EmptyResults';
 import {
   FilterSidebarSkeleton,
   ResultsCountSkeleton,
   ResultsGridSkeleton,
 } from '@/components/search/SearchResultsLoadingState';
 import { CourseCard } from '@/components/courses/CourseCard';
-import { Button } from '@/components/ui/Button';
 import { Pagination } from '@/components/ui/Pagination';
-import { useSearchStore } from '@/lib/hooks/use-search-store';
-import { cn } from '@/lib/utils';
+import {
+  useSearchStore,
+  durationToBucket,
+  DEFAULT_PRICE_RANGE,
+} from '@/lib/hooks/use-search-store';
 import type { Course } from '@/types';
 
 // Mock courses data — in production, fetch from API
@@ -212,8 +218,21 @@ export default function SearchPage() {
 
 function SearchPageContent() {
   const searchParams = useSearchParams();
-  const { query, sortBy, setSortBy, selectedCategories, toggleCategory, clearFilters } =
-    useSearchStore();
+  const {
+    query,
+    setQuery,
+    sortBy,
+    selectedCategories,
+    toggleCategory,
+    selectedLevels,
+    selectedDurations,
+    priceRange,
+    minRating,
+    clearFilters,
+    activeFilterCount,
+  } = useSearchStore();
+
+  const filterCount = activeFilterCount();
 
   const initialQuery = searchParams.get('q') || '';
   const initialCategory = searchParams.get('category') || '';
@@ -240,11 +259,17 @@ function SearchPageContent() {
     }, 450);
 
     return () => window.clearTimeout(timeoutId);
-  }, [query, selectedCategories, sortBy, currentPage]);
+  }, [query, selectedCategories, selectedLevels, selectedDurations, priceRange, minRating, sortBy, currentPage]);
+
+  // Reset to the first page whenever the effective result set changes.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, selectedCategories, selectedLevels, selectedDurations, priceRange, minRating, sortBy]);
 
   // Filter and sort courses
   const filteredCourses = useMemo(() => {
-    let results = MOCK_COURSES;
+    // Copy so the in-place sort below never mutates the source array.
+    let results = [...MOCK_COURSES];
 
     // Filter by search query
     if (query) {
@@ -262,10 +287,41 @@ function SearchPageContent() {
       results = results.filter((course) => selectedCategories.includes(course.category));
     }
 
+    // Filter by level
+    if (selectedLevels.length > 0) {
+      results = results.filter((course) => selectedLevels.includes(course.level));
+    }
+
+    // Filter by duration bucket
+    if (selectedDurations.length > 0) {
+      results = results.filter((course) =>
+        selectedDurations.includes(durationToBucket(course.totalDuration)),
+      );
+    }
+
+    // Filter by price range
+    if (priceRange.min !== DEFAULT_PRICE_RANGE.min || priceRange.max !== DEFAULT_PRICE_RANGE.max) {
+      results = results.filter((course) => {
+        if (course.price < priceRange.min) return false;
+        if (priceRange.max !== null && course.price > priceRange.max) return false;
+        return true;
+      });
+    }
+
+    // Filter by minimum rating
+    if (minRating > 0) {
+      results = results.filter((course) => (course.rating || 0) >= minRating);
+    }
+
     // Sort results
     switch (sortBy) {
       case 'rating':
         results.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
+      case 'popular':
+        results.sort(
+          (a, b) => (b._count?.enrollments || 0) - (a._count?.enrollments || 0),
+        );
         break;
       case 'price-low':
         results.sort((a, b) => a.price - b.price);
@@ -283,7 +339,7 @@ function SearchPageContent() {
     }
 
     return results;
-  }, [query, selectedCategories, sortBy]);
+  }, [query, selectedCategories, selectedLevels, selectedDurations, priceRange, minRating, sortBy]);
 
   // Pagination
   const itemsPerPage = 12;
@@ -291,6 +347,18 @@ function SearchPageContent() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedCourses = filteredCourses.slice(startIndex, endIndex);
+
+  // Terms fed to the "Did you mean…" spelling suggestion.
+  const suggestionDictionary = useMemo(() => {
+    const terms = new Set<string>();
+    MOCK_COURSES.forEach((course) => {
+      terms.add(course.category);
+      if (course.instructor?.name) terms.add(course.instructor.name);
+    });
+    return Array.from(terms);
+  }, []);
+
+  const hasActiveFilters = filterCount > 0 || Boolean(query);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -315,108 +383,57 @@ function SearchPageContent() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
-          {/* Sidebar Filters */}
-          <aside
-            className={cn(
-              'lg:col-span-1',
-              !showFilters && 'hidden lg:block',
-            )}
-          >
+          {/* Sidebar Filters (desktop) */}
+          <aside className="hidden lg:col-span-1 lg:block">
             <div className="sticky top-4 space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-ink-900">Filters</h2>
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-sm font-medium text-hamplard-mid hover:underline"
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
               {isLoading ? (
                 <FilterSidebarSkeleton />
               ) : (
-                <>
-                  {/* Filter Header */}
-                  <div className="flex items-center justify-between lg:hidden mb-4">
-                    <h2 className="text-lg font-semibold text-ink-900">Filters</h2>
-                    <button
-                      onClick={() => setShowFilters(false)}
-                      className="text-ink-500 hover:text-ink-900"
-                    >
-                      ✕
-                    </button>
-                  </div>
-
-                  {/* Sort */}
-                  <div>
-                    <label className="text-sm font-semibold text-ink-900 block mb-3">
-                      Sort By
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={sortBy}
-                        onChange={(e) =>
-                          setSortBy(e.target.value as any)
-                        }
-                        className="w-full px-3 py-2 border border-ink-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-hamplard-primary appearance-none cursor-pointer"
-                      >
-                        <option value="relevance">Relevance</option>
-                        <option value="rating">Highest Rated</option>
-                        <option value="newest">Newest First</option>
-                        <option value="price-low">Price: Low to High</option>
-                        <option value="price-high">Price: High to Low</option>
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  {/* Categories */}
-                  <div>
-                    <label className="text-sm font-semibold text-ink-900 block mb-3">
-                      Categories
-                    </label>
-                    <div className="space-y-2">
-                      {CATEGORIES.map((category) => (
-                        <label
-                          key={category}
-                          className="flex items-center gap-2 cursor-pointer hover:text-hamplard-primary transition-colors"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedCategories.includes(category)}
-                            onChange={() => toggleCategory(category)}
-                            className="w-4 h-4 accent-hamplard-primary rounded cursor-pointer"
-                          />
-                          <span className="text-sm text-ink-700">{category}</span>
-                          <span className="text-xs text-ink-400 ml-auto">
-                            {MOCK_COURSES.filter((c) => c.category === category).length}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Clear Filters */}
-                  {(query || selectedCategories.length > 0) && (
-                    <Button
-                      variant="tertiary"
-                      size="md"
-                      fullWidth
-                      onClick={clearFilters}
-                    >
-                      Clear All Filters
-                    </Button>
-                  )}
-                </>
+                <FilterPanel courses={MOCK_COURSES} />
               )}
             </div>
           </aside>
+
+          {/* Mobile filter drawer */}
+          <FilterDrawer
+            open={showFilters}
+            onClose={() => setShowFilters(false)}
+            courses={MOCK_COURSES}
+            resultCount={filteredCourses.length}
+          />
 
           {/* Main Content */}
           <main className="lg:col-span-3">
             {/* Mobile Filter Toggle */}
             <div className="mb-6 lg:hidden">
-              <Button
-                variant="secondary"
-                size="md"
-                fullWidth
+              <button
+                type="button"
                 onClick={() => setShowFilters(true)}
-                icon={<SlidersHorizontal className="w-4 h-4" />}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-hamplard-lilac px-4 py-2 text-sm font-medium text-hamplard-deep transition-colors hover:bg-saffron-100"
               >
+                <SlidersHorizontal className="h-4 w-4" />
                 Show Filters
-              </Button>
+                {filterCount > 0 && (
+                  <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-hamplard-primary px-1.5 text-xs font-semibold text-white">
+                    {filterCount}
+                  </span>
+                )}
+              </button>
             </div>
+
+            {/* Active filter chips */}
+            {!isLoading && <ActiveFilterChips />}
 
             {/* Results */}
             {isLoading ? (
@@ -444,23 +461,14 @@ function SearchPageContent() {
                 )}
               </>
             ) : (
-              <div className="flex flex-col items-center justify-center py-16">
-                <Search className="w-12 h-12 text-ink-200 mb-4" />
-                <h3 className="text-lg font-semibold text-ink-900 mb-2">No courses found</h3>
-                <p className="text-center text-sm text-ink-500 max-w-sm">
-                  {query
-                    ? `No results for "${query}". Try different keywords or clear your filters.`
-                    : 'Try searching for courses or selecting a category to get started.'}
-                </p>
-                <Button
-                  variant="primary"
-                  size="md"
-                  className="mt-6"
-                  onClick={clearFilters}
-                >
-                  Clear Filters
-                </Button>
-              </div>
+              <EmptyResults
+                query={query}
+                suggestionDictionary={suggestionDictionary}
+                suggestedCategories={CATEGORIES}
+                hasActiveFilters={hasActiveFilters}
+                onSuggestionSelect={(term) => setQuery(term)}
+                onClearFilters={clearFilters}
+              />
             )}
           </main>
         </div>
