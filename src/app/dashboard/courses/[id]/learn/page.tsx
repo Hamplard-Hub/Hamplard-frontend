@@ -305,6 +305,7 @@ export default function LearnPage() {
                 <VideoPlayer
                   key={activeLesson.videoUrl}
                   src={activeLesson.videoUrl}
+                  videoQualities={activeLesson.videoQualities}
                   enrollmentId={enrollment?.id}
                   lessonId={activeLesson.id}
                   autoplay={autoplay}

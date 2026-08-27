@@ -1,10 +1,20 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import {
-  Play, Pause, Volume2, VolumeX, Maximize, Minimize, Subtitles,
+  Play, Pause, Volume2, VolumeX, Maximize, Minimize, Subtitles, Settings,
 } from 'lucide-react';
 import { cn, formatDuration } from '@/lib/utils';
+import type { VideoQualityLevel, VideoQualities } from '@/types';
 
+// ── Quality option definitions ─────────────────────────────────────────────
+export const QUALITY_LEVELS: VideoQualityLevel[] = ['auto', '1080p', '720p', '480p', '360p'];
+
+function qualityLabel(q: VideoQualityLevel): string {
+  return q === 'auto' ? 'Auto' : q;
+}
+
+// ── Props ──────────────────────────────────────────────────────────────────
 interface VideoControlsProps {
   playing: boolean;
   currentTime: number;
@@ -19,6 +29,12 @@ interface VideoControlsProps {
   autoplay: boolean;
   /** Called when the user toggles the autoplay switch */
   onAutoplayChange: (enabled: boolean) => void;
+  /** Currently active quality level */
+  quality: VideoQualityLevel;
+  /** Map of available quality URLs — keys that are present become selectable */
+  videoQualities?: VideoQualities;
+  /** Called when the user picks a quality */
+  onQualityChange: (q: VideoQualityLevel) => void;
   onPlayPause: () => void;
   onSeek: (secs: number) => void;
   onVolume: (vol: number) => void;
@@ -30,12 +46,37 @@ interface VideoControlsProps {
 
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 
+// ── Component ──────────────────────────────────────────────────────────────
 export function VideoControls({
   playing, currentTime, duration, volume, muted, speed,
   subtitlesOn, isFullscreen, hasCaptions,
   autoplay, onAutoplayChange,
+  quality, videoQualities, onQualityChange,
   onPlayPause, onSeek, onVolume, onMute, onSpeed, onSubtitles, onFullscreen,
 }: VideoControlsProps) {
+  const [qualityOpen, setQualityOpen] = useState(false);
+  const qualityRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!qualityOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (qualityRef.current && !qualityRef.current.contains(e.target as Node)) {
+        setQualityOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [qualityOpen]);
+
+  // Build the list of selectable quality options:
+  // 'auto' is always available; specific levels only if a URL exists for them.
+  const availableQualities: VideoQualityLevel[] = QUALITY_LEVELS.filter(
+    (q) => q === 'auto' || (videoQualities && videoQualities[q as keyof VideoQualities]),
+  );
+
+  const showQualityButton = availableQualities.length > 1;
+
   return (
     <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-3 pt-6 pb-2 flex flex-col gap-1.5">
       {/* Seek bar */}
@@ -106,6 +147,63 @@ export function VideoControls({
             </option>
           ))}
         </select>
+
+        {/* Quality selector — only rendered when multiple options exist */}
+        {showQualityButton && (
+          <div ref={qualityRef} className="relative">
+            <button
+              onClick={() => setQualityOpen((o) => !o)}
+              className={cn(
+                'flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded border transition-colors',
+                qualityOpen
+                  ? 'border-saffron-400 text-saffron-300 bg-saffron-500/20'
+                  : 'border-white/20 text-white/80 hover:text-white hover:border-white/40',
+              )}
+              aria-label="Video quality"
+              aria-expanded={qualityOpen}
+              aria-haspopup="listbox"
+              title="Video quality"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              {/* Show label only when a non-auto quality is active */}
+              <span>{quality === 'auto' ? 'Quality' : quality}</span>
+            </button>
+
+            {/* Dropdown panel — opens upward */}
+            {qualityOpen && (
+              <ul
+                role="listbox"
+                aria-label="Select video quality"
+                className="absolute bottom-full right-0 mb-1.5 w-28 rounded-xl overflow-hidden bg-ink-950/95 backdrop-blur-sm border border-white/10 shadow-xl py-1 z-30"
+              >
+                {availableQualities.map((q) => {
+                  const isSelected = q === quality;
+                  return (
+                    <li key={q} role="option" aria-selected={isSelected}>
+                      <button
+                        onClick={() => {
+                          onQualityChange(q);
+                          setQualityOpen(false);
+                        }}
+                        className={cn(
+                          'w-full flex items-center justify-between px-3 py-1.5 text-xs transition-colors',
+                          isSelected
+                            ? 'text-saffron-300 font-semibold bg-saffron-500/10'
+                            : 'text-white/80 hover:text-white hover:bg-white/10',
+                        )}
+                      >
+                        {qualityLabel(q)}
+                        {isSelected && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-saffron-400 flex-shrink-0" aria-hidden="true" />
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        )}
 
         {/* Subtitles */}
         <button
