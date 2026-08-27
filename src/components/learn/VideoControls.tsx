@@ -1,9 +1,11 @@
 'use client';
 
+import { useState, useRef } from 'react';
 import {
-  Play, Pause, Volume2, VolumeX, Maximize, Minimize, Subtitles,
+  Play, Pause, Volume2, VolumeX, Maximize, Minimize, Subtitles, Keyboard,
 } from 'lucide-react';
 import { cn, formatDuration } from '@/lib/utils';
+import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 
 interface VideoControlsProps {
   playing: boolean;
@@ -31,6 +33,9 @@ export function VideoControls({
   subtitlesOn, isFullscreen, hasCaptions,
   onPlayPause, onSeek, onVolume, onMute, onSpeed, onSubtitles, onFullscreen,
 }: VideoControlsProps) {
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const keyboardBtnRef = useRef<HTMLButtonElement>(null);
+
   return (
     <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-3 pt-6 pb-2 flex flex-col gap-1.5">
       {/* Seek bar */}
@@ -120,6 +125,17 @@ export function VideoControls({
           <Subtitles className="w-4 h-4" />
         </button>
 
+        {/* Keyboard Shortcuts */}
+        <button
+          ref={keyboardBtnRef}
+          onClick={() => setShortcutsOpen(true)}
+          title="Keyboard shortcuts"
+          className="text-white hover:text-saffron-300 transition-colors p-1"
+          aria-label="Keyboard shortcuts"
+        >
+          <Keyboard className="w-4 h-4" />
+        </button>
+
         {/* Fullscreen */}
         <button
           onClick={onFullscreen}
@@ -132,6 +148,13 @@ export function VideoControls({
           }
         </button>
       </div>
+
+      <KeyboardShortcutsModal
+        isOpen={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+        triggerRef={keyboardBtnRef}
+      />
     </div>
   );
 }
+
