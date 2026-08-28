@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   CheckCircle2,
@@ -67,6 +67,7 @@ const DEFAULT_QUIZ_QUESTIONS: QuizQuestion[] = [
 
 export default function LearnPage() {
   const { id } = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
 
   const [course, setCourse] = useState<Course | null>(null);
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
@@ -94,8 +95,11 @@ export default function LearnPage() {
         const completedIds = new Set(
           e.lessonProgress?.filter((p) => p.completed).map((p) => p.lessonId),
         );
+        const requestedLesson = searchParams.get("lesson");
         const first =
-          allLessons.find((l) => !completedIds.has(l.id)) ?? allLessons[0];
+          allLessons.find((l) => l.id === requestedLesson) ??
+          allLessons.find((l) => !completedIds.has(l.id)) ??
+          allLessons[0];
         if (first) setActiveLesson(first);
       })
       .catch(console.error)
@@ -104,7 +108,7 @@ export default function LearnPage() {
     return () => {
       if (progressRef.current) clearInterval(progressRef.current);
     };
-  }, [id]);
+  }, [id, searchParams]);
 
   useEffect(() => {
     if (!course || !enrollment) return;
