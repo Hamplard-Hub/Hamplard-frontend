@@ -160,7 +160,7 @@ export function FreeCoursesClient() {
               <CourseCard
                 key={course.id}
                 course={course}
-                 href={`/courses/${course.id}`}
+                href={`/courses/${course.id}`}
                 freeCta
                 priority={index < 4}
               />
