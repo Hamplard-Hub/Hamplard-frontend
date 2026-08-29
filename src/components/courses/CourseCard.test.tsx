@@ -251,6 +251,18 @@ describe('CourseCard', () => {
       render(<CourseCard course={mockCourse} />);
       expect(screen.getByText(/enroll now/i)).toBeInTheDocument();
     });
+    it('shows Enroll Free instead of price when freeCta is enabled', () => {
+  const freeCourse = {
+    ...mockCourse,
+    price: 0,
+    originalPrice: undefined,
+  };
+
+  render(<CourseCard course={freeCourse} freeCta />);
+
+  expect(screen.getByText(/enroll free/i)).toBeInTheDocument();
+  expect(screen.queryByText(/\$0\.00/i)).not.toBeInTheDocument();
+});
   });
 
   describe('Hover Prefetching', () => {
