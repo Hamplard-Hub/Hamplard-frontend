@@ -26,8 +26,20 @@ function flatLessons(course: Course): Lesson[] {
 
 // ── Component ──────────────────────────────────────────────────────────────
 
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+/** Returns the flat ordered list of all lessons across every module */
+function flatLessons(course: Course): Lesson[] {
+  return course.modules?.flatMap((m) => m.lessons) ?? [];
+}
+
+// ── Component ──────────────────────────────────────────────────────────────
+
 export default function LearnPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedLessonId = searchParams.get("lesson");
 
   const [course, setCourse] = useState<Course | null>(null);
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
@@ -187,7 +199,7 @@ export default function LearnPage() {
     );
 
   return (
-    <div className="-m-6 flex h-[calc(100vh-3.5rem)] overflow-hidden">
+    <div className="-m-3 flex h-[calc(100vh-4rem)] flex-col overflow-hidden sm:-m-6 md:flex-row">
       {course && (
         <CourseCompletionModal
           open={showCompletionModal}
@@ -308,7 +320,6 @@ export default function LearnPage() {
           </div>
         )}
 
-        {/* Notes tab */}
         {sidebarTab === "notes" && activeLesson && (
           <div className="flex-1 overflow-hidden">
             <NotesPanel
@@ -319,7 +330,6 @@ export default function LearnPage() {
           </div>
         )}
 
-        {/* Q&A tab */}
         {sidebarTab === "qa" && (
           <div className="flex-1 flex items-center justify-center text-ink-400 px-4">
             <div className="text-center">
@@ -387,7 +397,7 @@ export default function LearnPage() {
                 <QuizComponent
                   questions={activeLesson.quiz ?? DEFAULT_QUIZ_QUESTIONS}
                   onContinue={
-                    nextLesson ? () => setActiveLesson(nextLesson) : undefined
+                    nextLesson ? () => selectLesson(nextLesson) : undefined
                   }
                 />
               </div>

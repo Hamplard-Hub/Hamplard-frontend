@@ -128,7 +128,7 @@ export function VideoControls({
         />
 
         {/* Time */}
-        <span className="hidden sm:block text-white text-[10px] tabular-nums ml-1 select-none">
+        <span className="block text-white text-[10px] tabular-nums ml-1 select-none">
           {formatDuration(Math.floor(currentTime))} / {formatDuration(Math.floor(duration))}
         </span>
 
@@ -138,7 +138,7 @@ export function VideoControls({
         <select
           value={speed}
           onChange={(e) => onSpeed(parseFloat(e.target.value))}
-          className="hidden md:block bg-transparent text-white text-xs cursor-pointer outline-none border border-white/20 rounded px-1 py-0.5 hover:border-white/50 transition-colors"
+          className="block bg-transparent text-white text-xs cursor-pointer outline-none border border-white/20 rounded px-1 py-0.5 hover:border-white/50 transition-colors"
           aria-label="Playback speed"
         >
           {SPEEDS.map((s) => (

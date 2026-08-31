@@ -1,5 +1,4 @@
-'use client';
-
+import type { Metadata } from 'next';
 import { Suspense, useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { SlidersHorizontal, X } from 'lucide-react';
@@ -8,16 +7,47 @@ import { CourseCard } from '@/components/courses/CourseCard';
 import { CourseCardSkeleton } from '@/components/skeletons';
 import { FilterSidebar } from '@/components/courses/FilterSidebar';
 import { Pagination } from '@/components/ui/Pagination';
+import { CompareBar } from '@/components/courses/CompareBar';
 import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll';
 import { cn } from '@/lib/utils';
+import { buildPaginatedMetadata } from '@/lib/seo';
 import type { Course, Category } from '@/types';
+
+type PageProps = {
+  searchParams: { page?: string };
+};
+
+/**
+ * Generate SEO metadata for the courses browse page with pagination support.
+ * - Canonical URL always points to page 1 (no page parameter)
+ * - rel="prev" and rel="next" links for pagination SEO
+ * - All URLs are absolute including domain
+ */
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const pageParam = searchParams.page;
+  const currentPage = pageParam ? parseInt(pageParam, 10) : 1;
+
+  // Estimate total pages based on typical course count
+  // This ensures pagination links are generated correctly
+  const totalPages = 50;
+
+  return buildPaginatedMetadata({
+    title: 'Browse Courses',
+    description: 'Discover skills from expert instructors across Africa and beyond. Learn tailoring, makeup, baking, photography, hairstyling, and more.',
+    basePath: '/courses',
+    currentPage,
+    totalPages,
+  });
+}
+
+'use client';
 
 // ── Constants ─────────────────────────────────────────────────────
 const SORT_OPTIONS = [
   { label: 'Most Relevant', value: 'relevant' },
-  { label: 'Highest Rated', value: 'rated'    },
-  { label: 'Most Popular',  value: 'popular'  },
-  { label: 'Newest',        value: 'newest'   },
+  { label: 'Highest Rated', value: 'rated' },
+  { label: 'Most Popular', value: 'popular' },
+  { label: 'Newest', value: 'newest' },
 ] as const;
 
 const PAGE_SIZE = 12;
@@ -40,8 +70,8 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
 
 // ── Main page ─────────────────────────────────────────────────────
 export default function CourseBrowsePage() {
-  const router       = useRouter();
-  const pathname     = usePathname();
+  const router = useRouter();
+  const pathname = usePathname();
   return (
     <Suspense
       fallback={
@@ -70,25 +100,25 @@ export default function CourseBrowsePage() {
 }
 
 function CourseBrowsePageContent() {
-  const router     = useRouter();
-  const pathname   = usePathname();
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
 
   // Read filter state from URL
   const urlCategory = searchParams.get('category') ?? '';
-  const urlLevel    = searchParams.get('level')    ?? '';
-  const urlPrice    = searchParams.get('price')    ?? '';
-  const urlRating   = searchParams.get('rating')   ?? '';
+  const urlLevel = searchParams.get('level') ?? '';
+  const urlPrice = searchParams.get('price') ?? '';
+  const urlRating = searchParams.get('rating') ?? '';
   const urlDuration = searchParams.get('duration') ?? '';
-  const urlSort     = searchParams.get('sort')     ?? 'relevant';
-  const urlSearch   = searchParams.get('search')   ?? '';
+  const urlSort = searchParams.get('sort') ?? 'relevant';
+  const urlSearch = searchParams.get('search') ?? '';
 
-  const [courses,     setCourses]     = useState<Course[]>([]);
-  const [categories,  setCategories]  = useState<Category[]>([]);
-  const [total,       setTotal]       = useState(0);
-  const [page,        setPage]        = useState(1);
-  const [hasMore,     setHasMore]     = useState(true);
-  const [loading,     setLoading]     = useState(true);   // first-page load
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(true);   // first-page load
   const [loadingMore, setLoadingMore] = useState(false);  // subsequent pages
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -97,14 +127,14 @@ function CourseBrowsePageContent() {
     const params = new URLSearchParams(searchParams.toString());
     Object.entries(updates).forEach(([k, v]) => {
       if (v) { params.set(k, v); }
-      else   { params.delete(k); }
+      else { params.delete(k); }
     });
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }, [router, pathname, searchParams]);
 
   // Fetch categories once
   useEffect(() => {
-    coursesApi.getCategories().then(setCategories).catch(() => {});
+    coursesApi.getCategories().then(setCategories).catch(() => { });
   }, []);
 
   // Helper: apply client-side sort & price filter
@@ -120,10 +150,10 @@ function CourseBrowsePageContent() {
     if (urlPrice) {
       sorted = sorted.filter((c) => {
         const p = Number(c.price);
-        if (urlPrice === 'free')    return p === 0;
+        if (urlPrice === 'free') return p === 0;
         if (urlPrice === 'under20') return p > 0 && p < 20;
-        if (urlPrice === '20to50')  return p >= 20 && p <= 50;
-        if (urlPrice === 'over50')  return p > 50;
+        if (urlPrice === '20to50') return p >= 20 && p <= 50;
+        if (urlPrice === 'over50') return p > 50;
         return true;
       });
     }
@@ -144,8 +174,8 @@ function CourseBrowsePageContent() {
 
     coursesApi.list({
       category: urlCategory || undefined,
-      level:    urlLevel    || undefined,
-      search:   urlSearch   || undefined,
+      level: urlLevel || undefined,
+      search: urlSearch || undefined,
       page: 1,
       limit: PAGE_SIZE,
     })
@@ -181,11 +211,11 @@ function CourseBrowsePageContent() {
 
     try {
       const res = await coursesApi.list({
-        search:   urlSearch   || undefined,
+        search: urlSearch || undefined,
         category: urlCategory || undefined,
-        level:    urlLevel    || undefined,
-        page:     nextPage,
-        limit:    PAGE_SIZE,
+        level: urlLevel || undefined,
+        page: nextPage,
+        limit: PAGE_SIZE,
       });
 
       if (res.data.length === 0) {
@@ -215,9 +245,9 @@ function CourseBrowsePageContent() {
 
   // Active filter chips
   const activeChips: { label: string; clear: () => void }[] = [];
-  if (urlSearch)   activeChips.push({ label: `"${urlSearch}"`,   clear: () => updateParams({ search: '' }) });
-  if (urlCategory) activeChips.push({ label: urlCategory,        clear: () => updateParams({ category: '' }) });
-  if (urlLevel)    activeChips.push({ label: urlLevel,           clear: () => updateParams({ level: '' }) });
+  if (urlSearch) activeChips.push({ label: `"${urlSearch}"`, clear: () => updateParams({ search: '' }) });
+  if (urlCategory) activeChips.push({ label: urlCategory, clear: () => updateParams({ category: '' }) });
+  if (urlLevel) activeChips.push({ label: urlLevel, clear: () => updateParams({ level: '' }) });
   if (urlPrice) {
     const priceLabel =
       { free: 'Free', under20: 'Under $20', '20to50': '$20–$50', over50: 'Over $50' }[urlPrice] ??
@@ -283,9 +313,9 @@ function CourseBrowsePageContent() {
             activeRating={urlRating}
             activeDuration={urlDuration}
             onCategory={(v) => updateParams({ category: v })}
-            onLevel={(v)    => updateParams({ level: v })}
-            onPrice={(v)    => updateParams({ price: v })}
-            onRating={(v)   => updateParams({ rating: v })}
+            onLevel={(v) => updateParams({ level: v })}
+            onPrice={(v) => updateParams({ price: v })}
+            onRating={(v) => updateParams({ rating: v })}
             onDuration={(v) => updateParams({ duration: v })}
             onClearAll={clearAll}
           />
@@ -388,40 +418,41 @@ function CourseBrowsePageContent() {
               onPageChange={p => updateParams({ page: String(p) })}
               className="mt-10"
             />
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                  {courses.map((course) => (
-                    <CourseCard key={course.id} course={course} />
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {courses.map((course) => (
+                  <CourseCard key={course.id} course={course} />
+                ))}
+              </div>
+
+              {/* Skeleton row while next page loads */}
+              {loadingMore && (
+                <div
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mt-5"
+                  aria-live="polite"
+                  aria-label="Loading more courses"
+                >
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <CourseCardSkeleton key={i} />
                   ))}
                 </div>
+              )}
 
-                {/* Skeleton row while next page loads */}
-                {loadingMore && (
-                  <div
-                    className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mt-5"
-                    aria-live="polite"
-                    aria-label="Loading more courses"
-                  >
-                    {Array.from({ length: 4 }).map((_, i) => (
-                      <CourseCardSkeleton key={i} />
-                    ))}
-                  </div>
-                )}
+              {/* End-of-list message */}
+              {!hasMore && !loadingMore && (
+                <p className="text-center text-sm text-ink-400 py-10 select-none">
+                  You've seen all courses
+                </p>
+              )}
 
-                {/* End-of-list message */}
-                {!hasMore && !loadingMore && (
-                  <p className="text-center text-sm text-ink-400 py-10 select-none">
-                    You've seen all courses
-                  </p>
-                )}
-
-                {/* Invisible sentinel — IntersectionObserver watches this */}
-                <div ref={sentinelRef} aria-hidden="true" className="h-1" />
-              </>
+              {/* Invisible sentinel — IntersectionObserver watches this */}
+              <div ref={sentinelRef} aria-hidden="true" className="h-1" />
+            </>
             )}
           </div>
         </div>
       </div>
+      <CompareBar />
     </div>
   );
 }

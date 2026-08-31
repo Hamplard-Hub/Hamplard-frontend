@@ -170,9 +170,15 @@ export default function InstructorDashboardPage() {
       </div>
 
       {/* My courses */}
-      <h2 className="font-display text-lg font-semibold text-ink-900 mb-4">
-        My courses
-      </h2>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="font-display text-lg font-semibold text-ink-900">
+          My courses
+        </h2>
+        <Link href="/dashboard/instructor/courses" className="btn-secondary inline-flex items-center gap-2">
+          <BookOpen className="w-4 h-4" />
+          Manage courses
+        </Link>
+      </div>
       {!stats?.courses?.length ? (
         <div className="card p-10 text-center">
           <BookOpen className="w-10 h-10 text-saffron-200 mx-auto mb-3" />
