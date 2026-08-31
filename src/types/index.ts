@@ -89,6 +89,7 @@ export interface Course {
   totalRevenue: number;
   txHash: string | null;
   approvedAt: string | null;
+  publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   instructor: {
