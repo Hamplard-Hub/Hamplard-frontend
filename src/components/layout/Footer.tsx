@@ -10,9 +10,10 @@ const FOOTER_COLUMNS = [
     title: 'About Hamplard',
     links: [
       { label: 'Our story', href: '/about' },
+      { label: 'Teach on Hamplard', href: '/teach' },
+      { label: 'Team plans', href: '/teams' },
       { label: 'Careers', href: '/#careers' },
       { label: 'Partner with us', href: '/#partners' },
-      { label: 'Blog', href: '/#blog' },
     ],
   },
   {

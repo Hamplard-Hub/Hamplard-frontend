@@ -65,12 +65,21 @@ Defined in `src/styles/tokens.css`.
 
 Verified normal-text compliant pairs (>= 4.5:1):
 
-- `#26215C` on `#FFFFFF`
-- `#3C3489` on `#FFFFFF`
-- `#26215C` on `#EEEDFE`
-- `#FFFFFF` on `#3C3489`
+| Foreground | Background | Ratio | WCAG AA status |
+|---|---|---:|---|
+| `#26215C` | `#FFFFFF` | `14.44:1` | Pass |
+| `#3C3489` | `#FFFFFF` | `10.27:1` | Pass |
+| `#26215C` | `#EEEDFE` | `12.50:1` | Pass |
+| `#4A42B8` | `#EEEDFE` | `6.58:1` | Pass |
+| `#FFFFFF` | `#4A42B8` | `5.91:1` | Pass |
 
-Implementation note: use `--color-text-link` (`#3C3489`) for body-sized links on light backgrounds. Reserve `#7F77DD` for larger UI surfaces and decorative accents.
+Large text and UI component pairs (>= 3:1):
+
+- `#4A42B8` on `#EEEDFE` = `6.58:1`
+- `#FFFFFF` on `#4A42B8` = `5.91:1`
+- `#3C3489` on `#FFFFFF` = `10.27:1`
+
+Implementation note: use `--color-text-link` (`#3C3489`) for body-sized links on light backgrounds. Keep `--color-brand-primary` at `#4A42B8` for lilac-surface actions and primary CTAs, and reserve `#3C3489` for hover/focus states where darker contrast is needed.
 
 ## Dark Mode Extension Hook
 
