@@ -8,6 +8,7 @@ import {
   cn, courseTotalMins, formatUsdc, levelChip,
 } from '@/lib/utils';
 import { useIsWishlisted, useWishlistStore } from '@/lib/hooks/use-wishlist-store';
+import { useCompareStore } from '@/lib/hooks/use-compare-store';
 import { useHoverPrefetch } from '@/lib/hooks/useHoverPrefetch';
 import type { Course } from '@/types';
 
@@ -48,6 +49,10 @@ export function CourseCard({
 
   const isWishlisted  = useIsWishlisted(course.id);
   const toggleWishlistId = useWishlistStore((state) => state.toggle);
+  const isComparing = useCompareStore((state) => state.isComparing(course.id));
+  const addToCompare = useCompareStore((state) => state.add);
+  const removeFromCompare = useCompareStore((state) => state.remove);
+  const compareCount = useCompareStore((state) => state.courses.length);
   const [isHovered, setIsHovered]     = useState(false);
   const [showPreview, setShowPreview]  = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -77,6 +82,15 @@ export function CourseCard({
     e.preventDefault();
     e.stopPropagation();
     toggleWishlistId(course.id);
+  }
+
+  function toggleCompare(e: React.ChangeEvent<HTMLInputElement>) {
+    e.stopPropagation();
+    if (isComparing) {
+      removeFromCompare(course.id);
+    } else {
+      addToCompare(course);
+    }
   }
 
   useEffect(() => {
@@ -225,41 +239,64 @@ export function CourseCard({
           )}
 
           {/* Price / free enrollment CTA */}
-<div className="pt-3 border-t border-ink-100">
-  {freeCta ? (
-    <span className="block w-full rounded-lg bg-hamplard-primary px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors group-hover:bg-hamplard-primary/90">
-      Enroll Free
-    </span>
-  ) : (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <span className="text-base font-bold text-ink-900">
-          {formatUsdc(course.price)}
-          <span className="text-xs font-normal text-ink-400 ml-1">USDC</span>
-        </span>
+          <div className="pt-3 border-t border-ink-100">
+            {freeCta ? (
+              <span className="block w-full rounded-lg bg-hamplard-primary px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors group-hover:bg-hamplard-primary/90">
+                Enroll Free
+              </span>
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-base font-bold text-ink-900">
+                    {formatUsdc(course.price)}
+                    <span className="text-xs font-normal text-ink-400 ml-1">USDC</span>
+                  </span>
 
-        {hasDiscount && course.originalPrice != null && (
-          <>
-            <span className="text-sm text-ink-400 line-through">
-              {formatUsdc(course.originalPrice)}
-            </span>
-            <span className="text-xs font-semibold text-rose-600">
-              -{discountPct}%
-            </span>
-          </>
-        )}
-      </div>
+                  {hasDiscount && course.originalPrice != null && (
+                    <>
+                      <span className="text-sm text-ink-400 line-through">
+                        {formatUsdc(course.originalPrice)}
+                      </span>
+                      <span className="text-xs font-semibold text-rose-600">
+                        -{discountPct}%
+                      </span>
+                    </>
+                  )}
+                </div>
 
-      {course.status === 'ACTIVE' && (
-        <span className="text-xs font-medium text-saffron-600 bg-saffron-50 px-2 py-0.5 rounded-lg">
-          Enroll now
-        </span>
-      )}
-    </div>
-  )}
-</div>
-</div>
-</article>
+                {course.status === 'ACTIVE' && (
+                  <span className="text-xs font-medium text-saffron-600 bg-saffron-50 px-2 py-0.5 rounded-lg">
+                    Enroll now
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Compare checkbox */}
+          <div className="flex items-center gap-2 pt-3 border-t border-ink-100 mt-3">
+            <input
+              type="checkbox"
+              id={`compare-${course.id}`}
+              checked={isComparing}
+              onChange={toggleCompare}
+              disabled={!isComparing && compareCount >= 3}
+              onClick={(e) => e.stopPropagation()}
+              className="w-4 h-4 rounded border-ink-300 text-saffron-600 focus:ring-2 focus:ring-saffron-500 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+            <label
+              htmlFor={`compare-${course.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                'text-xs text-ink-600 select-none cursor-pointer',
+                !isComparing && compareCount >= 3 && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              Compare
+            </label>
+          </div>
+        </div>
+      </article>
 
       {/* ── Quick-preview tooltip ── */}
       {showPreview && course.description && (

@@ -15,6 +15,10 @@ interface VideoControlsProps {
   subtitlesOn: boolean;
   isFullscreen: boolean;
   hasCaptions: boolean;
+  /** Whether autoplay is currently enabled */
+  autoplay: boolean;
+  /** Called when the user toggles the autoplay switch */
+  onAutoplayChange: (enabled: boolean) => void;
   onPlayPause: () => void;
   onSeek: (secs: number) => void;
   onVolume: (vol: number) => void;
@@ -29,6 +33,7 @@ const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
 export function VideoControls({
   playing, currentTime, duration, volume, muted, speed,
   subtitlesOn, isFullscreen, hasCaptions,
+  autoplay, onAutoplayChange,
   onPlayPause, onSeek, onVolume, onMute, onSpeed, onSubtitles, onFullscreen,
 }: VideoControlsProps) {
   return (
@@ -118,6 +123,37 @@ export function VideoControls({
           aria-label="Subtitles"
         >
           <Subtitles className="w-4 h-4" />
+        </button>
+
+        {/* Autoplay toggle */}
+        <button
+          onClick={() => onAutoplayChange(!autoplay)}
+          className={cn(
+            'flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors',
+            autoplay
+              ? 'border-saffron-400 text-saffron-300 bg-saffron-500/20 hover:bg-saffron-500/30'
+              : 'border-white/20 text-white/60 hover:text-white hover:border-white/40',
+          )}
+          aria-pressed={autoplay}
+          aria-label={autoplay ? 'Autoplay on — click to turn off' : 'Autoplay off — click to turn on'}
+          title="Autoplay next lecture"
+        >
+          {/* Mini toggle pill */}
+          <span
+            className={cn(
+              'relative inline-flex h-3 w-5 rounded-full transition-colors duration-200',
+              autoplay ? 'bg-saffron-500' : 'bg-white/20',
+            )}
+            aria-hidden="true"
+          >
+            <span
+              className={cn(
+                'absolute top-0.5 h-2 w-2 rounded-full bg-white shadow transition-transform duration-200',
+                autoplay ? 'translate-x-2.5' : 'translate-x-0.5',
+              )}
+            />
+          </span>
+          Autoplay
         </button>
 
         {/* Fullscreen */}

@@ -5,24 +5,24 @@ import { buildMetadata } from "@/lib/seo";
 import type { Metadata } from "next";
 import { HomepageCarousels, RecentlyViewed } from "@/components/home";
 
-const DEFAULT_OG_IMAGE = '/hamplard-og.svg';
+const DEFAULT_OG_IMAGE = "/hamplard-og.svg";
 
 export const metadata: Metadata = buildMetadata({
-  title: 'Hamplard',
+  title: "Hamplard",
   description:
     "Learn practical skills — tailoring, makeup, baking, photography and more. Africa's online vocational skills platform.",
   openGraph: {
-    title: 'Hamplard',
+    title: "Hamplard",
     description:
       "Learn practical skills — tailoring, makeup, baking, photography and more. Africa's online vocational skills platform.",
-    url: '/',
-    siteName: 'Hamplard',
-    type: 'website',
-    images: [{ url: DEFAULT_OG_IMAGE, alt: 'Hamplard brand preview' }],
+    url: "/",
+    siteName: "Hamplard",
+    type: "website",
+    images: [{ url: DEFAULT_OG_IMAGE, alt: "Hamplard brand preview" }],
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'Hamplard',
+    card: "summary_large_image",
+    title: "Hamplard",
     description:
       "Learn practical skills — tailoring, makeup, baking, photography and more. Africa's online vocational skills platform.",
     images: [DEFAULT_OG_IMAGE],
@@ -45,7 +45,10 @@ export default function HomePage() {
       </section>
 
       <section className="mx-auto max-w-[1280px] px-6 py-16 xl:px-10">
-        <PricingPlansSection heading="Plans that support every stage of your learning journey" intro="Students can start with the Free plan and upgrade when they want deeper tools, while instructors can unlock analytics and better learner engagement with Pro." />
+        <PricingPlansSection
+          heading="Plans that support every stage of your learning journey"
+          intro="Students can start with the Free plan and upgrade when they want deeper tools, while instructors can unlock analytics and better learner engagement with Pro."
+        />
       </section>
     </div>
   );

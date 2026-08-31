@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { User } from '@/types';
+import { usersApi } from '@/lib/api/services';
 
 interface AuthState {
   address:     string | null;
@@ -9,6 +10,7 @@ interface AuthState {
   setAuth:     (address: string, token: string, user: User, rememberMe?: boolean) => void;
   setAddress:  (address: string) => void;
   updateUser:  (patch: Partial<User>) => void;
+  deleteAccount: (password: string) => Promise<void>;
   logout:      () => void;
   rehydrate:   () => void;
 }
@@ -30,6 +32,16 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   updateUser: (patch) =>
     set((state) => ({ user: state.user ? { ...state.user, ...patch } : state.user })),
+
+  deleteAccount: async (password) => {
+    await usersApi.deleteAccount(password);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('hamplard_token');
+      localStorage.removeItem('hamplard_address');
+      document.cookie = 'hamplard_token=; path=/; max-age=0';
+    }
+    set({ address: null, token: null, user: null, isConnected: false });
+  },
 
   logout: () => {
     if (typeof window !== 'undefined') {

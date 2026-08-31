@@ -8,6 +8,7 @@ import { CourseCard } from '@/components/courses/CourseCard';
 import { CourseCardSkeleton } from '@/components/skeletons';
 import { FilterSidebar } from '@/components/courses/FilterSidebar';
 import { Pagination } from '@/components/ui/Pagination';
+import { CompareBar } from '@/components/courses/CompareBar';
 import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll';
 import { cn } from '@/lib/utils';
 import type { Course, Category } from '@/types';
@@ -422,6 +423,7 @@ function CourseBrowsePageContent() {
           </div>
         </div>
       </div>
+      <CompareBar />
     </div>
   );
 }
