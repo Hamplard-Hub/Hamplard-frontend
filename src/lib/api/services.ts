@@ -111,6 +111,10 @@ export const coursesApi = {
     return data.data;
   },
 
+  remove: async (id: string): Promise<void> => {
+    await apiClient.delete(`/courses/${id}`);
+  },
+
   submitForReview: async (id: string, txHash?: string): Promise<Course> => {
     const { data } = await apiClient.post<ApiResponse<Course>>(
       `/courses/${id}/submit`, { txHash },
@@ -376,6 +380,9 @@ export const usersApi = {
     const { data } = await apiClient.patch<ApiResponse<User>>('/users/me', payload);
     return data.data;
   },
+  deleteAccount: async (password: string): Promise<void> => {
+    await apiClient.delete('/users/me', { data: { password } });
+  },
   getInstructorStats: async () => {
     const { data } = await apiClient.get('/users/me/instructor-stats');
     return data.data;
@@ -529,4 +536,40 @@ export const contactApi = {
     return data.data;
   },
 };
+
+// ----------------------------------------------------------
+// Two-Factor Authentication
+// ----------------------------------------------------------
+export const twoFactorApi = {
+  setupInitiate: async (): Promise<{ qrCode: string; secret: string }> => {
+    const { data } = await apiClient.post<ApiResponse<{ qrCode: string; secret: string }>>(
+      '/2fa/setup',
+    );
+    return data.data;
+  },
+
+  setupVerify: async (code: string): Promise<{ backupCodes: string[] }> => {
+    const { data } = await apiClient.post<ApiResponse<{ backupCodes: string[] }>>(
+      '/2fa/verify',
+      { code },
+    );
+    return data.data;
+  },
+
+  disable: async (code: string): Promise<{ success: boolean }> => {
+    const { data } = await apiClient.post<ApiResponse<{ success: boolean }>>(
+      '/2fa/disable',
+      { code },
+    );
+    return data.data;
+  },
+
+  getStatus: async (): Promise<{ enabled: boolean }> => {
+    const { data } = await apiClient.get<ApiResponse<{ enabled: boolean }>>(
+      '/2fa/status',
+    );
+    return data.data;
+  },
+};
+
 

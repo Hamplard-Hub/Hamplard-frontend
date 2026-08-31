@@ -39,7 +39,8 @@ const STATIC_CATEGORIES = Object.entries(CATEGORY_META).map(([slug, m]) => ({
 
 const NAV_LINKS = [
   { label: 'Courses', href: '/dashboard/courses' },
-  { label: 'Teach', href: '/dashboard/instructor' },
+  { label: 'Teach on Hamplard', href: '/teach' },
+  { label: 'Team Plans', href: '/teams' },
 ] as const;
 
 // ─── Component ───────────────────────────────────────────────────────────────

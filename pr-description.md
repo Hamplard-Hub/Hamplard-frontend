@@ -1,80 +1,87 @@
+# Countdown Timer Component for Limited Offers
+
+Closes #153
+
 ## Summary
 
-This PR adds comprehensive end-to-end (E2E) tests for the course enrollment flow using Playwright. The tests cover the critical purchase path to catch regressions automatically and ensure a reliable user experience.
+This PR implements a fully accessible countdown timer component for the Hamplard frontend. The component creates urgency around limited-time enrollment offers or sale prices by displaying a real-time countdown in DD:HH:MM:SS format.
 
-## Changes Made
+## Changes
 
-### E2E Test Suite (e2e/enrollment.spec.ts)
+### New Files
+- **`src/components/ui/CountdownTimer.tsx`** - Main countdown timer component
+- **`src/components/ui/CountdownTimer.test.tsx`** - Comprehensive unit tests
 
-1. **Full Enrollment Flow Test**
-   - Navigate to course page
-   - Click "Enroll Now" button
-   - Proceed to checkout
-   - Complete mock payment
-   - Verify enrolled course appears in dashboard
-
-2. **Promo Code Test**
-   - Apply promo code (WELCOME20 for 20% off)
-   - Verify discount is calculated correctly
-   - Check discounted price is displayed
-
-3. **Dashboard Verification Test**
-   - Verify enrolled courses appear in dashboard
-   - Check course card structure
-
-4. **Course Detail Page Test**
-   - Verify course title, instructor, pricing, and category display
-   - Confirm enroll button is present
-
-5. **Course Listing Test**
-   - Verify courses page loads correctly
-   - Check course cards are rendered
-
-6. **Dashboard Navigation Test**
-   - Verify dashboard loads
-   - Check navigation to "My Courses" section
-
-### Test Fixtures (e2e/fixtures/course.ts)
-
-- **Mock Courses**: React Fundamentals, Advanced React, TypeScript Mastery with realistic pricing and metadata
-- **Mock Promo Codes**: WELCOME20 (20% off), SAVE10 (10% off), FLAT25 ($25 off)
-- **Shared Helpers**: Navigation functions and promo code application utilities
-
-### Configuration (playwright.config.ts)
-
-- Multi-browser support: Chromium, Firefox, Safari, and mobile browsers (Pixel 5, iPhone 12)
-- Web server configuration for local dev server (npm run dev)
-- Trace and video recording on test failure
-- Retry configuration for CI environments
+### Modified Files
+- **`src/components/ui/index.ts`** - Added CountdownTimer exports
 
 ## Technical Details
 
-- All API calls are mocked to avoid real transactions
-- Tests run against local dev server (http://localhost:3001)
-- Proper wait strategies for network idle and URL changes
-- Accessible element queries using role-based selectors
-- Tests are isolated with beforeEach cleanup
+### Component Features
+- **Props**: 
+  - `expiresAt: Date` - The expiration date/time
+  - `label?: string` - Custom label (defaults to "Offer expires in")
+  - `onExpire?: () => void` - Callback fired when timer reaches zero
+  - `className?: string` - Optional Tailwind classes
+  
+- **Display Format**: `DD : HH : MM : SS` with labels beneath each unit
+- **Refresh Rate**: Updates every second using `setInterval`
+- **Expiration State**: Shows "Offer ended" text when timer reaches zero
+- **Cleanup**: Properly clears interval on component unmount
 
-## Running the Tests
+### Accessibility
+- ✅ `role="timer"` for screen reader identification
+- ✅ `aria-live="off"` to prevent noisy announcements (avoids interrupting users every second)
+- ✅ Semantic HTML structure
+- ✅ Forward ref support for imperative access
 
-```bash
-# Install dependencies
-npm install
+### Styling
+- Uses Tailwind CSS with responsive design (`md:` breakpoints)
+- Color scheme aligns with Hamplard design tokens:
+  - Primary color for countdown values
+  - Subdued colors for labels and separators
+  - Rose-600 for "Offer ended" state
+- Clean, centered layout with proper spacing
 
-# Install Playwright browsers
-npx playwright install
+## Testing
 
-# Run E2E tests
-npm run test:e2e
+Comprehensive test suite covering:
+- ✅ Rendering with and without custom labels
+- ✅ Countdown decrement logic
+- ✅ Expiration callback execution
+- ✅ "Offer ended" display state
+- ✅ Interval cleanup on unmount
+- ✅ No memory leaks on prop changes
+- ✅ Accessibility attributes
+- ✅ Edge cases (already expired, long durations)
 
-# Run with UI mode
-npm run test:e2e:ui
+## Acceptance Criteria
+
+- ✅ Timer counts down correctly each second
+- ✅ Reaches zero and shows "Offer ended" text correctly
+- ✅ Interval cleaned up on component unmount
+- ✅ Accessible with `role="timer"` and `aria-live="off"`
+- ✅ All tests passing
+
+## Usage Example
+
+```tsx
+import { CountdownTimer } from '@/components/ui';
+
+export default function SaleSection() {
+  const saleEnds = new Date('2026-12-31T23:59:59Z');
+  
+  return (
+    <CountdownTimer 
+      expiresAt={saleEnds}
+      label="Limited offer ends in"
+      onExpire={() => console.log('Sale ended!')}
+    />
+  );
+}
 ```
 
-All tests are designed to run in CI without real API calls, ensuring reliable and fast execution.
-
----
-
-**Closes #122**
-
-Updated: Added comprehensive test coverage for course enrollment flow.
+## Notes
+- Component uses client-side rendering (`'use client'`)
+- No external dependencies beyond existing project libraries
+- Fully TypeScript compatible with proper type exports

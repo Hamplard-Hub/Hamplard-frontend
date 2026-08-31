@@ -1,5 +1,4 @@
-'use client';
-
+import type { Metadata } from 'next';
 import { Suspense, useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { SlidersHorizontal } from 'lucide-react';
@@ -15,12 +14,47 @@ import {
 } from '@/components/search/SearchResultsLoadingState';
 import { CourseCard } from '@/components/courses/CourseCard';
 import { Pagination } from '@/components/ui/Pagination';
+import { buildPaginatedMetadata } from '@/lib/seo';
 import {
   useSearchStore,
   durationToBucket,
   DEFAULT_PRICE_RANGE,
 } from '@/lib/hooks/use-search-store';
 import type { Course } from '@/types';
+
+type PageProps = {
+  searchParams: { page?: string; q?: string };
+};
+
+/**
+ * Generate SEO metadata for the search page with pagination support.
+ * - Canonical URL always points to page 1 (no page parameter)
+ * - rel="prev" and rel="next" links for pagination SEO
+ * - All URLs are absolute including domain
+ */
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const pageParam = searchParams.page;
+  const currentPage = pageParam ? parseInt(pageParam, 10) : 1;
+  const query = searchParams.q || '';
+
+  // Estimate total pages for search results
+  const totalPages = 20;
+
+  const title = query ? `Search: ${query}` : 'Search Courses';
+  const description = query
+    ? `Search results for "${query}". Find courses across tailoring, baking, photography, and more.`
+    : 'Search for courses across all categories. Learn practical skills from expert instructors.';
+
+  return buildPaginatedMetadata({
+    title,
+    description,
+    basePath: '/search',
+    currentPage,
+    totalPages,
+  });
+}
+
+'use client';
 
 // Mock courses data — in production, fetch from API
 const MOCK_COURSES: Course[] = [
