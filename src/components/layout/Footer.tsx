@@ -20,6 +20,7 @@ const FOOTER_COLUMNS = [
     title: 'Courses',
     links: [
       { label: 'All courses', href: '/dashboard/courses' },
+      { label: 'Free courses', href: '/courses/free' },
       { label: 'Tailoring', href: '/dashboard/courses?category=tailoring' },
       { label: 'Makeup Artistry', href: '/dashboard/courses?category=makeup' },
       { label: 'Baking', href: '/dashboard/courses?category=baking' },

@@ -29,11 +29,17 @@ interface Props {
   course: Course;
   href?: string;
   showProgress?: number;
-  /** Pass true for cards in the first visible row to load eagerly (no lazy loading). */
   priority?: boolean;
+  freeCta?: boolean;
 }
 
-export function CourseCard({ course, href, showProgress, priority = false }: Props) {
+export function CourseCard({
+  course,
+  href,
+  showProgress,
+  priority = false,
+  freeCta = false,
+}: Props) {
   const dest = href ?? `/dashboard/courses/${course.id}`;
   const mins = courseTotalMins(course.totalDuration ?? 0);
 
@@ -232,28 +238,38 @@ export function CourseCard({ course, href, showProgress, priority = false }: Pro
             </div>
           )}
 
-          {/* Price */}
-          <div className="flex items-center justify-between pt-3 border-t border-ink-100">
-            <div className="flex items-center gap-2">
-              <span className="text-base font-bold text-ink-900">
-                {formatUsdc(course.price)}
-                <span className="text-xs font-normal text-ink-400 ml-1">USDC</span>
+          {/* Price / free enrollment CTA */}
+          <div className="pt-3 border-t border-ink-100">
+            {freeCta ? (
+              <span className="block w-full rounded-lg bg-hamplard-primary px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors group-hover:bg-hamplard-primary/90">
+                Enroll Free
               </span>
-              {hasDiscount && course.originalPrice != null && (
-                <>
-                  <span className="text-sm text-ink-400 line-through">
-                    {formatUsdc(course.originalPrice)}
+            ) : (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-base font-bold text-ink-900">
+                    {formatUsdc(course.price)}
+                    <span className="text-xs font-normal text-ink-400 ml-1">USDC</span>
                   </span>
-                  <span className="text-xs font-semibold text-rose-600">
-                    -{discountPct}%
+
+                  {hasDiscount && course.originalPrice != null && (
+                    <>
+                      <span className="text-sm text-ink-400 line-through">
+                        {formatUsdc(course.originalPrice)}
+                      </span>
+                      <span className="text-xs font-semibold text-rose-600">
+                        -{discountPct}%
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                {course.status === 'ACTIVE' && (
+                  <span className="text-xs font-medium text-saffron-600 bg-saffron-50 px-2 py-0.5 rounded-lg">
+                    Enroll now
                   </span>
-                </>
-              )}
-            </div>
-            {course.status === 'ACTIVE' && (
-              <span className="text-xs font-medium text-saffron-600 bg-saffron-50 px-2 py-0.5 rounded-lg">
-                Enroll now
-              </span>
+                )}
+              </div>
             )}
           </div>
 
