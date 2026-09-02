@@ -176,7 +176,7 @@ export default function SignupPage() {
                 />
                 <span>
                   I agree to the{' '}
-                  <Link href="#" className="font-medium text-[#3C3489] hover:underline">
+                  <Link href="/terms" className="font-medium text-[#3C3489] hover:underline">
                     terms and privacy policy
                   </Link>
                   .

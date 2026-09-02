@@ -1,4 +1,4 @@
-import type { Course } from '@/types';
+import type { Category, Course } from '@/types';
 
 /**
  * Server-side reads used by `generateMetadata` and the sitemap.
@@ -29,13 +29,41 @@ export async function getCourseForMetadata(id: string): Promise<Course | null> {
 /** Published courses for the sitemap. Paginated payloads are `data.data` + `data.meta`. */
 export async function getCoursesForSitemap(limit = 200): Promise<Course[]> {
   try {
-    const res = await fetch(`${API_URL}/courses?limit=${limit}`, {
+    const courses: Course[] = [];
+    let page = 1;
+    let totalPages = 1;
+
+    while (page <= totalPages) {
+      const res = await fetch(`${API_URL}/courses?page=${page}&limit=${limit}`, {
+        next: { revalidate: REVALIDATE },
+      });
+      if (!res.ok) return courses;
+
+      const body = await res.json();
+      const pageData = body?.data;
+      if (!Array.isArray(pageData?.data)) return courses;
+
+      courses.push(...(pageData.data as Course[]));
+      totalPages = Number(pageData.meta?.totalPages) || page;
+      page += 1;
+    }
+
+    return Array.from(new Map(courses.map((course) => [course.id, course])).values());
+  } catch {
+    return [];
+  }
+}
+
+/** Public course categories used to build crawlable filtered course pages. */
+export async function getCategoriesForSitemap(): Promise<Category[]> {
+  try {
+    const res = await fetch(`${API_URL}/courses/categories`, {
       next: { revalidate: REVALIDATE },
     });
     if (!res.ok) return [];
+
     const body = await res.json();
-    const courses = body?.data?.data;
-    return Array.isArray(courses) ? (courses as Course[]) : [];
+    return Array.isArray(body?.data) ? (body.data as Category[]) : [];
   } catch {
     return [];
   }

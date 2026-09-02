@@ -8,6 +8,8 @@ import {
   cn, courseTotalMins, formatUsdc, levelChip,
 } from '@/lib/utils';
 import { useIsWishlisted, useWishlistStore } from '@/lib/hooks/use-wishlist-store';
+import { useCompareStore } from '@/lib/hooks/use-compare-store';
+import { useHoverPrefetch } from '@/lib/hooks/useHoverPrefetch';
 import type { Course } from '@/types';
 
 // A 1×1 purple-toned blurred placeholder encoded as a base64 data URL.
@@ -35,8 +37,16 @@ export function CourseCard({ course, href, showProgress, priority = false }: Pro
   const dest = href ?? `/dashboard/courses/${course.id}`;
   const mins = courseTotalMins(course.totalDuration ?? 0);
 
+  // Warm the router cache for the course page once the pointer has rested
+  // on the card for 200ms (skipped on touch devices, cancelled on early exit).
+  const hoverPrefetch = useHoverPrefetch(dest);
+
   const isWishlisted  = useIsWishlisted(course.id);
   const toggleWishlistId = useWishlistStore((state) => state.toggle);
+  const isComparing = useCompareStore((state) => state.isComparing(course.id));
+  const addToCompare = useCompareStore((state) => state.add);
+  const removeFromCompare = useCompareStore((state) => state.remove);
+  const compareCount = useCompareStore((state) => state.courses.length);
   const [isHovered, setIsHovered]     = useState(false);
   const [showPreview, setShowPreview]  = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -49,6 +59,7 @@ export function CourseCard({ course, href, showProgress, priority = false }: Pro
 
   function handleMouseEnter() {
     setIsHovered(true);
+    hoverPrefetch.onMouseEnter();
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => setShowPreview(true), 200);
   }
@@ -56,6 +67,7 @@ export function CourseCard({ course, href, showProgress, priority = false }: Pro
   function handleMouseLeave() {
     setIsHovered(false);
     setShowPreview(false);
+    hoverPrefetch.onMouseLeave();
     if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
   }
 
@@ -64,6 +76,15 @@ export function CourseCard({ course, href, showProgress, priority = false }: Pro
     e.preventDefault();
     e.stopPropagation();
     toggleWishlistId(course.id);
+  }
+
+  function toggleCompare(e: React.ChangeEvent<HTMLInputElement>) {
+    e.stopPropagation();
+    if (isComparing) {
+      removeFromCompare(course.id);
+    } else {
+      addToCompare(course);
+    }
   }
 
   useEffect(() => {
@@ -234,6 +255,29 @@ export function CourseCard({ course, href, showProgress, priority = false }: Pro
                 Enroll now
               </span>
             )}
+          </div>
+
+          {/* Compare checkbox */}
+          <div className="flex items-center gap-2 pt-3 border-t border-ink-100 mt-3">
+            <input
+              type="checkbox"
+              id={`compare-${course.id}`}
+              checked={isComparing}
+              onChange={toggleCompare}
+              disabled={!isComparing && compareCount >= 3}
+              onClick={(e) => e.stopPropagation()}
+              className="w-4 h-4 rounded border-ink-300 text-saffron-600 focus:ring-2 focus:ring-saffron-500 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+            <label
+              htmlFor={`compare-${course.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                'text-xs text-ink-600 select-none cursor-pointer',
+                !isComparing && compareCount >= 3 && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              Compare
+            </label>
           </div>
         </div>
       </article>

@@ -1,24 +1,65 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bell, Shield, Save, Loader2 } from 'lucide-react';
+import { Bell, Shield, Save, Loader2, Trash2 } from 'lucide-react';
 import { Breadcrumb } from '@/components/ui';
-import { StudyReminder } from '@/components/dashboard/StudyReminder';
+import DeleteAccountModal from '@/components/auth/DeleteAccountModal';
+import { Bell, Shield, Save, Loader2, Zap } from 'lucide-react';
+import { Breadcrumb } from '@/components/ui';
+import { TwoFactorSetup } from '@/components/auth/TwoFactorSetup';
+import { twoFactorApi } from '@/lib/api/services';
 
 export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [loadingTwoFactor, setLoadingTwoFactor] = useState(false);
 
   const [emailUpdates, setEmailUpdates] = useState(true);
   const [courseUpdates, setCourseUpdates] = useState(true);
   const [securityAlerts, setSecurityAlerts] = useState(true);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+
+  const { prefersReducedMotion, setManualOverride, clearManualOverride, hasManualOverride, mounted } = useReducedMotion();
+  const [localReducedMotion, setLocalReducedMotion] = useState(false);
 
   useEffect(() => {
-    // No dedicated settings endpoints found in current client services.
-    // Keep this page functional as UI scaffold.
+    // Load 2FA status
+    const loadTwoFactorStatus = async () => {
+      try {
+        const status = await twoFactorApi.getStatus();
+        setTwoFactorEnabled(status.enabled);
+      } catch (err) {
+        // If 2FA endpoint doesn't exist yet, assume disabled
+        setTwoFactorEnabled(false);
+      }
+    };
+
+    loadTwoFactorStatus();
     setLoaded(true);
   }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      setLocalReducedMotion(prefersReducedMotion);
+    }
+  }, [mounted, prefersReducedMotion]);
+
+  const handleReducedMotionChange = (enabled: boolean) => {
+    setLocalReducedMotion(enabled);
+    if (enabled) {
+      setManualOverride(true);
+      // Apply class to html element for JavaScript-based checks
+      document.documentElement.classList.add('reduce-motion');
+      document.documentElement.setAttribute('data-reduce-motion', 'true');
+    } else {
+      clearManualOverride();
+      // Remove class from html element
+      document.documentElement.classList.remove('reduce-motion');
+      document.documentElement.removeAttribute('data-reduce-motion');
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -53,7 +94,7 @@ export default function SettingsPage() {
           className="mb-3"
         />
         <h1 className="section-heading">Settings</h1>
-        <p className="text-sm text-ink-500 mt-1">Notification and security preferences.</p>
+        <p className="text-sm text-ink-500 mt-1">Notification, accessibility, and security preferences.</p>
       </div>
 
       {error && (
@@ -61,6 +102,7 @@ export default function SettingsPage() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Notifications Section */}
         <section className="card p-6">
           <div className="flex items-center gap-2 mb-3">
             <Bell className="w-4 h-4 text-saffron-600" />
@@ -96,6 +138,7 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* Security Section */}
         <section className="card p-6">
           <div className="flex items-center gap-2 mb-3">
             <Shield className="w-4 h-4 text-saffron-600" />
@@ -125,6 +168,33 @@ export default function SettingsPage() {
         </section>
       </div>
 
+      {/* Two-Factor Authentication Section */}
+      <section className="card p-6 mt-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Shield className="w-5 h-5 text-saffron-600" />
+            <h2 className="text-lg font-semibold text-ink-900">Two-Factor Authentication</h2>
+          </div>
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+            twoFactorEnabled
+              ? 'bg-emerald-100 text-emerald-700'
+              : 'bg-amber-100 text-amber-700'
+          }`}>
+            {twoFactorEnabled ? 'Enabled' : 'Disabled'}
+          </span>
+        </div>
+
+        <div className="bg-ink-50 p-4 rounded-lg">
+          {loadingTwoFactor ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 text-saffron-500 animate-spin" />
+            </div>
+          ) : (
+            <TwoFactorSetup />
+          )}
+        </div>
+      </section>
+
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <button type="button" disabled={saving} onClick={handleSave} className="btn-primary inline-flex items-center gap-2">
           <Save className="w-4 h-4" />
@@ -136,14 +206,25 @@ export default function SettingsPage() {
         </span>
       </div>
 
-      {/* Study reminder scheduler */}
-      <div className="mt-8">
-        <h2 className="section-heading mb-1 text-base">Study schedule</h2>
-        <p className="mb-4 text-sm text-ink-500">
-          Set daily learning reminders. The tab must be open for the reminder to fire.
-        </p>
-        <StudyReminder />
-      </div>
+      <section className="card mt-8 border-red-100 p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Trash2 className="h-4 w-4 text-red-600" aria-hidden="true" />
+              <h2 className="font-semibold text-ink-900">Danger zone</h2>
+            </div>
+            <p className="mt-2 max-w-xl text-sm text-ink-500">
+              Permanently delete your account, progress, certificates, and course access.
+            </p>
+          </div>
+          <button type="button" onClick={() => setDeleteModalOpen(true)} className="btn-danger shrink-0">
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+            Delete account
+          </button>
+        </div>
+      </section>
+
+      <DeleteAccountModal open={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} />
     </div>
   );
 }

@@ -112,6 +112,10 @@ export const coursesApi = {
     return data.data;
   },
 
+  remove: async (id: string): Promise<void> => {
+    await apiClient.delete(`/courses/${id}`);
+  },
+
   submitForReview: async (id: string, txHash?: string): Promise<Course> => {
     const { data } = await apiClient.post<ApiResponse<Course>>(
       `/courses/${id}/submit`, { txHash },
@@ -377,6 +381,9 @@ export const usersApi = {
     const { data } = await apiClient.patch<ApiResponse<User>>('/users/me', payload);
     return data.data;
   },
+  deleteAccount: async (password: string): Promise<void> => {
+    await apiClient.delete('/users/me', { data: { password } });
+  },
   getInstructorStats: async () => {
     const { data } = await apiClient.get('/users/me/instructor-stats');
     return data.data;
@@ -514,139 +521,56 @@ export const promoCodesApi = {
 };
 
 // ----------------------------------------------------------
-// Gifts
+// Contact
 // ----------------------------------------------------------
-export const giftsApi = {
-  /** Purchase a course as a gift */
-  create: async (payload: {
-    courseId: string;
-    recipientEmail: string;
-    message?: string;
-    deliveryDate: string;
-  }): Promise<Gift> => {
-    try {
-      const { data } = await apiClient.post<ApiResponse<Gift>>('/gifts', payload);
-      return data.data;
-    } catch {
-      // Optimistic local fallback so the UI stays functional without a backend
-      const gift: Gift = {
-        id: `gift-${Date.now()}`,
-        courseId: payload.courseId,
-        senderEmail: null,
-        recipientEmail: payload.recipientEmail,
-        message: payload.message ?? null,
-        deliveryDate: payload.deliveryDate,
-        claimToken: `claim-${Math.random().toString(36).slice(2, 12)}`,
-        status: 'PENDING',
-        claimedAt: null,
-        createdAt: new Date().toISOString(),
-      };
-      if (typeof window !== 'undefined') {
-        const key = 'hamplard_gifts';
-        const existing = JSON.parse(localStorage.getItem(key) ?? '[]') as Gift[];
-        localStorage.setItem(key, JSON.stringify([gift, ...existing]));
-      }
-      return gift;
-    }
+export const contactApi = {
+  submitContactForm: async (payload: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+  }) => {
+    const { data } = await apiClient.post<ApiResponse<{ id: string; createdAt: string }>>(
+      '/contact',
+      payload,
+    );
+    return data.data;
   },
+};
 
-  /** Get a gift by its claim token */
-  getByToken: async (token: string): Promise<Gift> => {
-    try {
-      const { data } = await apiClient.get<ApiResponse<Gift>>(`/gifts/claim/${token}`);
-      return data.data;
-    } catch {
-      if (typeof window !== 'undefined') {
-        const key = 'hamplard_gifts';
-        const existing = JSON.parse(localStorage.getItem(key) ?? '[]') as Gift[];
-        const found = existing.find((g) => g.claimToken === token);
-        if (found) return found;
-      }
-      throw new Error('Gift not found or already claimed.');
-    }
-  },
-
-  /** Claim a gift — adds the course to the recipient's enrollments */
-  claim: async (token: string): Promise<Enrollment> => {
-    const { data } = await apiClient.post<ApiResponse<Enrollment>>(`/gifts/claim/${token}`);
+// ----------------------------------------------------------
+// Two-Factor Authentication
+// ----------------------------------------------------------
+export const twoFactorApi = {
+  setupInitiate: async (): Promise<{ qrCode: string; secret: string }> => {
+    const { data } = await apiClient.post<ApiResponse<{ qrCode: string; secret: string }>>(
+      '/2fa/setup',
+    );
     return data.data;
   },
 
-  /** Get all gifts sent by the current user */
-  getMy: async (): Promise<Gift[]> => {
-    try {
-      const { data } = await apiClient.get<ApiResponse<Gift[]>>('/gifts/my');
-      return data.data;
-    } catch {
-      if (typeof window !== 'undefined') {
-        return JSON.parse(localStorage.getItem('hamplard_gifts') ?? '[]') as Gift[];
-      }
-      return [];
-    }
+  setupVerify: async (code: string): Promise<{ backupCodes: string[] }> => {
+    const { data } = await apiClient.post<ApiResponse<{ backupCodes: string[] }>>(
+      '/2fa/verify',
+      { code },
+    );
+    return data.data;
+  },
+
+  disable: async (code: string): Promise<{ success: boolean }> => {
+    const { data } = await apiClient.post<ApiResponse<{ success: boolean }>>(
+      '/2fa/disable',
+      { code },
+    );
+    return data.data;
+  },
+
+  getStatus: async (): Promise<{ enabled: boolean }> => {
+    const { data } = await apiClient.get<ApiResponse<{ enabled: boolean }>>(
+      '/2fa/status',
+    );
+    return data.data;
   },
 };
 
-// ----------------------------------------------------------
-// Leaderboard
-// ----------------------------------------------------------
 
-// Seeded mock data so the UI is always populated during development
-const MOCK_ENTRIES = [
-  { rank: 1,  userId: 'u1',  name: 'Adaeze Okonkwo',   avatarUrl: null, coursesCompleted: 12, hoursLearned: 48, streakDays: 30 },
-  { rank: 2,  userId: 'u2',  name: 'Emeka Nwosu',       avatarUrl: null, coursesCompleted: 10, hoursLearned: 42, streakDays: 25 },
-  { rank: 3,  userId: 'u3',  name: 'Fatima Al-Hassan',  avatarUrl: null, coursesCompleted: 9,  hoursLearned: 38, streakDays: 22 },
-  { rank: 4,  userId: 'u4',  name: 'Chukwudi Eze',      avatarUrl: null, coursesCompleted: 8,  hoursLearned: 34, streakDays: 18 },
-  { rank: 5,  userId: 'u5',  name: 'Ngozi Adeyemi',     avatarUrl: null, coursesCompleted: 7,  hoursLearned: 30, streakDays: 15 },
-  { rank: 6,  userId: 'u6',  name: 'Yusuf Musa',        avatarUrl: null, coursesCompleted: 7,  hoursLearned: 28, streakDays: 12 },
-  { rank: 7,  userId: 'u7',  name: 'Amina Bello',       avatarUrl: null, coursesCompleted: 6,  hoursLearned: 25, streakDays: 10 },
-  { rank: 8,  userId: 'u8',  name: 'Olumide Adesanya',  avatarUrl: null, coursesCompleted: 5,  hoursLearned: 22, streakDays: 8  },
-  { rank: 9,  userId: 'u9',  name: 'Chidinma Obi',      avatarUrl: null, coursesCompleted: 4,  hoursLearned: 18, streakDays: 6  },
-  { rank: 10, userId: 'u10', name: 'Biodun Fashola',    avatarUrl: null, coursesCompleted: 3,  hoursLearned: 14, streakDays: 4  },
-];
-
-export const leaderboardApi = {
-  get: async (period: LeaderboardPeriod = 'week'): Promise<LeaderboardResponse> => {
-    try {
-      const { data } = await apiClient.get<ApiResponse<LeaderboardResponse>>(
-        '/leaderboard', { params: { period } },
-      );
-      return data.data;
-    } catch {
-      // Vary numbers slightly per period so tab switching feels responsive
-      const multiplier = period === 'all' ? 1 : period === 'month' ? 0.7 : 0.4;
-      const entries = MOCK_ENTRIES.map((e) => ({
-        ...e,
-        coursesCompleted: Math.max(1, Math.round(e.coursesCompleted * multiplier)),
-        hoursLearned:     Math.max(1, Math.round(e.hoursLearned     * multiplier)),
-        streakDays:       Math.max(1, Math.round(e.streakDays       * multiplier)),
-      }));
-      return { entries, currentUser: null, period };
-    }
-  },
-};
-
-// ----------------------------------------------------------
-// Tags  (for course creation tag suggestions)
-// ----------------------------------------------------------
-const BUILTIN_TAGS = [
-  'Tailoring', 'Makeup', 'Skincare', 'Baking', 'Pastry', 'Hairstyling',
-  'Photography', 'Nail Technology', 'Fashion Design', 'Eyelash Extension',
-  'Embroidery', 'Crochet', 'Knitting', 'Interior Design', 'Event Planning',
-  'Videography', 'Graphic Design', 'Digital Marketing', 'Social Media',
-  'Entrepreneurship', 'Accounting', 'Catering', 'Food Styling', 'Jewellery',
-  'Leather Work', 'Shoe Making', 'Weavon', 'Bridal Makeup', 'Gele Tying',
-];
-
-export const tagsApi = {
-  search: async (query: string): Promise<string[]> => {
-    try {
-      const { data } = await apiClient.get<ApiResponse<string[]>>(
-        '/tags', { params: { q: query } },
-      );
-      return data.data;
-    } catch {
-      const q = query.toLowerCase();
-      return BUILTIN_TAGS.filter((t) => t.toLowerCase().includes(q)).slice(0, 8);
-    }
-  },
-};

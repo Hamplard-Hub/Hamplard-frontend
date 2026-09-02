@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { CookieConsentBanner } from '@/components/ui/CookieConsentBanner';
 import { ToastProvider } from '@/components/ui/ToastProvider';
+import { NetworkStatusBanner } from '@/components/ui/NetworkStatusBanner';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { createQueryClient } from '@/lib/query-client';
 
@@ -18,6 +19,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
+        <NetworkStatusBanner />
         {children}
         <CookieConsentBanner />
       </ToastProvider>

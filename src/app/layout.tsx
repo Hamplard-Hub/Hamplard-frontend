@@ -3,6 +3,7 @@ import '@/styles/globals.css';
 import { Providers } from './providers';
 import { Footer } from '@/components/layout/Footer';
 import { siteConfig, siteUrl } from '@/lib/seo';
+import { WebVitalsReporter } from '@/components/WebVitalsReporter';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -47,6 +48,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+      </head>
       <body>
         {/* Skip navigation — first focusable element for keyboard users */}
         <a
@@ -56,6 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to main content
         </a>
         <Providers>
+          <WebVitalsReporter />
           <div id="main-content" tabIndex={-1} className="outline-none">
             {children}
           </div>

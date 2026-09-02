@@ -1,8 +1,7 @@
 ﻿"use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   CheckCircle2,
   Circle,
@@ -11,20 +10,26 @@ import {
   Download,
   Loader2,
   ArrowLeft,
+  Award,
+  SkipForward,
   MessageSquare,
   FileText,
-  Award,
 } from "lucide-react";
+import Link from "next/link";
 import { coursesApi, enrollmentsApi, lessonsApi } from "@/lib/api/services";
 import { formatDuration, cn } from "@/lib/utils";
-import type { Course, Enrollment, Lesson } from "@/types";
-import NotesPanel from "@/components/learn/NotesPanel";
 import CourseCompletionModal from "@/components/learn/CourseCompletionModal";
+import { VideoPlayer } from "@/components/learn/VideoPlayer";
+import { AutoplayCountdown } from "@/components/learn/AutoplayCountdown";
+import NotesPanel from "@/components/learn/NotesPanel";
 import QuizComponent from "@/components/learn/QuizComponent";
 import { Breadcrumb } from "@/components/ui";
-import type { QuizQuestion } from "@/types";
+import type { Course, Enrollment, Lesson, QuizQuestion } from "@/types";
 
 type SidebarTab = "lessons" | "notes" | "qa";
+
+// ── Constants ──────────────────────────────────────────────────────────────
+const AUTOPLAY_STORAGE_KEY = "hamplard:autoplay";
 
 const DEFAULT_QUIZ_QUESTIONS: QuizQuestion[] = [
   {
@@ -65,8 +70,20 @@ const DEFAULT_QUIZ_QUESTIONS: QuizQuestion[] = [
   },
 ];
 
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+/** Returns the flat ordered list of all lessons across every module */
+function flatLessons(course: Course): Lesson[] {
+  return course.modules?.flatMap((m) => m.lessons) ?? [];
+}
+
+// ── Component ──────────────────────────────────────────────────────────────
+
 export default function LearnPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestedLessonId = searchParams.get("lesson");
 
   const [course, setCourse] = useState<Course | null>(null);
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
@@ -77,11 +94,68 @@ export default function LearnPage() {
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>("lessons");
   const [showCompletionModal, setShowCompletionModal] = useState(false);
 
+  // ── Autoplay state ───────────────────────────────────────────────────────
+  const [autoplay, setAutoplay] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    const stored = window.localStorage.getItem(AUTOPLAY_STORAGE_KEY);
+    return stored === null ? true : stored === "true";
+  });
+  const [showCountdown, setShowCountdown] = useState(false);
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const progressRef = useRef<NodeJS.Timeout | null>(null);
   const previousCompletedCountRef = useRef<number | null>(null);
   const hasInitializedCompletionState = useRef(false);
 
+  // ── Derived: next lesson ─────────────────────────────────────────────────
+  const nextLesson = useMemo<Lesson | null>(() => {
+    if (!course || !activeLesson) return null;
+    const all = flatLessons(course);
+    const idx = all.findIndex((l) => l.id === activeLesson.id);
+    return idx >= 0 && idx < all.length - 1 ? all[idx + 1] : null;
+  }, [course, activeLesson]);
+
+  const selectLesson = useCallback(
+    (lesson: Lesson) => {
+      setActiveLesson(lesson);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("lesson", lesson.id);
+      router.replace(`/dashboard/courses/${id}/learn?${params.toString()}`, {
+        scroll: false,
+      });
+    },
+    [id, router, searchParams],
+  );
+
+  // ── Persist autoplay preference ──────────────────────────────────────────
+  const handleAutoplayChange = useCallback((enabled: boolean) => {
+    setAutoplay(enabled);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(AUTOPLAY_STORAGE_KEY, String(enabled));
+    }
+    // If the user turns autoplay off while the countdown is visible, cancel it
+    if (!enabled) setShowCountdown(false);
+  }, []);
+
+  // ── Video ended handler ──────────────────────────────────────────────────
+  const handleVideoEnded = useCallback(() => {
+    if (autoplay && nextLesson) {
+      setShowCountdown(true);
+    }
+    // If autoplay is off or there's no next lesson the video just stops
+  }, [autoplay, nextLesson]);
+
+  // ── Navigate to next lecture ─────────────────────────────────────────────
+  const goToNext = useCallback(() => {
+    if (!nextLesson) return;
+    setShowCountdown(false);
+    selectLesson(nextLesson);
+  }, [nextLesson, selectLesson]);
+
+  const cancelCountdown = useCallback(() => {
+    setShowCountdown(false);
+  }, []);
+
+  // ── Initial data load ────────────────────────────────────────────────────
   useEffect(() => {
     Promise.all([coursesApi.get(id), enrollmentsApi.get(id)])
       .then(([c, e]) => {
@@ -90,34 +164,41 @@ export default function LearnPage() {
         // Open first module by default
         if (c.modules?.[0]) setExpanded({ [c.modules[0].id]: true });
         // Start from first incomplete lesson
-        const allLessons = c.modules?.flatMap((m) => m.lessons) ?? [];
+        const allLessons = flatLessons(c);
         const completedIds = new Set(
-          e.lessonProgress?.filter((p) => p.completed).map((p) => p.lessonId),
+          e.lessonProgress
+            ?.filter((p: { completed: boolean }) => p.completed)
+            .map((p: { lessonId: string }) => p.lessonId),
         );
+        const requested = allLessons.find((l) => l.id === requestedLessonId);
         const first =
-          allLessons.find((l) => !completedIds.has(l.id)) ?? allLessons[0];
+          requested ??
+          allLessons.find((l) => !completedIds.has(l.id)) ??
+          allLessons[0];
         if (first) setActiveLesson(first);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
 
-    return () => {
-      if (progressRef.current) clearInterval(progressRef.current);
-    };
-  }, [id]);
+  }, [id, requestedLessonId]);
 
+  // ── Course completion detection ──────────────────────────────────────────
   useEffect(() => {
     if (!course || !enrollment) return;
 
-    const totalLessons = course.modules?.flatMap((m) => m.lessons).length ?? 0;
+    const totalLessons = flatLessons(course).length;
     const completedCount =
-      enrollment.lessonProgress?.filter((p) => p.completed).length ?? 0;
+      enrollment.lessonProgress?.filter(
+        (p: { completed: boolean }) => p.completed,
+      ).length ?? 0;
     const isComplete = totalLessons > 0 && completedCount >= totalLessons;
-    const prevIncomplete =
+    const previouslyIncomplete =
       previousCompletedCountRef.current === null ||
       previousCompletedCountRef.current < totalLessons;
     const newlyCompleted =
-      hasInitializedCompletionState.current && prevIncomplete && isComplete;
+      hasInitializedCompletionState.current &&
+      previouslyIncomplete &&
+      isComplete;
 
     previousCompletedCountRef.current = completedCount;
     hasInitializedCompletionState.current = true;
@@ -142,9 +223,16 @@ export default function LearnPage() {
     }
   }, [course, enrollment]);
 
+  // ── Dismiss countdown when lesson changes (e.g. sidebar click) ──────────
+  useEffect(() => {
+    setShowCountdown(false);
+  }, [activeLesson]);
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
   const isLessonCompleted = (lessonId: string) =>
     enrollment?.lessonProgress?.some(
-      (p) => p.lessonId === lessonId && p.completed,
+      (p: { lessonId: string; completed: boolean }) =>
+        p.lessonId === lessonId && p.completed,
     ) ?? false;
 
   const handleMarkComplete = async () => {
@@ -159,19 +247,15 @@ export default function LearnPage() {
     }
   };
 
-  const totalLessons = course?.modules?.flatMap((m) => m.lessons).length ?? 0;
+  const totalLessons = course ? flatLessons(course).length : 0;
   const completedCount =
-    enrollment?.lessonProgress?.filter((p) => p.completed).length ?? 0;
+    enrollment?.lessonProgress?.filter(
+      (p: { completed: boolean }) => p.completed,
+    ).length ?? 0;
   const progress =
     totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
-  const allLessons = course?.modules?.flatMap((m) => m.lessons) ?? [];
-  const currentIndex = allLessons.findIndex((l) => l.id === activeLesson?.id);
-  const nextLesson =
-    currentIndex >= 0 && currentIndex < allLessons.length - 1
-      ? allLessons[currentIndex + 1]
-      : null;
-
+  // ── Render ────────────────────────────────────────────────────────────────
   if (loading)
     return (
       <div className="flex justify-center py-16">
@@ -185,7 +269,7 @@ export default function LearnPage() {
     );
 
   return (
-    <div className="-m-6 flex h-[calc(100vh-3.5rem)] overflow-hidden">
+    <div className="-m-3 flex h-[calc(100vh-4rem)] flex-col overflow-hidden sm:-m-6 md:flex-row">
       {course && (
         <CourseCompletionModal
           open={showCompletionModal}
@@ -195,9 +279,8 @@ export default function LearnPage() {
         />
       )}
 
-      {/* ÔöÇÔöÇ Left sidebar ÔöÇÔöÇ */}
-      <aside className="w-72 bg-white border-r border-ink-100 flex flex-col flex-shrink-0">
-        {/* Tab bar */}
+      {/* ── Lesson sidebar ──────────────────────────────────────────────── */}
+      <aside className="flex max-h-[42vh] w-full flex-shrink-0 flex-col border-b border-ink-100 bg-white md:max-h-none md:w-72 md:border-b-0 md:border-r">
         <div className="flex border-b border-ink-100">
           {(
             [
@@ -234,7 +317,6 @@ export default function LearnPage() {
           ))}
         </div>
 
-        {/* Lessons tab */}
         {sidebarTab === "lessons" && (
           <div className="flex flex-col flex-1 overflow-hidden">
             <div className="p-4 border-b border-ink-100">
@@ -269,7 +351,10 @@ export default function LearnPage() {
                 <div key={module.id} className="border-b border-ink-50">
                   <button
                     onClick={() =>
-                      setExpanded((p) => ({ ...p, [module.id]: !p[module.id] }))
+                      setExpanded((previous) => ({
+                        ...previous,
+                        [module.id]: !previous[module.id],
+                      }))
                     }
                     className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-ink-50 transition-colors"
                   >
@@ -279,8 +364,9 @@ export default function LearnPage() {
                       </p>
                       <p className="text-[10px] text-ink-400 mt-0.5">
                         {
-                          module.lessons.filter((l) => isLessonCompleted(l.id))
-                            .length
+                          module.lessons.filter((lesson) =>
+                            isLessonCompleted(lesson.id),
+                          ).length
                         }
                         /{module.lessons.length} done
                       </p>
@@ -297,10 +383,11 @@ export default function LearnPage() {
                       {module.lessons.map((lesson) => {
                         const done = isLessonCompleted(lesson.id);
                         const active = activeLesson?.id === lesson.id;
+
                         return (
                           <button
                             key={lesson.id}
-                            onClick={() => setActiveLesson(lesson)}
+                            onClick={() => selectLesson(lesson)}
                             className={cn(
                               "w-full flex items-start gap-2.5 px-4 py-2.5 text-left transition-colors",
                               active ? "bg-saffron-50" : "hover:bg-ink-50",
@@ -346,7 +433,6 @@ export default function LearnPage() {
           </div>
         )}
 
-        {/* Notes tab */}
         {sidebarTab === "notes" && activeLesson && (
           <div className="flex-1 overflow-hidden">
             <NotesPanel
@@ -357,7 +443,6 @@ export default function LearnPage() {
           </div>
         )}
 
-        {/* Q&A tab */}
         {sidebarTab === "qa" && (
           <div className="flex-1 flex items-center justify-center text-ink-400 px-4">
             <div className="text-center">
@@ -368,8 +453,8 @@ export default function LearnPage() {
         )}
       </aside>
 
-      {/* ÔöÇÔöÇ Main lesson content ÔöÇÔöÇ */}
-      <div className="flex-1 overflow-y-auto p-6">
+      {/* ── Main lesson content ──────────────────────────────────────────── */}
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-3 sm:p-6">
         {activeLesson ? (
           <div className="max-w-3xl mx-auto">
             {/* Breadcrumb ÔÇö sits above the lesson content */}
@@ -385,15 +470,28 @@ export default function LearnPage() {
 
             {/* Video */}
             {activeLesson.videoUrl && (
-              <div className="aspect-video rounded-2xl overflow-hidden bg-black mb-5">
-                <video
+              <div className="relative aspect-video rounded-2xl overflow-hidden bg-black mb-5">
+                <VideoPlayer
                   ref={videoRef}
                   key={activeLesson.videoUrl}
                   src={activeLesson.videoUrl}
-                  controls
+                  enrollmentId={enrollment?.id}
+                  lessonId={activeLesson.id}
+                  autoplay={autoplay}
+                  onAutoplayChange={handleAutoplayChange}
+                  onEnded={handleVideoEnded}
                   className="w-full h-full"
-                  controlsList="nodownload"
                 />
+
+                {/* Autoplay countdown overlay */}
+                {showCountdown && nextLesson && (
+                  <AutoplayCountdown
+                    nextTitle={nextLesson.title}
+                    seconds={5}
+                    onComplete={goToNext}
+                    onCancel={cancelCountdown}
+                  />
+                )}
               </div>
             )}
 
@@ -412,12 +510,13 @@ export default function LearnPage() {
                 <QuizComponent
                   questions={activeLesson.quiz ?? DEFAULT_QUIZ_QUESTIONS}
                   onContinue={
-                    nextLesson ? () => setActiveLesson(nextLesson) : undefined
+                    nextLesson ? () => selectLesson(nextLesson) : undefined
                   }
                 />
               </div>
             )}
 
+            {/* Title + mark complete row */}
             <div className="flex items-start justify-between mb-5">
               <div>
                 <h1 className="font-display text-xl font-semibold text-ink-900 mb-1">
@@ -461,6 +560,19 @@ export default function LearnPage() {
                 <Download className="w-4 h-4" />
                 Download lesson resource
               </a>
+            )}
+
+            {/* Next lecture button (shown when autoplay is OFF and video has ended) */}
+            {!autoplay && nextLesson && !activeLesson.videoUrl && (
+              <div className="flex justify-end mb-5">
+                <button
+                  onClick={goToNext}
+                  className="btn-secondary inline-flex items-center gap-2"
+                >
+                  <SkipForward className="w-4 h-4" />
+                  Next lecture
+                </button>
+              </div>
             )}
 
             {/* Completion celebration */}

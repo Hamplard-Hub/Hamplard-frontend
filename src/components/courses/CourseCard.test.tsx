@@ -1,5 +1,5 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CourseCard } from './CourseCard';
 import type { Course } from '@/types';
 
@@ -11,6 +11,20 @@ vi.mock('@/lib/hooks/use-wishlist-store', () => ({
   useWishlistStore: vi.fn(() => ({
     toggle: mockToggleWishlistId,
   })),
+}));
+
+// Mock next/navigation's useRouter — the hover-prefetch hook calls router.prefetch()
+const mockPrefetch = vi.fn();
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    prefetch: mockPrefetch,
+    push: vi.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+  }),
 }));
 
 // Mock next/image
@@ -55,9 +69,32 @@ const mockCourse: Course = {
   updatedAt: new Date().toISOString(),
 };
 
+// jsdom does not implement window.matchMedia — stub it so the hover-prefetch
+// hook can detect pointer devices. Defaults to a fine-pointer (desktop) device.
+const originalMatchMedia = window.matchMedia;
+
+function stubMatchMedia(matches: boolean) {
+  window.matchMedia = ((query: string) => ({
+    matches,
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })) as unknown as typeof window.matchMedia;
+}
+
 describe('CourseCard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    stubMatchMedia(true);
+  });
+
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
+    vi.useRealTimers();
   });
 
   describe('Thumbnail Rendering', () => {
@@ -213,6 +250,95 @@ describe('CourseCard', () => {
     it('shows enroll now badge when status is ACTIVE', () => {
       render(<CourseCard course={mockCourse} />);
       expect(screen.getByText(/enroll now/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('Hover Prefetching', () => {
+    function getCardArticle() {
+      const link = screen.getByRole('link');
+      return link.querySelector('article') as HTMLElement;
+    }
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    it('prefetches the course page after hovering for 200ms', () => {
+      render(<CourseCard course={mockCourse} />);
+      const article = getCardArticle();
+
+      fireEvent.mouseEnter(article);
+      expect(mockPrefetch).not.toHaveBeenCalled();
+
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+
+      expect(mockPrefetch).toHaveBeenCalledTimes(1);
+      expect(mockPrefetch).toHaveBeenCalledWith(`/dashboard/courses/${mockCourse.id}`);
+    });
+
+    it('prefetches the custom href when one is provided', () => {
+      render(<CourseCard course={mockCourse} href={`/courses/${mockCourse.id}`} />);
+      const article = getCardArticle();
+
+      fireEvent.mouseEnter(article);
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+
+      expect(mockPrefetch).toHaveBeenCalledTimes(1);
+      expect(mockPrefetch).toHaveBeenCalledWith(`/courses/${mockCourse.id}`);
+    });
+
+    it('does not prefetch when the pointer leaves before 200ms', () => {
+      render(<CourseCard course={mockCourse} />);
+      const article = getCardArticle();
+
+      fireEvent.mouseEnter(article);
+      act(() => {
+        vi.advanceTimersByTime(150);
+      });
+      fireEvent.mouseLeave(article);
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+
+      expect(mockPrefetch).not.toHaveBeenCalled();
+    });
+
+    it('does not prefetch at all on touch devices', () => {
+      stubMatchMedia(false);
+      render(<CourseCard course={mockCourse} />);
+      const article = getCardArticle();
+
+      fireEvent.mouseEnter(article);
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
+
+      expect(mockPrefetch).not.toHaveBeenCalled();
+    });
+
+    it('re-arms the prefetch when hovering again after leaving early', () => {
+      render(<CourseCard course={mockCourse} />);
+      const article = getCardArticle();
+
+      // First hover: leave before the delay elapses.
+      fireEvent.mouseEnter(article);
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
+      fireEvent.mouseLeave(article);
+
+      // Second hover: stay past the delay.
+      fireEvent.mouseEnter(article);
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+
+      expect(mockPrefetch).toHaveBeenCalledTimes(1);
+      expect(mockPrefetch).toHaveBeenCalledWith(`/dashboard/courses/${mockCourse.id}`);
     });
   });
 });
