@@ -47,6 +47,17 @@ export interface User {
   createdAt: string;
 }
 
+/** Available quality levels for a lesson's video */
+export type VideoQualityLevel = 'auto' | '1080p' | '720p' | '480p' | '360p';
+
+/** Per-resolution source URLs attached to a lesson (all optional) */
+export interface VideoQualities {
+  '1080p'?: string;
+  '720p'?: string;
+  '480p'?: string;
+  '360p'?: string;
+}
+
 export interface Lesson {
   id: string;
   moduleId: string;
@@ -60,6 +71,8 @@ export interface Lesson {
   quiz?: QuizQuestion[] | null;
   position: number;
   isFree: boolean;
+  /** Optional per-resolution URLs. When absent only 'auto' is available. */
+  videoQualities?: VideoQualities;
 }
 
 export interface CourseModule {

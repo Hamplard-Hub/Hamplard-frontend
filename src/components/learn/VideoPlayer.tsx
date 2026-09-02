@@ -6,11 +6,14 @@ import React, {
 } from 'react';
 import { Loader2 } from 'lucide-react';
 import { VideoControls } from './VideoControls';
+import type { VideoQualityLevel, VideoQualities } from '@/types';
 
 // ── Types ──────────────────────────────────────────────────────────
 interface VideoPlayerProps {
   /** URL of the video to play */
   src: string;
+  /** Per-resolution source URLs for the quality selector */
+  videoQualities?: VideoQualities;
   /** URL of the WebVTT subtitle track (optional) */
   captionsUrl?: string;
   /** enrollment id — used when saving progress to the API */
@@ -41,6 +44,7 @@ export const VideoPlayer = forwardRef<
   VideoPlayerProps
 >(function videoPlayer({
   src,
+  videoQualities,
   captionsUrl,
   enrollmentId,
   lessonId,
@@ -70,6 +74,21 @@ export const VideoPlayer = forwardRef<
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [buffering,    setBuffering]    = useState(false);
   const [showControls, setShowControls] = useState(true);
+
+  // ── Quality state ─────────────────────────────────────────────
+  const [quality, setQuality] = useState<VideoQualityLevel>('auto');
+  // Tracks the URL currently loaded into the <video> element
+  const [activeSrc, setActiveSrc] = useState(src);
+  // Stash position before switching so we can restore it after load
+  const pendingSeekRef = useRef<number | null>(null);
+
+  // ── Reset quality when the lesson changes ────────────────────
+  useEffect(() => {
+    setQuality('auto');
+    setActiveSrc(src);
+    pendingSeekRef.current = null;
+    pendingPlayRef.current = false;
+  }, [src]);
 
   // ── Save progress helper ──────────────────────────────────────
   const saveProgress = useCallback(async () => {
@@ -216,6 +235,20 @@ export const VideoPlayer = forwardRef<
     if (vid) setDuration(vid.duration);
   };
 
+  // Restore playback position + resume after a quality src switch
+  const handleCanPlay = useCallback(() => {
+    const vid = videoRef.current;
+    if (!vid) return;
+    if (pendingSeekRef.current !== null) {
+      vid.currentTime = pendingSeekRef.current;
+      pendingSeekRef.current = null;
+    }
+    if (pendingPlayRef.current) {
+      pendingPlayRef.current = false;
+      vid.play().catch(() => {});
+    }
+  }, []);
+
   const handlePlay  = () => setPlaying(true);
   const handlePause = () => {
     setPlaying(false);
@@ -265,6 +298,35 @@ export const VideoPlayer = forwardRef<
 
   const handleSubtitles = () => setSubtitlesOn((s) => !s);
 
+  // ── Quality switching ─────────────────────────────────────────
+  // Ref to remember whether we should resume playback after a src switch
+  const pendingPlayRef = useRef(false);
+
+  const handleQualityChange = useCallback((q: VideoQualityLevel) => {
+    const vid = videoRef.current;
+    if (!vid) return;
+
+    // Resolve the URL for this quality level
+    const url =
+      q === 'auto'
+        ? src
+        : videoQualities?.[q as keyof VideoQualities] ?? src;
+
+    // Nothing to do if the src isn't actually changing
+    if (url === activeSrc && q === quality) return;
+
+    // Stash current position so we can restore it after the new src loads
+    pendingSeekRef.current = vid.currentTime;
+    const wasPlaying = !vid.paused;
+
+    setQuality(q);
+    setActiveSrc(url);
+
+    // The <video> src update + seek happens inside handleCanPlay below.
+    // Store wasPlaying in a ref so handleCanPlay can resume if needed.
+    pendingPlayRef.current = wasPlaying;
+  }, [src, videoQualities, activeSrc, quality]);
+
   const toggleFullscreen = async () => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
@@ -300,12 +362,13 @@ export const VideoPlayer = forwardRef<
       {/* eslint-disable-next-line jsx-a11y/media-has-caption -- captions handled via <track> */}
       <video
         ref={videoRef}
-        src={src}
+        src={activeSrc}
         className="w-full h-full"
         preload="metadata"
         playsInline
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
+        onCanPlay={handleCanPlay}
         onPlay={handlePlay}
         onPause={handlePause}
         onWaiting={handleWaiting}
@@ -350,6 +413,9 @@ export const VideoPlayer = forwardRef<
           hasCaptions={!!captionsUrl}
           autoplay={autoplay}
           onAutoplayChange={onAutoplayChange ?? (() => {})}
+          quality={quality}
+          videoQualities={videoQualities}
+          onQualityChange={handleQualityChange}
           onPlayPause={togglePlayPause}
           onSeek={handleSeek}
           onVolume={handleVolume}
