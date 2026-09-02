@@ -12,6 +12,7 @@ import {
   LogOut,
   User,
   Settings,
+  Trophy,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
@@ -31,6 +32,7 @@ const STUDENT_NAV: NavItem[] = [
   { href: '/dashboard/my-courses',  label: 'My Courses',     icon: BookOpen },
   { href: '/dashboard/wishlist',    label: 'Wishlist',       icon: Heart, showWishlistCount: true },
   { href: '/dashboard/certificates',label: 'Certificates',   icon: Award },
+  { href: '/leaderboard',           label: 'Leaderboard',    icon: Trophy },
   { href: '/dashboard/profile',    label: 'Profile',        icon: User },
   { href: '/dashboard/settings',   label: 'Settings',       icon: Settings },
   { href: '/notifications',         label: 'Notifications',  icon: Bell },

@@ -2,6 +2,7 @@ import { apiClient } from './client';
 import type {
   ApiResponse, PaginatedResponse, Course, Enrollment,
   Certificate, Notification, User, Category, Announcement,
+  Gift, LeaderboardResponse, LeaderboardPeriod,
 } from '@/types';
 
 const isBrowser = typeof window !== 'undefined';
