@@ -1,9 +1,11 @@
 'use client';
 
+import { useState, useRef } from 'react';
 import {
-  Play, Pause, Volume2, VolumeX, Maximize, Minimize, Subtitles,
+  Play, Pause, Volume2, VolumeX, Maximize, Minimize, Subtitles, Keyboard,
 } from 'lucide-react';
 import { cn, formatDuration } from '@/lib/utils';
+import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 
 interface VideoControlsProps {
   playing: boolean;
@@ -36,6 +38,9 @@ export function VideoControls({
   autoplay, onAutoplayChange,
   onPlayPause, onSeek, onVolume, onMute, onSpeed, onSubtitles, onFullscreen,
 }: VideoControlsProps) {
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const keyboardBtnRef = useRef<HTMLButtonElement>(null);
+
   return (
     <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-3 pt-6 pb-2 flex flex-col gap-1.5">
       {/* Seek bar */}
@@ -168,6 +173,13 @@ export function VideoControls({
           }
         </button>
       </div>
+
+      <KeyboardShortcutsModal
+        isOpen={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+        triggerRef={keyboardBtnRef}
+      />
     </div>
   );
 }
+
