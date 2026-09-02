@@ -167,7 +167,29 @@ export const VideoPlayer = forwardRef<
           e.preventDefault();
           handleSeek(Math.min(vid.duration || Infinity, vid.currentTime + 10));
           break;
-        default:
+        case 'ArrowUp':
+          e.preventDefault();
+          handleVolume(Math.min(1, vid.volume + 0.1));
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          handleVolume(Math.max(0, vid.volume - 0.1));
+          break;
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+          if (vid.duration) {
+            e.preventDefault();
+            const pct = parseInt(e.key, 10) / 10;
+            handleSeek(vid.duration * pct);
+          }
           break;
       }
     };

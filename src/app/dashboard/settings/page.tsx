@@ -10,6 +10,7 @@ import { TwoFactorSetup } from '@/components/auth/TwoFactorSetup';
 import { twoFactorApi } from '@/lib/api/services';
 
 export default function SettingsPage() {
+  const toast = useToast();
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +21,10 @@ export default function SettingsPage() {
   const [courseUpdates, setCourseUpdates] = useState(true);
   const [securityAlerts, setSecurityAlerts] = useState(true);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+
+  const [exporting, setExporting] = useState(false);
+  const [exportStatus, setExportStatus] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const { prefersReducedMotion, setManualOverride, clearManualOverride, hasManualOverride, mounted } = useReducedMotion();
   const [localReducedMotion, setLocalReducedMotion] = useState(false);
@@ -50,12 +55,10 @@ export default function SettingsPage() {
     setLocalReducedMotion(enabled);
     if (enabled) {
       setManualOverride(true);
-      // Apply class to html element for JavaScript-based checks
       document.documentElement.classList.add('reduce-motion');
       document.documentElement.setAttribute('data-reduce-motion', 'true');
     } else {
       clearManualOverride();
-      // Remove class from html element
       document.documentElement.classList.remove('reduce-motion');
       document.documentElement.removeAttribute('data-reduce-motion');
     }
@@ -66,12 +69,36 @@ export default function SettingsPage() {
     setError(null);
 
     try {
-      // Scaffold only (no backend endpoint).
       await new Promise((r) => setTimeout(r, 600));
     } catch (e: any) {
       setError(e?.message ?? 'Failed to save settings');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDataExport = async () => {
+    setExporting(true);
+    setExportStatus('Export in progress');
+    setExportError(null);
+
+    try {
+      const res = await usersApi.requestDataExport();
+      toast.success({
+        title: 'Data Export Requested',
+        description: res.message || "Your data export is being prepared, you'll receive an email when ready",
+        duration: 5000,
+      });
+    } catch (e: any) {
+      const msg = e?.message ?? 'Failed to initiate data export. Please try again.';
+      setExportError(msg);
+      toast.error({
+        title: 'Export Request Failed',
+        description: msg,
+      });
+      setExportStatus(null);
+    } finally {
+      setExporting(false);
     }
   };
 
