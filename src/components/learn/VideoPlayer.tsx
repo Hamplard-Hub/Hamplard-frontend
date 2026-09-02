@@ -21,6 +21,12 @@ interface VideoPlayerProps {
   onProgress?: (watchedSecs: number) => void;
   /** Called once when the video reaches ≥95% of its duration */
   onComplete?: () => void;
+  /** Called when the video element fires its 'ended' event */
+  onEnded?: () => void;
+  /** Whether autoplay-next is currently enabled */
+  autoplay?: boolean;
+  /** Called when the user toggles the autoplay switch in the controls */
+  onAutoplayChange?: (enabled: boolean) => void;
   /** Class name applied to the outermost wrapper */
   className?: string;
 }
@@ -40,6 +46,9 @@ export const VideoPlayer = forwardRef<
   lessonId,
   onProgress,
   onComplete,
+  onEnded,
+  autoplay = false,
+  onAutoplayChange,
   className = '',
 }, ref) {
   // ── Refs ──────────────────────────────────────────────────────
@@ -214,6 +223,11 @@ export const VideoPlayer = forwardRef<
   };
   const handleWaiting = () => setBuffering(true);
   const handlePlaying = () => setBuffering(false);
+  const handleEnded   = () => {
+    setPlaying(false);
+    saveProgress();
+    onEnded?.();
+  };
 
   // ── Control callbacks (passed to VideoControls) ───────────────
   const togglePlayPause = () => {
@@ -296,6 +310,7 @@ export const VideoPlayer = forwardRef<
         onPause={handlePause}
         onWaiting={handleWaiting}
         onPlaying={handlePlaying}
+        onEnded={handleEnded}
         {...({ controlsList: 'nodownload' } as React.VideoHTMLAttributes<HTMLVideoElement>)}
       >
         {captionsUrl && (
@@ -333,6 +348,8 @@ export const VideoPlayer = forwardRef<
           subtitlesOn={subtitlesOn}
           isFullscreen={isFullscreen}
           hasCaptions={!!captionsUrl}
+          autoplay={autoplay}
+          onAutoplayChange={onAutoplayChange ?? (() => {})}
           onPlayPause={togglePlayPause}
           onSeek={handleSeek}
           onVolume={handleVolume}
