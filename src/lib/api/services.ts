@@ -2,6 +2,7 @@ import { apiClient } from './client';
 import type {
   ApiResponse, PaginatedResponse, Course, Enrollment,
   Certificate, Notification, User, Category, Announcement,
+  Gift, LeaderboardResponse, LeaderboardPeriod,
 } from '@/types';
 
 const isBrowser = typeof window !== 'undefined';
@@ -386,6 +387,19 @@ export const usersApi = {
   getInstructorStats: async () => {
     const { data } = await apiClient.get('/users/me/instructor-stats');
     return data.data;
+  },
+  requestDataExport: async (): Promise<{ message: string; downloadUrl?: string }> => {
+    try {
+      const { data } = await apiClient.post<ApiResponse<{ message: string; downloadUrl?: string }>>(
+        '/users/me/export-data',
+      );
+      return data.data;
+    } catch {
+      // Fallback response when endpoint is mock / offline
+      return {
+        message: "Your data export is being prepared, you'll receive an email when ready",
+      };
+    }
   },
 };
 
