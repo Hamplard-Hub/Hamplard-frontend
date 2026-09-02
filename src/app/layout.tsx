@@ -3,7 +3,7 @@ import '@/styles/globals.css';
 import { Providers } from './providers';
 import { Footer } from '@/components/layout/Footer';
 import { siteConfig, siteUrl } from '@/lib/seo';
-import { RouteAnnouncer } from '@/components/ui/RouteAnnouncer';
+import { WebVitalsReporter } from '@/components/WebVitalsReporter';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -60,7 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to main content
         </a>
         <Providers>
-          <RouteAnnouncer />
+          <WebVitalsReporter />
           <div id="main-content" tabIndex={-1} className="outline-none">
             {children}
           </div>

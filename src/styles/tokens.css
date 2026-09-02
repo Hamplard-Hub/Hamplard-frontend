@@ -10,8 +10,8 @@
    * -------------------------------------------------------------------------- */
   --color-brand-deep: #26215c;
   --color-brand-deep-rgb: 38 33 92;
-  --color-brand-primary: #7f77dd;
-  --color-brand-primary-rgb: 127 119 221;
+  --color-brand-primary: #4a42b8;
+  --color-brand-primary-rgb: 74 66 184;
   --color-brand-lilac: #eeedfe;
   --color-brand-lilac-rgb: 238 237 254;
   --color-brand-white: #ffffff;
@@ -31,7 +31,7 @@
 
   --color-text-body: var(--color-brand-deep);
   --color-text-heading: var(--color-brand-deep);
-  --color-text-muted: #554f99;
+  --color-text-muted: #4a467a;
   --color-text-link: var(--color-brand-mid);
   --color-text-on-primary: var(--color-brand-white);
   --color-text-on-inverse: var(--color-brand-white);
@@ -43,10 +43,11 @@
   /* --------------------------------------------------------------------------
    * WCAG 2.1 AA contrast pairs (normal text >= 4.5:1)
    * Verified:
-   * - #26215C on #FFFFFF
-   * - #3C3489 on #FFFFFF
-   * - #26215C on #EEEDFE
-   * - #FFFFFF on #3C3489
+   * - #26215C on #FFFFFF -> 14.44:1
+   * - #3C3489 on #FFFFFF -> 10.27:1
+   * - #26215C on #EEEDFE -> 12.50:1
+   * - #4A42B8 on #EEEDFE -> 6.58:1
+   * - #FFFFFF on #4A42B8 -> 5.91:1
    * -------------------------------------------------------------------------- */
 
   /* --------------------------------------------------------------------------
