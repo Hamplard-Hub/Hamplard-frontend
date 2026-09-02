@@ -118,6 +118,12 @@ export default async function CoursePage({ params }: Props) {
             <Link href="/auth/login" className="btn-primary w-full text-center px-5 py-3">
               Sign in to enroll
             </Link>
+            <Link
+              href={`/gift/${course.id}`}
+              className="btn-secondary w-full text-center px-5 py-3 flex items-center justify-center gap-2"
+            >
+              🎁 Gift this course
+            </Link>
           </aside>
         </div>
       </div>
