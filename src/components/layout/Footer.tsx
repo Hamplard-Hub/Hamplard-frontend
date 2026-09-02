@@ -10,15 +10,17 @@ const FOOTER_COLUMNS = [
     title: 'About Hamplard',
     links: [
       { label: 'Our story', href: '/about' },
+      { label: 'Teach on Hamplard', href: '/teach' },
+      { label: 'Team plans', href: '/teams' },
       { label: 'Careers', href: '/#careers' },
       { label: 'Partner with us', href: '/#partners' },
-      { label: 'Blog', href: '/#blog' },
     ],
   },
   {
     title: 'Courses',
     links: [
       { label: 'All courses', href: '/dashboard/courses' },
+      { label: 'Free courses', href: '/courses/free' },
       { label: 'Tailoring', href: '/dashboard/courses?category=tailoring' },
       { label: 'Makeup Artistry', href: '/dashboard/courses?category=makeup' },
       { label: 'Baking', href: '/dashboard/courses?category=baking' },

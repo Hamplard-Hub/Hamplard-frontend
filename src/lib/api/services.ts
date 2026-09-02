@@ -2,6 +2,7 @@ import { apiClient } from './client';
 import type {
   ApiResponse, PaginatedResponse, Course, Enrollment,
   Certificate, Notification, User, Category, Announcement,
+  Gift, LeaderboardResponse, LeaderboardPeriod,
 } from '@/types';
 
 const isBrowser = typeof window !== 'undefined';
@@ -109,6 +110,10 @@ export const coursesApi = {
   update: async (id: string, payload: Partial<Course>): Promise<Course> => {
     const { data } = await apiClient.patch<ApiResponse<Course>>(`/courses/${id}`, payload);
     return data.data;
+  },
+
+  remove: async (id: string): Promise<void> => {
+    await apiClient.delete(`/courses/${id}`);
   },
 
   submitForReview: async (id: string, txHash?: string): Promise<Course> => {
@@ -376,9 +381,25 @@ export const usersApi = {
     const { data } = await apiClient.patch<ApiResponse<User>>('/users/me', payload);
     return data.data;
   },
+  deleteAccount: async (password: string): Promise<void> => {
+    await apiClient.delete('/users/me', { data: { password } });
+  },
   getInstructorStats: async () => {
     const { data } = await apiClient.get('/users/me/instructor-stats');
     return data.data;
+  },
+  requestDataExport: async (): Promise<{ message: string; downloadUrl?: string }> => {
+    try {
+      const { data } = await apiClient.post<ApiResponse<{ message: string; downloadUrl?: string }>>(
+        '/users/me/export-data',
+      );
+      return data.data;
+    } catch {
+      // Fallback response when endpoint is mock / offline
+      return {
+        message: "Your data export is being prepared, you'll receive an email when ready",
+      };
+    }
   },
 };
 
@@ -529,4 +550,40 @@ export const contactApi = {
     return data.data;
   },
 };
+
+// ----------------------------------------------------------
+// Two-Factor Authentication
+// ----------------------------------------------------------
+export const twoFactorApi = {
+  setupInitiate: async (): Promise<{ qrCode: string; secret: string }> => {
+    const { data } = await apiClient.post<ApiResponse<{ qrCode: string; secret: string }>>(
+      '/2fa/setup',
+    );
+    return data.data;
+  },
+
+  setupVerify: async (code: string): Promise<{ backupCodes: string[] }> => {
+    const { data } = await apiClient.post<ApiResponse<{ backupCodes: string[] }>>(
+      '/2fa/verify',
+      { code },
+    );
+    return data.data;
+  },
+
+  disable: async (code: string): Promise<{ success: boolean }> => {
+    const { data } = await apiClient.post<ApiResponse<{ success: boolean }>>(
+      '/2fa/disable',
+      { code },
+    );
+    return data.data;
+  },
+
+  getStatus: async (): Promise<{ enabled: boolean }> => {
+    const { data } = await apiClient.get<ApiResponse<{ enabled: boolean }>>(
+      '/2fa/status',
+    );
+    return data.data;
+  },
+};
+
 

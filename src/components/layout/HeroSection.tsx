@@ -129,6 +129,13 @@ export function HeroSection() {
             >
               Browse courses
             </Link>
+            <Link
+              href="/courses/free"
+              className="inline-flex items-center justify-center font-semibold text-sm text-white md:px-7 px-4 py-3 border border-[#EEEDFE]/35 hover:bg-[#EEEDFE]/10 hover:border-[#EEEDFE]/65 transition-all duration-150"
+              style={{ borderRadius: "var(--radius-pill)" }}
+            >
+              Free courses
+            </Link>
           </div>
 
           {/* Trust bar */}

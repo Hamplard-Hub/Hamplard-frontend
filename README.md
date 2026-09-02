@@ -70,343 +70,400 @@ Install [Freighter](https://freighter.app) and switch it to Testnet.
 
 ---
 
+## Testing
+
+### Unit & Component Tests (Vitest)
+
+```bash
+npm run test
+```
+
+### End-to-End Tests (Playwright)
+
+Run all E2E tests across Chromium, Firefox, and WebKit:
+
+```bash
+npm run test:e2e
+```
+
+Open the Playwright UI for interactive test authoring and debugging:
+
+```bash
+npm run test:e2e:ui
+```
+
+### Visual Regression Tests
+
+Visual regression tests use Playwright's `toHaveScreenshot` to catch accidental layout changes on the homepage and course detail page. Baseline screenshots are stored in `e2e/screenshots/`.
+
+#### Run visual tests only
+
+```bash
+npx playwright test --project=visual
+```
+
+This runs tests tagged with `@visual` across three viewports:
+- **Mobile**: 375px × 667px
+- **Tablet**: 768px × 1024px
+- **Desktop**: 1280px × 800px
+
+#### Update baseline screenshots
+
+After making intentional UI changes, regenerate and commit the new baselines:
+
+```bash
+npx playwright test --update-snapshots
+```
+
+Then commit the updated files in `e2e/screenshots/` to the repository.
+
+> **Note:** Baseline screenshots must be committed to the repo before CI can pass. Run `--update-snapshots` locally on the same OS/architecture used by CI (Ubuntu Linux) to avoid platform-specific rendering differences.
+
+#### CI Integration
+
+Visual regression tests run automatically in GitHub Actions on every push and pull request. If a visual diff is detected, the CI job will fail and upload:
+- The Playwright HTML report (with side-by-side diffs)
+- Test traces for debugging
+
+---
+
 ## License
 
 MIT
-TODO: Build Instructor Referral Program UI
+TODO: Add and Configure robots.txt
 
-1. Project Discovery & Preparation
+1. Project Discovery
 
 1. [ ] Inspect the repository structure.
 2. [ ] Confirm the project uses Next.js.
-3. [ ] Confirm the project uses the App Router.
-4. [ ] Locate "src/app/dashboard/instructor".
-5. [ ] Confirm the instructor dashboard route structure.
-6. [ ] Inspect existing instructor dashboard pages.
-7. [ ] Review existing dashboard layout components.
-8. [ ] Review existing dashboard navigation.
-9. [ ] Identify existing UI components.
-10. [ ] Inspect "src/components/ui".
-11. [ ] Check whether "SocialShare.tsx" already exists.
-12. [ ] Review existing button components.
-13. [ ] Review existing card components.
-14. [ ] Review existing table components.
-15. [ ] Review existing badge components.
-16. [ ] Review existing toast/notification components.
-17. [ ] Review existing icon library.
-18. [ ] Review existing typography conventions.
-19. [ ] Review existing spacing conventions.
-20. [ ] Review existing responsive design patterns.
-21. [ ] Identify the project's preferred styling approach.
-22. [ ] Identify whether Tailwind CSS is used.
-23. [ ] Review existing dashboard color conventions.
-24. [ ] Review existing instructor-specific components.
-25. [ ] Search for referral-related types.
-26. [ ] Search for existing referral APIs.
-27. [ ] Search for existing referral data models.
-28. [ ] Search for existing instructor statistics.
-29. [ ] Search for commission-related functionality.
-30. [ ] Search for existing course revenue calculations.
-31. [ ] Search for existing invite functionality.
-32. [ ] Search for existing social-sharing components.
-33. [ ] Review route-level loading patterns.
-34. [ ] Review route-level error patterns.
-35. [ ] Review existing client components.
-36. [ ] Confirm whether clipboard functionality is already used.
-37. [ ] Confirm whether browser APIs require ""use client"".
-38. [ ] Review test conventions.
-39. [ ] Review lint and formatting rules.
+3. [ ] Confirm the project uses Next.js 14.
+4. [ ] Confirm the project uses the App Router.
+5. [ ] Locate the "src/app" directory.
+6. [ ] Confirm "src/app" contains the application routes.
+7. [ ] Check whether a "robots.ts" file already exists.
+8. [ ] Check whether a "robots.txt" file already exists.
+9. [ ] Check whether another robots implementation exists elsewhere.
+10. [ ] Search for existing Metadata API usage.
+11. [ ] Search for existing "MetadataRoute" imports.
+12. [ ] Search for an existing sitemap implementation.
+13. [ ] Locate "src/app/sitemap.ts" if present.
+14. [ ] Review the existing sitemap configuration.
+15. [ ] Confirm the canonical site domain.
+16. [ ] Confirm the required sitemap URL.
+17. [ ] Review the project's route structure.
+18. [ ] Identify dashboard routes.
+19. [ ] Identify checkout routes.
+20. [ ] Identify API routes.
+21. [ ] Identify authentication routes.
+22. [ ] Identify Next.js internal routes.
+23. [ ] Identify public course routes.
+24. [ ] Identify category routes.
+25. [ ] Identify the about page.
+26. [ ] Identify the teach page.
+27. [ ] Identify the teams page.
+28. [ ] Review existing route conventions.
+29. [ ] Review existing tests.
+30. [ ] Review existing build scripts.
+31. [ ] Review existing development scripts.
+32. [ ] Review linting configuration.
+33. [ ] Review TypeScript configuration.
+34. [ ] Confirm no custom robots middleware already exists.
+35. [ ] Confirm no static robots file conflicts with the new route.
+36. [ ] Check Git working tree status.
+37. [ ] Confirm the task can be implemented without unrelated changes.
+38. [ ] Identify the issue number for the PR.
+39. [ ] Record the required PR closing statement.
 40. [ ] Define the implementation scope.
 
-2. Referral Page Setup
+2. robots.ts Creation
 
-41. [ ] Create "src/app/dashboard/instructor/referrals/page.tsx".
-42. [ ] Follow the existing App Router conventions.
-43. [ ] Determine whether the page requires client-side behavior.
-44. [ ] Add ""use client"" if required for clipboard/share interactions.
-45. [ ] Avoid client-side code that is not necessary.
-46. [ ] Import required React utilities.
-47. [ ] Import existing UI components.
-48. [ ] Import "ReferralStats".
-49. [ ] Import "SocialShare".
-50. [ ] Define the referral page component.
-51. [ ] Add the page heading.
-52. [ ] Add a concise referral-program description.
-53. [ ] Explain that instructors can invite colleagues.
-54. [ ] Explain that successful referrals can earn bonuses.
-55. [ ] Create the referral-link section.
-56. [ ] Create the referral statistics section.
-57. [ ] Create the referral history section.
-58. [ ] Create the bonus terms section.
-59. [ ] Create the social-sharing section.
-60. [ ] Keep the page structure easy to scan.
-61. [ ] Follow existing dashboard layout conventions.
-62. [ ] Reuse existing page container components where available.
-63. [ ] Reuse existing card components where available.
-64. [ ] Reuse existing button components where available.
-65. [ ] Reuse existing typography components where available.
-66. [ ] Avoid unnecessary new dependencies.
-67. [ ] Avoid unrelated dashboard changes.
-68. [ ] Keep the page accessible.
-69. [ ] Keep the implementation maintainable.
-70. [ ] Confirm the page renders without errors.
+41. [ ] Create a new file at "src/app/robots.ts".
+42. [ ] Use the Next.js Metadata API.
+43. [ ] Import "MetadataRoute" from "next".
+44. [ ] Use the "MetadataRoute.Robots" type.
+45. [ ] Define the robots function.
+46. [ ] Ensure the function returns the correct robots metadata structure.
+47. [ ] Keep the implementation server-side compatible.
+48. [ ] Avoid client-side directives.
+49. [ ] Do not add unnecessary dependencies.
+50. [ ] Do not create a custom API route for robots.txt.
+51. [ ] Do not manually construct the robots.txt response.
+52. [ ] Use the App Router MetadataRoute implementation.
+53. [ ] Keep the file limited to robots configuration.
+54. [ ] Add appropriate typing.
+55. [ ] Ensure TypeScript can infer the return structure correctly.
+56. [ ] Ensure the implementation follows Next.js 14 conventions.
+57. [ ] Ensure the generated route is "/robots.txt".
+58. [ ] Ensure no additional route handler is required.
+59. [ ] Confirm Next.js generates the response automatically.
+60. [ ] Keep the implementation readable.
+61. [ ] Keep the implementation minimal.
+62. [ ] Avoid unnecessary comments.
+63. [ ] Avoid hard-coded route logic outside the robots configuration.
+64. [ ] Avoid introducing unrelated metadata changes.
+65. [ ] Verify the file is located exactly under "src/app".
+66. [ ] Verify the filename is exactly "robots.ts".
+67. [ ] Verify the file extension is TypeScript.
+68. [ ] Verify the implementation exports the robots function correctly.
+69. [ ] Verify the implementation uses "MetadataRoute.Robots".
+70. [ ] Confirm the basic implementation compiles.
 
-3. Referral Link
+3. Allow Rules
 
-71. [ ] Define the instructor referral link source.
-72. [ ] Determine whether the link comes from existing instructor data.
-73. [ ] Determine whether a static development value is required temporarily.
-74. [ ] Ensure the referral link is unique to the instructor.
-75. [ ] Display the complete referral link.
-76. [ ] Place the referral link inside a visually distinct container.
-77. [ ] Ensure long referral links do not break the layout.
-78. [ ] Allow the link to wrap or scroll appropriately.
-79. [ ] Add a copy button.
-80. [ ] Use "navigator.clipboard" for copying.
-81. [ ] Verify clipboard access occurs only in the browser.
-82. [ ] Copy the exact referral URL.
-83. [ ] Prevent accidental whitespace from being copied.
-84. [ ] Add copy success feedback.
-85. [ ] Change button text/icon temporarily after copying if appropriate.
-86. [ ] Restore the normal copy state after feedback.
-87. [ ] Handle clipboard failures gracefully.
-88. [ ] Display an appropriate error notification if copying fails.
-89. [ ] Avoid exposing clipboard errors unnecessarily.
-90. [ ] Ensure repeated copy actions work.
-91. [ ] Ensure the button remains keyboard accessible.
-92. [ ] Ensure the button has an accessible label.
-93. [ ] Ensure the link itself is selectable if appropriate.
-94. [ ] Ensure the copy button works on supported mobile browsers.
-95. [ ] Test copying from the dashboard.
-96. [ ] Test copying multiple times.
-97. [ ] Test copy behavior after navigation.
-98. [ ] Test copy behavior after page refresh.
-99. [ ] Verify the copied value exactly matches the displayed referral link.
-100. [ ] Confirm referral-link functionality is complete.
+71. [ ] Configure the root path "/" as allowed.
+72. [ ] Configure "/courses" as allowed.
+73. [ ] Configure "/courses/*" as allowed.
+74. [ ] Configure "/categories/*" as allowed.
+75. [ ] Configure "/about" as allowed.
+76. [ ] Configure "/teach" as allowed.
+77. [ ] Configure "/teams" as allowed.
+78. [ ] Ensure the root public site remains crawlable.
+79. [ ] Ensure the courses landing page remains crawlable.
+80. [ ] Ensure course detail pages remain crawlable.
+81. [ ] Ensure category pages remain crawlable.
+82. [ ] Ensure the about page remains crawlable.
+83. [ ] Ensure the teach page remains crawlable.
+84. [ ] Ensure the teams page remains crawlable.
+85. [ ] Confirm wildcard syntax is represented correctly.
+86. [ ] Confirm "/courses/*" covers course detail routes.
+87. [ ] Confirm "/categories/*" covers category detail routes.
+88. [ ] Avoid accidentally disallowing public pages.
+89. [ ] Avoid adding unrelated public routes to the allowlist.
+90. [ ] Preserve the exact required allowlist.
+91. [ ] Confirm "/" is not accidentally overridden by a broad disallow.
+92. [ ] Confirm public pages can still be crawled.
+93. [ ] Confirm public course content can be discovered.
+94. [ ] Confirm category content can be discovered.
+95. [ ] Confirm the allow rules generate valid robots directives.
+96. [ ] Confirm rules are compatible with search-engine parsing.
+97. [ ] Confirm wildcard behavior is valid.
+98. [ ] Ensure no duplicate allow directives are generated unnecessarily.
+99. [ ] Ensure the final output reflects the intended public routes.
+100. [ ] Document any framework-specific wildcard representation if necessary.
 
-4. ReferralStats Component
+4. Disallow Rules
 
-101. [ ] Create "src/components/instructor/ReferralStats.tsx".
-102. [ ] Define a reusable "ReferralStats" component.
-103. [ ] Define the component props.
-104. [ ] Type all statistic values.
-105. [ ] Add referrals-sent statistic.
-106. [ ] Add referrals-signed-up statistic.
-107. [ ] Add referrals-published-course statistic.
-108. [ ] Add total-bonus-earned statistic.
-109. [ ] Display each statistic as a separate card.
-110. [ ] Add an appropriate icon to each statistic.
-111. [ ] Add clear statistic labels.
-112. [ ] Display the numeric values prominently.
-113. [ ] Format bonus amounts consistently.
-114. [ ] Use the project's currency convention.
-115. [ ] Avoid hard-coding misleading totals.
-116. [ ] Ensure zero values display correctly.
-117. [ ] Ensure large values remain readable.
-118. [ ] Ensure cards are responsive.
-119. [ ] Ensure cards stack appropriately on small screens.
-120. [ ] Ensure cards align consistently on larger screens.
-121. [ ] Reuse existing card styles where possible.
-122. [ ] Reuse existing icon styles.
-123. [ ] Avoid excessive visual decoration.
-124. [ ] Keep the component independent from page layout.
-125. [ ] Keep the component easy to test.
-126. [ ] Ensure values come from props/data rather than duplicated constants.
-127. [ ] Add appropriate accessibility labels.
-128. [ ] Ensure the bonus statistic is clearly distinguished.
-129. [ ] Ensure all four required statistics are visible.
-130. [ ] Confirm "ReferralStats" renders correctly.
+101. [ ] Configure "/dashboard/*" as disallowed.
+102. [ ] Configure "/checkout" as disallowed.
+103. [ ] Configure "/api/*" as disallowed.
+104. [ ] Configure "/auth/*" as disallowed.
+105. [ ] Configure "/_next/" as disallowed.
+106. [ ] Ensure dashboard pages cannot be crawled.
+107. [ ] Ensure dashboard subroutes cannot be crawled.
+108. [ ] Ensure checkout is excluded from crawling.
+109. [ ] Ensure API routes are excluded from crawling.
+110. [ ] Ensure API subroutes are excluded from crawling.
+111. [ ] Ensure authentication routes are excluded from crawling.
+112. [ ] Ensure authentication subroutes are excluded from crawling.
+113. [ ] Ensure Next.js internal assets are excluded where required.
+114. [ ] Confirm the dashboard wildcard is represented correctly.
+115. [ ] Confirm the API wildcard is represented correctly.
+116. [ ] Confirm the authentication wildcard is represented correctly.
+117. [ ] Confirm the "/_next/" path is represented correctly.
+118. [ ] Ensure no public route is accidentally disallowed.
+119. [ ] Avoid broad disallow rules such as "/".
+120. [ ] Avoid disallowing "/courses".
+121. [ ] Avoid disallowing "/categories".
+122. [ ] Avoid disallowing "/about".
+123. [ ] Avoid disallowing "/teach".
+124. [ ] Avoid disallowing "/teams".
+125. [ ] Confirm the checkout path is specifically excluded.
+126. [ ] Confirm dashboard paths are excluded before crawling.
+127. [ ] Confirm API paths are excluded before crawling.
+128. [ ] Confirm auth paths are excluded before crawling.
+129. [ ] Confirm internal Next.js paths are excluded.
+130. [ ] Verify disallow rules match the acceptance criteria.
 
-5. Referral Statistics Data
+5. User-Agent Configuration
 
-131. [ ] Identify the source of referral statistics.
-132. [ ] Check for an existing referral endpoint.
-133. [ ] Check for existing instructor dashboard statistics.
-134. [ ] Check for existing referral service methods.
-135. [ ] Determine whether server-side data fetching is available.
-136. [ ] Determine whether client-side fetching is required.
-137. [ ] Avoid inventing backend APIs unless explicitly required.
-138. [ ] Use existing project data contracts where available.
-139. [ ] Define a typed statistics model.
-140. [ ] Map referrals sent to the correct value.
-141. [ ] Map referrals signed up to the correct value.
-142. [ ] Map published-course referrals to the correct value.
-143. [ ] Map total bonus earned to the correct value.
-144. [ ] Ensure counts are numeric.
-145. [ ] Ensure bonus values are numeric or correctly formatted.
-146. [ ] Handle missing statistics safely.
-147. [ ] Handle zero statistics safely.
-148. [ ] Handle loading states if data is fetched asynchronously.
-149. [ ] Handle data-fetching errors if applicable.
-150. [ ] Confirm statistics represent the current instructor.
+131. [ ] Configure the robots policy for all search-engine crawlers.
+132. [ ] Use the appropriate wildcard user-agent configuration.
+133. [ ] Ensure the rules apply to general crawlers.
+134. [ ] Ensure the rules are not limited to a single search engine.
+135. [ ] Ensure the generated output contains the intended user-agent directive.
+136. [ ] Avoid creating unnecessary crawler-specific rules.
+137. [ ] Avoid duplicate user-agent sections.
+138. [ ] Confirm the allow rules apply to the intended crawler group.
+139. [ ] Confirm the disallow rules apply to the intended crawler group.
+140. [ ] Confirm the output remains standards-compatible.
+141. [ ] Keep crawler configuration simple.
+142. [ ] Avoid adding unsupported directives.
+143. [ ] Avoid adding crawl-delay unless explicitly required.
+144. [ ] Avoid adding host directives.
+145. [ ] Avoid adding unrelated SEO configuration.
+146. [ ] Confirm the user-agent configuration is generated correctly.
+147. [ ] Confirm the final output is readable.
+148. [ ] Confirm crawlers can interpret the rules.
+149. [ ] Confirm the implementation matches Next.js MetadataRoute behavior.
+150. [ ] Document the intended crawler scope if project documentation requires it.
 
-6. Referral History Table
+6. Sitemap Configuration
 
-151. [ ] Create the referral history section.
-152. [ ] Add a section heading.
-153. [ ] Add a short explanatory description.
-154. [ ] Create the referral history table.
-155. [ ] Add invitee email column.
-156. [ ] Add date joined column.
-157. [ ] Add status column.
-158. [ ] Add bonus earned column.
-159. [ ] Define referral history data types.
-160. [ ] Populate the table from referral history data.
-161. [ ] Format invitee emails correctly.
-162. [ ] Format dates consistently with the application.
-163. [ ] Display referral status using badges where appropriate.
-164. [ ] Format bonus amounts consistently.
-165. [ ] Display zero bonus correctly.
-166. [ ] Display pending referral status correctly.
-167. [ ] Display signed-up status correctly.
-168. [ ] Display published-course status correctly.
-169. [ ] Display completed/earned status correctly if supported.
-170. [ ] Ensure statuses are understandable.
-171. [ ] Add an empty-state message.
-172. [ ] Display the empty state when there are no referrals.
-173. [ ] Ensure the table is responsive.
-174. [ ] Add horizontal scrolling on narrow screens if necessary.
-175. [ ] Ensure table headers remain understandable.
-176. [ ] Avoid unnecessary table columns.
-177. [ ] Keep email values from overflowing.
-178. [ ] Ensure dates remain readable.
-179. [ ] Ensure bonus values align consistently.
-180. [ ] Confirm referral history renders correctly.
+151. [ ] Add the sitemap URL to the robots configuration.
+152. [ ] Use "https://hamplard.com/sitemap.xml".
+153. [ ] Ensure the sitemap URL is absolute.
+154. [ ] Ensure the URL uses HTTPS.
+155. [ ] Ensure the hostname is exactly "hamplard.com".
+156. [ ] Ensure the path is exactly "/sitemap.xml".
+157. [ ] Ensure the sitemap directive is generated.
+158. [ ] Ensure the sitemap appears in "/robots.txt".
+159. [ ] Confirm there are no typos in the domain.
+160. [ ] Confirm there is no trailing whitespace.
+161. [ ] Confirm the sitemap URL is not relative.
+162. [ ] Confirm the sitemap URL is not accidentally duplicated.
+163. [ ] Check whether an existing sitemap implementation uses the same domain.
+164. [ ] Keep robots and sitemap configuration consistent.
+165. [ ] Verify the sitemap directive follows the generated robots syntax.
+166. [ ] Confirm search engines can identify the sitemap.
+167. [ ] Confirm the sitemap directive is not placed inside an invalid user-agent rule.
+168. [ ] Confirm the generated output contains exactly the required sitemap.
+169. [ ] Avoid adding unrelated sitemap URLs.
+170. [ ] Verify the sitemap requirement is fully satisfied.
 
-7. SocialShare Component
+7. Local Development Validation
 
-181. [ ] Inspect "src/components/ui/SocialShare.tsx".
-182. [ ] Create the component if it does not exist.
-183. [ ] Follow existing UI component conventions.
-184. [ ] Define the component's props.
-185. [ ] Accept the referral URL.
-186. [ ] Accept optional share text if required.
-187. [ ] Add a copy-link action.
-188. [ ] Add an email-share action.
-189. [ ] Add a WhatsApp-share action.
-190. [ ] Ensure copy uses "navigator.clipboard".
-191. [ ] Ensure email uses the appropriate "mailto:" intent.
-192. [ ] Ensure WhatsApp uses the appropriate share intent.
-193. [ ] Encode referral URL before inserting it into share URLs.
-194. [ ] Encode share text before inserting it into share URLs.
-195. [ ] Avoid malformed share URLs.
-196. [ ] Open email sharing correctly.
-197. [ ] Open WhatsApp sharing correctly.
-198. [ ] Use "window.open" or project-standard navigation where appropriate.
-199. [ ] Ensure external share intents do not break the application.
-200. [ ] Add accessible labels to share buttons.
+171. [ ] Start the Next.js development server.
+172. [ ] Confirm the application starts without errors.
+173. [ ] Open "/robots.txt".
+174. [ ] Confirm "/robots.txt" returns HTTP 200.
+175. [ ] Confirm the response is plain text.
+176. [ ] Confirm the generated content is not HTML.
+177. [ ] Confirm the user-agent directive exists.
+178. [ ] Confirm the root allow rule exists.
+179. [ ] Confirm the courses allow rule exists.
+180. [ ] Confirm course wildcard behavior is represented.
+181. [ ] Confirm categories wildcard behavior is represented.
+182. [ ] Confirm "/about" is allowed.
+183. [ ] Confirm "/teach" is allowed.
+184. [ ] Confirm "/teams" is allowed.
+185. [ ] Confirm dashboard is disallowed.
+186. [ ] Confirm checkout is disallowed.
+187. [ ] Confirm API is disallowed.
+188. [ ] Confirm auth is disallowed.
+189. [ ] Confirm "/_next/" is disallowed.
+190. [ ] Confirm the sitemap URL is present.
+191. [ ] Confirm the sitemap URL is correct.
+192. [ ] Confirm there are no unexpected directives.
+193. [ ] Confirm there are no duplicate directives.
+194. [ ] Confirm there are no TypeScript runtime errors.
+195. [ ] Confirm hot reload detects changes if applicable.
+196. [ ] Confirm the generated robots output updates after changes.
+197. [ ] Test the route after restarting the dev server.
+198. [ ] Test the route in a clean browser request.
+199. [ ] Test the route using an HTTP client if available.
+200. [ ] Record the final generated output for review.
 
-8. Share Behavior
+8. Automated Testing
 
-201. [ ] Test copy-link button.
-202. [ ] Verify copied URL matches the referral URL.
-203. [ ] Test email share button.
-204. [ ] Verify email intent is correctly constructed.
-205. [ ] Verify referral link is included in the email share.
-206. [ ] Verify share text is correctly encoded.
-207. [ ] Test WhatsApp share button.
-208. [ ] Verify WhatsApp share intent is correctly constructed.
-209. [ ] Verify referral link is included in WhatsApp content.
-210. [ ] Verify spaces are encoded correctly.
-211. [ ] Verify special URL characters are encoded correctly.
-212. [ ] Verify the share actions open the correct intents.
-213. [ ] Test share buttons on desktop where supported.
-214. [ ] Test share buttons on mobile where supported.
-215. [ ] Test share buttons with long referral URLs.
-216. [ ] Ensure share buttons remain usable on small screens.
-217. [ ] Ensure share buttons have visible labels or accessible names.
-218. [ ] Ensure icons alone are not the only accessibility cue.
-219. [ ] Handle unsupported share behavior gracefully.
-220. [ ] Confirm all required share methods work.
+201. [ ] Search for existing metadata route tests.
+202. [ ] Determine the project's preferred testing approach.
+203. [ ] Add a test for "/robots.txt".
+204. [ ] Verify the route exists.
+205. [ ] Verify the route returns successfully.
+206. [ ] Verify the output contains the user-agent directive.
+207. [ ] Verify the root path is allowed.
+208. [ ] Verify "/courses" is allowed.
+209. [ ] Verify course wildcard paths are allowed.
+210. [ ] Verify category wildcard paths are allowed.
+211. [ ] Verify "/about" is allowed.
+212. [ ] Verify "/teach" is allowed.
+213. [ ] Verify "/teams" is allowed.
+214. [ ] Verify "/dashboard/*" is disallowed.
+215. [ ] Verify "/checkout" is disallowed.
+216. [ ] Verify "/api/*" is disallowed.
+217. [ ] Verify "/auth/*" is disallowed.
+218. [ ] Verify "/_next/" is disallowed.
+219. [ ] Verify the sitemap URL is included.
+220. [ ] Verify the exact sitemap URL.
+221. [ ] Verify no required allow rule is missing.
+222. [ ] Verify no required disallow rule is missing.
+223. [ ] Verify the response format.
+224. [ ] Verify the generated robots configuration is deterministic.
+225. [ ] Ensure tests do not depend on production infrastructure.
+226. [ ] Ensure tests do not require external network access.
+227. [ ] Ensure tests are repeatable.
+228. [ ] Ensure tests use the project's existing testing conventions.
+229. [ ] Add regression coverage for future changes.
+230. [ ] Confirm the tests pass locally.
 
-9. Bonus Terms Card
+9. TypeScript & Build Verification
 
-221. [ ] Create the bonus terms summary card.
-222. [ ] Add a clear card heading.
-223. [ ] Explain the referral bonus concept.
-224. [ ] Explain that the referred instructor must sign up.
-225. [ ] Explain that the referred instructor must publish a course if required.
-226. [ ] Explain that the bonus is connected to first-course revenue.
-227. [ ] Explain any eligibility conditions available from existing requirements.
-228. [ ] Avoid inventing unsupported commission percentages.
-229. [ ] Avoid inventing unsupported payment timelines.
-230. [ ] Avoid inventing unsupported limits.
-231. [ ] Use existing product/business rules if available.
-232. [ ] Keep the summary concise.
-233. [ ] Add appropriate visual emphasis.
-234. [ ] Ensure terms are easy to understand.
-235. [ ] Add a note directing instructors to full terms if available.
-236. [ ] Avoid presenting assumptions as official terms.
-237. [ ] Ensure the card is responsive.
-238. [ ] Ensure the card is accessible.
-239. [ ] Verify the terms card fits the dashboard design.
-240. [ ] Confirm the bonus terms section renders correctly.
+231. [ ] Run the project's type-check command.
+232. [ ] Confirm "robots.ts" passes TypeScript validation.
+233. [ ] Confirm the "MetadataRoute.Robots" type is valid.
+234. [ ] Confirm there are no implicit "any" errors.
+235. [ ] Confirm there are no unused imports.
+236. [ ] Confirm there are no unused variables.
+237. [ ] Run the project linter.
+238. [ ] Fix any lint errors caused by the new file.
+239. [ ] Run formatting checks.
+240. [ ] Format the new file according to project standards.
+241. [ ] Run the production build.
+242. [ ] Confirm the build completes successfully.
+243. [ ] Confirm "/robots.txt" is generated correctly by the production build.
+244. [ ] Confirm the App Router recognizes the metadata route.
+245. [ ] Confirm no route conflicts occur.
+246. [ ] Confirm no existing sitemap functionality breaks.
+247. [ ] Confirm no existing pages break.
+248. [ ] Confirm no unrelated build warnings are introduced.
+249. [ ] Review the final build output.
+250. [ ] Confirm the implementation is production-ready.
 
-10. Responsive & Accessibility Review
+10. Final Review & PR
 
-241. [ ] Test the page on desktop width.
-242. [ ] Test the page on tablet width.
-243. [ ] Test the page on mobile width.
-244. [ ] Verify statistics cards remain readable.
-245. [ ] Verify referral link remains usable.
-246. [ ] Verify copy button remains accessible.
-247. [ ] Verify share buttons fit within the layout.
-248. [ ] Verify the history table works on mobile.
-249. [ ] Verify the bonus card does not overflow.
-250. [ ] Verify keyboard navigation.
-251. [ ] Verify focus states.
-252. [ ] Verify button labels.
-253. [ ] Verify screen-reader-friendly headings.
-254. [ ] Verify semantic table markup.
-255. [ ] Verify status badges have meaningful text.
-256. [ ] Verify sufficient visual distinction between interactive elements.
-257. [ ] Verify no content is hidden accidentally.
-258. [ ] Verify long emails do not break the layout.
-259. [ ] Verify long referral URLs do not break the layout.
-260. [ ] Verify page remains usable at reduced viewport widths.
+251. [ ] Review the complete Git diff.
+252. [ ] Confirm only intended files were changed.
+253. [ ] Confirm "src/app/robots.ts" is included.
+254. [ ] Confirm ".env" files were not modified unnecessarily.
+255. [ ] Confirm no generated files were accidentally committed.
+256. [ ] Confirm no dependencies were added unnecessarily.
+257. [ ] Confirm no unrelated refactoring was included.
+258. [ ] Confirm the implementation follows Next.js 14.
+259. [ ] Confirm the implementation uses "MetadataRoute.Robots".
+260. [ ] Confirm App Router requirements are satisfied.
+261. [ ] Confirm all public pages are allowed.
+262. [ ] Confirm all specified private paths are disallowed.
+263. [ ] Confirm the sitemap URL is correct.
+264. [ ] Confirm "/robots.txt" works in development.
+265. [ ] Confirm "/robots.txt" works in production build validation.
+266. [ ] Confirm automated tests pass.
+267. [ ] Confirm linting passes.
+268. [ ] Confirm type checking passes.
+269. [ ] Confirm build passes.
+270. [ ] Confirm acceptance criteria are fully satisfied.
 
-11. Testing
+11. PR Description
 
-261. [ ] Add tests for "ReferralStats".
-262. [ ] Test referrals-sent count.
-263. [ ] Test referrals-signed-up count.
-264. [ ] Test published-course count.
-265. [ ] Test total bonus amount.
-266. [ ] Add tests for referral history rendering.
-267. [ ] Test invitee email rendering.
-268. [ ] Test date rendering.
-269. [ ] Test status rendering.
-270. [ ] Test bonus rendering.
-271. [ ] Add test for empty referral history.
-272. [ ] Add test for copy-link behavior.
-273. [ ] Mock "navigator.clipboard" where necessary.
-274. [ ] Verify clipboard receives the referral URL.
-275. [ ] Add test for clipboard failure handling.
-276. [ ] Add tests for email sharing.
-277. [ ] Verify the email intent contains the referral URL.
-278. [ ] Add tests for WhatsApp sharing.
-279. [ ] Verify the WhatsApp intent contains the referral URL.
-280. [ ] Verify share URLs are properly encoded.
+271. [ ] Create the pull request.
+272. [ ] Use a clear PR title.
+273. [ ] Summarize the robots.txt implementation.
+274. [ ] Mention that the App Router Metadata API is used.
+275. [ ] Mention the public routes that remain crawlable.
+276. [ ] Mention the private routes that are disallowed.
+277. [ ] Mention the sitemap configuration.
+278. [ ] Mention "/robots.txt" validation.
+279. [ ] Mention automated test coverage.
+280. [ ] Include the required issue-closing syntax.
+281. [ ] Replace "[issue_id]" with the actual issue number.
+282. [ ] Ensure the PR description contains "Closes #[issue_id]".
+283. [ ] Ensure the closing syntax is not accidentally written as plain placeholder text.
+284. [ ] Verify GitHub recognizes the issue-closing syntax.
+285. [ ] Include testing performed.
+286. [ ] Include build/type-check results.
+287. [ ] Include any relevant screenshots or output if required.
+288. [ ] Confirm the PR description is concise.
+289. [ ] Confirm the PR description accurately describes the changes.
+290. [ ] Confirm no unrelated work is mentioned as completed.
 
-12. Final Validation & PR
+12. Final Acceptance Checklist
 
-281. [ ] Run the relevant component tests.
-282. [ ] Run the complete test suite.
-283. [ ] Run linting.
-284. [ ] Run TypeScript checks.
-285. [ ] Run formatting checks.
-286. [ ] Run the production build.
-287. [ ] Manually visit "/dashboard/instructor/referrals".
-288. [ ] Verify the referral link is displayed.
-289. [ ] Verify copy works.
-290. [ ] Verify all four statistics display correctly.
-291. [ ] Verify referral history renders.
-292. [ ] Verify copy, email, and WhatsApp share buttons work.
-293. [ ] Verify bonus terms card renders.
-294. [ ] Review the final Git diff.
-295. [ ] Remove debugging code and unused imports.
-296. [ ] Confirm only intended files were changed.
-297. [ ] Create the pull request with a clear description.
-298. [ ] Include testing and validation results.
-299. [ ] Include "Closes #[issue_id]" in the PR description, replacing "[issue_id]" with the actual issue number.
-300. [ ] Confirm all acceptance criteria are satisfied and the PR is ready for review.
+291. [ ] "src/app/robots.ts" exists.
+292. [ ] "MetadataRoute.Robots" is used.
+293. [ ] "/robots.txt" returns the expected content.
+294. [ ] Dashboard routes are disallowed.
+295. [ ] API routes are disallowed.
+296. [ ] Authentication routes are disallowed.
+297. [ ] Checkout is disallowed.
+298. [ ] Public pages are allowed.
+299. [ ] "https://hamplard.com/sitemap.xml" is included.
+300. [ ] PR description contains "Closes #[issue_id]" and the task is ready for review.
