@@ -187,6 +187,18 @@ export interface Announcement {
   createdAt: string;
 }
 
+/** A card the learner saved for future checkouts. Card details never leave Stripe. */
+export interface SavedPaymentMethod {
+  /** Stripe PaymentMethod id (`pm_…`). */
+  id: string;
+  brand: string;
+  last4: string;
+  expMonth: number;
+  expYear: number;
+  isDefault: boolean;
+  createdAt: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;

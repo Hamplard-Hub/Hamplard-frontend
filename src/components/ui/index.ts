@@ -7,3 +7,5 @@ export type { PaginationProps } from './Pagination';
 export { AvatarUpload } from './AvatarUpload';
 export { CountdownTimer } from './CountdownTimer';
 export type { CountdownTimerProps } from './CountdownTimer';
+export { ConfirmDialog } from './ConfirmDialog';
+export type { ConfirmDialogProps } from './ConfirmDialog';

@@ -17,6 +17,7 @@ import type {
 import { AlertCircle, CheckCircle2, Lock, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { CardBrandIcon, cardBrandLabel } from '@/components/checkout/CardBrandIcon';
+import { WalletPaymentButton } from '@/components/checkout/WalletPaymentButton';
 import { friendlyStripeError } from '@/lib/stripe/errors';
 import { simulatePaymentConfirmation } from '@/lib/stripe/simulate';
 import { isStripeConfigured } from '@/lib/stripe/client';
@@ -36,10 +37,13 @@ export interface BillingDetails {
 }
 
 export interface PaymentFormProps {
-  /** Order total, used on the pay button. */
+  /** Order total, used on the pay button and the Apple Pay / Google Pay sheet. */
   amount: number;
+  /** ISO currency of `amount`; checkout prices are in US dollars. */
+  currency?: string;
   /**
-   * Confirms the charge once Stripe has tokenised the card. Wire this to the
+   * Confirms the charge once Stripe has tokenised the card (or the wallet has
+   * returned a payment method). Wire this to the
    * PaymentIntent endpoint when it exists; until then the form falls back to
    * `simulatePaymentConfirmation`.
    */
@@ -97,6 +101,7 @@ const REQUIRED = 'This field is required.';
 
 export function PaymentForm({
   amount,
+  currency = 'usd',
   onConfirmPayment,
   onSuccess,
   onPayPalSelected,
@@ -112,6 +117,8 @@ export function PaymentForm({
   const [status, setStatus] = useState<Status>('idle');
   const [formError, setFormError] = useState<string | null>(null);
   const [payPalNotice, setPayPalNotice] = useState<string | null>(null);
+  /** True while the Apple Pay / Google Pay sheet is open over the page. */
+  const [walletOpen, setWalletOpen] = useState(false);
 
   /** Live validation straight from Stripe, per card field. */
   const [cardErrors, setCardErrors] = useState<Record<string, string | null>>({});
@@ -121,6 +128,7 @@ export function PaymentForm({
 
   const errorRef = useRef<HTMLDivElement>(null);
   const isProcessing = status === 'processing';
+  const isBusy = isProcessing || walletOpen;
   const isDone = status === 'succeeded';
   const stripeUnavailable = !isStripeConfigured();
 
@@ -198,12 +206,24 @@ export function PaymentForm({
     }
 
     try {
-      await (onConfirmPayment ?? simulatePaymentConfirmation)(paymentMethod);
-      setStatus('succeeded');
-      onSuccess?.(paymentMethod);
+      await confirmPayment(paymentMethod);
+      handlePaymentSucceeded(paymentMethod);
     } catch (confirmError) {
       failWith(friendlyStripeError(confirmError));
     }
+  };
+
+  const confirmPayment = (paymentMethod: PaymentMethod) =>
+    (onConfirmPayment ?? simulatePaymentConfirmation)(paymentMethod);
+
+  const handlePaymentSucceeded = (paymentMethod: PaymentMethod) => {
+    setStatus('succeeded');
+    onSuccess?.(paymentMethod);
+  };
+
+  const handleWalletSheetOpenChange = (open: boolean) => {
+    setWalletOpen(open);
+    if (open) setFormError(null);
   };
 
   const handlePayPal = () => {
@@ -238,11 +258,11 @@ export function PaymentForm({
     <form
       onSubmit={handleSubmit}
       noValidate
-      aria-busy={isProcessing}
+      aria-busy={isBusy}
       className={cn('space-y-6', className)}
     >
       {/* Payment method choice */}
-      <fieldset className="space-y-3" disabled={isProcessing}>
+      <fieldset className="space-y-3" disabled={isBusy}>
         <legend className="text-sm font-semibold text-ink-900">Payment method</legend>
         <div className="grid gap-3 sm:grid-cols-2">
           {(
@@ -292,7 +312,17 @@ export function PaymentForm({
 
       {method === 'card' ? (
         <>
-          <fieldset className="space-y-4" disabled={isProcessing}>
+          <WalletPaymentButton
+            amount={amount}
+            currency={currency}
+            disabled={isBusy}
+            confirmPayment={confirmPayment}
+            onSuccess={handlePaymentSucceeded}
+            onError={(walletError) => failWith(friendlyStripeError(walletError))}
+            onSheetOpenChange={handleWalletSheetOpenChange}
+          />
+
+          <fieldset className="space-y-4" disabled={isBusy}>
             <legend className="text-sm font-semibold text-ink-900">Card details</legend>
 
             <div>
@@ -329,11 +359,11 @@ export function PaymentForm({
                 className={cn(
                   ELEMENT_WRAPPER_CLASS,
                   cardErrors.cardNumber && 'border-rose-500',
-                  isProcessing && 'bg-ink-50',
+                  isBusy && 'bg-ink-50',
                 )}
               >
                 <CardNumberElement
-                  options={{ style: ELEMENT_STYLE, showIcon: false, disabled: isProcessing }}
+                  options={{ style: ELEMENT_STYLE, showIcon: false, disabled: isBusy }}
                   onChange={handleElementChange('cardNumber')}
                 />
               </div>
@@ -347,11 +377,11 @@ export function PaymentForm({
                   className={cn(
                     ELEMENT_WRAPPER_CLASS,
                     cardErrors.cardExpiry && 'border-rose-500',
-                    isProcessing && 'bg-ink-50',
+                    isBusy && 'bg-ink-50',
                   )}
                 >
                   <CardExpiryElement
-                    options={{ style: ELEMENT_STYLE, disabled: isProcessing }}
+                    options={{ style: ELEMENT_STYLE, disabled: isBusy }}
                     onChange={handleElementChange('cardExpiry')}
                   />
                 </div>
@@ -364,11 +394,11 @@ export function PaymentForm({
                   className={cn(
                     ELEMENT_WRAPPER_CLASS,
                     cardErrors.cardCvc && 'border-rose-500',
-                    isProcessing && 'bg-ink-50',
+                    isBusy && 'bg-ink-50',
                   )}
                 >
                   <CardCvcElement
-                    options={{ style: ELEMENT_STYLE, disabled: isProcessing }}
+                    options={{ style: ELEMENT_STYLE, disabled: isBusy }}
                     onChange={handleElementChange('cardCvc')}
                   />
                 </div>
@@ -377,7 +407,7 @@ export function PaymentForm({
             </div>
           </fieldset>
 
-          <fieldset className="space-y-4" disabled={isProcessing}>
+          <fieldset className="space-y-4" disabled={isBusy}>
             <legend className="text-sm font-semibold text-ink-900">Billing address</legend>
 
             <div>
@@ -533,7 +563,7 @@ export function PaymentForm({
             fullWidth
             isLoading={isProcessing}
             loadingText="Processing payment…"
-            disabled={!stripe || stripeUnavailable}
+            disabled={!stripe || stripeUnavailable || walletOpen}
             icon={<Lock className="h-4 w-4" aria-hidden="true" />}
           >
             Pay {formatUsdc(amount)}

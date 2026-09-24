@@ -2,12 +2,13 @@ import { apiClient } from './client';
 import type {
   ApiResponse, PaginatedResponse, Course, Enrollment,
   Certificate, Notification, User, Category, Announcement,
-  Gift, LeaderboardResponse, LeaderboardPeriod,
+  Gift, LeaderboardResponse, LeaderboardPeriod, SavedPaymentMethod,
 } from '@/types';
 
 const isBrowser = typeof window !== 'undefined';
 const ANNOUNCEMENTS_STORAGE_KEY = 'hamplard_announcements';
 const NOTIFICATIONS_STORAGE_KEY = 'hamplard_notifications';
+const PAYMENT_METHODS_STORAGE_KEY = 'hamplard_payment_methods';
 
 const readStorage = <T,>(key: string, fallback: T): T => {
   if (!isBrowser) return fallback;
@@ -530,6 +531,69 @@ export const promoCodesApi = {
   validate: async (code: string, courseId: string) => {
     const { data } = await apiClient.post(`/promo-codes/validate`, { code, courseId });
     return data.data;
+  },
+};
+
+// ----------------------------------------------------------
+// Saved payment methods
+// ----------------------------------------------------------
+// Falls back to per-user localStorage until the payments service exposes
+// these endpoints. Only Stripe's non-sensitive card summary is stored.
+const paymentMethodsStorageKey = () => `${PAYMENT_METHODS_STORAGE_KEY}:${currentUserKey()}`;
+const readSavedPaymentMethods = () => readStorage<SavedPaymentMethod[]>(paymentMethodsStorageKey(), []);
+const writeSavedPaymentMethods = (methods: SavedPaymentMethod[]) => {
+  // Exactly one default whenever any card is saved.
+  const withDefault = methods.length > 0 && !methods.some((m) => m.isDefault)
+    ? methods.map((m, index) => ({ ...m, isDefault: index === 0 }))
+    : methods;
+  writeStorage(paymentMethodsStorageKey(), withDefault);
+  return withDefault;
+};
+
+export const paymentMethodsApi = {
+  list: async (): Promise<SavedPaymentMethod[]> => {
+    try {
+      const { data } = await apiClient.get<ApiResponse<SavedPaymentMethod[]>>('/payment-methods');
+      return data.data;
+    } catch {
+      return readSavedPaymentMethods();
+    }
+  },
+
+  add: async (payload: Omit<SavedPaymentMethod, 'isDefault' | 'createdAt'>): Promise<SavedPaymentMethod> => {
+    try {
+      const { data } = await apiClient.post<ApiResponse<SavedPaymentMethod>>('/payment-methods', {
+        paymentMethodId: payload.id,
+      });
+      return data.data;
+    } catch {
+      const stored = readSavedPaymentMethods();
+      const method: SavedPaymentMethod = {
+        ...payload,
+        isDefault: stored.length === 0,
+        createdAt: new Date().toISOString(),
+      };
+      writeSavedPaymentMethods([...stored.filter((m) => m.id !== method.id), method]);
+      return method;
+    }
+  },
+
+  remove: async (paymentMethodId: string): Promise<void> => {
+    try {
+      await apiClient.delete(`/payment-methods/${paymentMethodId}`);
+    } catch {
+      writeSavedPaymentMethods(readSavedPaymentMethods().filter((m) => m.id !== paymentMethodId));
+    }
+  },
+
+  setDefault: async (paymentMethodId: string): Promise<void> => {
+    try {
+      await apiClient.patch(`/payment-methods/${paymentMethodId}/default`);
+    } catch {
+      writeSavedPaymentMethods(
+        readSavedPaymentMethods().map((m) => ({ ...m, isDefault: m.id === paymentMethodId })),
+      );
+    }
   },
 };
 
