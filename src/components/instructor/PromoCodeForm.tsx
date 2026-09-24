@@ -9,6 +9,26 @@ import { promoCodesApi } from '@/lib/api/services';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
+/** A promo code as returned by `promoCodesApi.getMy`. */
+export interface PromoCode {
+  id: string;
+  code: string;
+  discountType: PromoCodeFormValues['discountType'];
+  discountValue: number;
+  expiryDate: string;
+  maxUses: number;
+  currentUses: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+/** "20%" for percentage codes, "$5" for fixed-amount codes. */
+export const formatPromoDiscount = ({
+  discountType,
+  discountValue,
+}: Pick<PromoCode, 'discountType' | 'discountValue'>): string =>
+  discountType === 'PERCENTAGE' ? `${discountValue}%` : `$${discountValue}`;
+
 interface PromoCodeFormProps {
   onSuccess?: () => void;
   onError?: (error: string) => void;

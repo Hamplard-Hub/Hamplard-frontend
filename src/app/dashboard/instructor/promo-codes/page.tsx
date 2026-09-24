@@ -2,24 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Copy, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Copy, CheckCircle2, AlertCircle, Download } from 'lucide-react';
 import { promoCodesApi } from '@/lib/api/services';
-import { PromoCodeForm } from '@/components/instructor/PromoCodeForm';
+import {
+  PromoCodeForm,
+  formatPromoDiscount,
+  type PromoCode,
+} from '@/components/instructor/PromoCodeForm';
+import { promoCodesCsvFilename, promoCodesToCsv } from '@/components/instructor/promo-codes-csv';
 import { Button } from '@/components/ui/Button';
 import { formatDate, copyToClipboard } from '@/lib/utils';
-import type { PaginatedResponse } from '@/types';
-
-interface PromoCode {
-  id: string;
-  code: string;
-  discountType: 'PERCENTAGE' | 'FIXED';
-  discountValue: number;
-  expiryDate: string;
-  maxUses: number;
-  currentUses: number;
-  isActive: boolean;
-  createdAt: string;
-}
+import { downloadCsv } from '@/lib/utils/csv';
 
 export default function PromoCodesPage() {
   const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
@@ -64,6 +57,11 @@ export default function PromoCodesPage() {
     } catch (err) {
       console.error('Failed to toggle promo code:', err);
     }
+  };
+
+  const handleExportCsv = () => {
+    if (promoCodes.length === 0) return;
+    downloadCsv(promoCodesCsvFilename(), promoCodesToCsv(promoCodes));
   };
 
   const handleFormSuccess = () => {
@@ -146,6 +144,22 @@ export default function PromoCodesPage() {
 
         {/* Promo Codes List */}
         <div className="lg:col-span-2">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h2 className="font-display text-lg font-semibold text-ink-900">
+              Your Codes{!loading && promoCodes.length > 0 ? ` (${promoCodes.length})` : ''}
+            </h2>
+            <Button
+              variant="tertiary"
+              size="sm"
+              onClick={handleExportCsv}
+              disabled={loading || promoCodes.length === 0}
+              title={promoCodes.length === 0 ? 'Create a promo code to export it' : undefined}
+              icon={<Download className="w-4 h-4" aria-hidden="true" />}
+            >
+              Export CSV
+            </Button>
+          </div>
+
           {loading ? (
             <div className="card p-8 text-center">
               <p className="text-ink-600">Loading promo codes...</p>
@@ -217,9 +231,7 @@ interface PromoCodeItemProps {
 function PromoCodeItem({ promo, onCopy, onToggleActive, isCopied }: PromoCodeItemProps) {
   const isExpired = new Date(promo.expiryDate) < new Date();
   const isExhausted = promo.currentUses >= promo.maxUses;
-  const discountLabel = promo.discountType === 'PERCENTAGE' 
-    ? `${promo.discountValue}%` 
-    : `$${promo.discountValue}`;
+  const discountLabel = formatPromoDiscount(promo);
 
   return (
     <div className={`card p-4 flex items-start justify-between ${!promo.isActive ? 'opacity-60' : ''}`}>
