@@ -10,6 +10,8 @@ export interface CartItem {
 interface CartStore {
   items: CartItem[];
   addItem: (course: Course) => void;
+  /** Adds every course not already in the cart; returns how many were added. */
+  addItems: (courses: Course[]) => number;
   removeItem: (courseId: string) => void;
   clearCart: () => void;
   getTotalPrice: () => number;
@@ -35,6 +37,23 @@ export const useCartStore = create<CartStore>((set, get) => ({
         ],
       };
     });
+  },
+
+  addItems: (courses: Course[]) => {
+    const inCart = new Set(get().items.map((item) => item.courseId));
+    const addedAt = new Date().toISOString();
+    const added: CartItem[] = [];
+
+    courses.forEach((course) => {
+      if (inCart.has(course.id)) return;
+      inCart.add(course.id);
+      added.push({ courseId: course.id, course, addedAt });
+    });
+
+    if (added.length > 0) {
+      set((state) => ({ items: [...state.items, ...added] }));
+    }
+    return added.length;
   },
 
   removeItem: (courseId: string) => {

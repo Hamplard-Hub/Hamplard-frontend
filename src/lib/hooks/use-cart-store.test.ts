@@ -132,6 +132,49 @@ describe('useCartStore', () => {
     });
   });
 
+  describe('addItems', () => {
+    it('adds every course in one update and reports how many were added', () => {
+      const { result } = renderHook(() => useCartStore());
+
+      let added = 0;
+      act(() => {
+        added = result.current.addItems([mockCourse1, mockCourse2, mockCourse3]);
+      });
+
+      expect(added).toBe(3);
+      expect(result.current.items.map((item) => item.courseId)).toEqual([
+        'course-1',
+        'course-2',
+        'course-3',
+      ]);
+    });
+
+    it('skips courses already in the cart and duplicates within the batch', () => {
+      const { result } = renderHook(() => useCartStore());
+
+      let added = 0;
+      act(() => {
+        result.current.addItem(mockCourse1);
+        added = result.current.addItems([mockCourse1, mockCourse2, mockCourse2]);
+      });
+
+      expect(added).toBe(1);
+      expect(result.current.items.map((item) => item.courseId)).toEqual(['course-1', 'course-2']);
+    });
+
+    it('returns 0 and leaves the cart untouched for an empty batch', () => {
+      const { result } = renderHook(() => useCartStore());
+
+      let added = -1;
+      act(() => {
+        added = result.current.addItems([]);
+      });
+
+      expect(added).toBe(0);
+      expect(result.current.items).toEqual([]);
+    });
+  });
+
   describe('removeItem', () => {
     it('removes a course from cart', () => {
       const { result } = renderHook(() => useCartStore());
