@@ -18,9 +18,12 @@ const options: StripeElementsOptions = {
 };
 
 /**
- * Wraps the checkout in Stripe's Elements context. Resolves to `null` when
- * NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is unset — children still render, and
- * `PaymentForm` shows an unavailable notice instead of a dead form.
+ * Wraps the checkout in Stripe's Elements context — the card fields, the
+ * Apple Pay / Google Pay button and the saved-card form all read the Stripe
+ * instance from here. Resolves to `null` when
+ * NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is unset — children still render,
+ * `PaymentForm` shows an unavailable notice instead of a dead form, and the
+ * wallet button stays hidden.
  */
 export function StripeProvider({ children }: { children: React.ReactNode }) {
   return (

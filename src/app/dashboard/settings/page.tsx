@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bell, Shield, Save, Loader2, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { Bell, Shield, Save, Loader2, Trash2, CreditCard, ChevronRight } from 'lucide-react';
 import { Breadcrumb } from '@/components/ui';
 import DeleteAccountModal from '@/components/auth/DeleteAccountModal';
 import { Bell, Shield, Save, Loader2, Zap } from 'lucide-react';
@@ -221,6 +222,21 @@ export default function SettingsPage() {
           )}
         </div>
       </section>
+
+      {/* Payment Methods Section */}
+      <Link
+        href="/dashboard/settings/payment-methods"
+        className="card p-6 mt-5 flex items-center justify-between gap-4 transition-colors hover:bg-ink-50"
+      >
+        <span className="flex items-start gap-3">
+          <CreditCard className="w-5 h-5 text-saffron-600 mt-0.5" aria-hidden="true" />
+          <span>
+            <span className="block text-lg font-semibold text-ink-900">Payment methods</span>
+            <span className="block text-sm text-ink-500">Add, remove, or choose a default card for checkout.</span>
+          </span>
+        </span>
+        <ChevronRight className="w-5 h-5 text-ink-400 shrink-0" aria-hidden="true" />
+      </Link>
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <button type="button" disabled={saving} onClick={handleSave} className="btn-primary inline-flex items-center gap-2">

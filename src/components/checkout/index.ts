@@ -7,5 +7,7 @@ export type { CheckoutStep } from './StepProgress';
 export { OrderReview } from './OrderReview';
 export { ConfirmationStep } from './ConfirmationStep';
 export { CheckoutSteps } from './CheckoutSteps';
-export { CardBrandIcon, cardBrandLabel } from './CardBrandIcon';
+export { CardBrandIcon, cardBrandLabel, normalizeCardBrand } from './CardBrandIcon';
 export type { CardBrand } from './CardBrandIcon';
+export { WalletPaymentButton } from './WalletPaymentButton';
+export type { WalletPaymentButtonProps } from './WalletPaymentButton';

@@ -1,7 +1,10 @@
 import { CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-/** Brand strings Stripe reports on `CardNumberElement` change events. */
+/**
+ * Brand strings Stripe reports on `CardNumberElement` change events and on a
+ * saved PaymentMethod's `card.brand`.
+ */
 export type CardBrand =
   | 'visa'
   | 'mastercard'
@@ -23,8 +26,32 @@ const BRAND_LABELS: Record<CardBrand, string> = {
   unknown: 'Card',
 };
 
+/** Display names and spellings other APIs use for the same brands. */
+const BRAND_ALIASES: Record<string, CardBrand> = {
+  'american express': 'amex',
+  american_express: 'amex',
+  americanexpress: 'amex',
+  'master card': 'mastercard',
+  master_card: 'mastercard',
+  'diners club': 'diners',
+  diners_club: 'diners',
+  dinersclub: 'diners',
+  'union pay': 'unionpay',
+  union_pay: 'unionpay',
+};
+
+/**
+ * Map any brand string — Stripe's `visa`, a saved card's `Visa`, or
+ * `American Express` — onto a known `CardBrand`, falling back to `unknown`.
+ */
+export const normalizeCardBrand = (brand: string | null | undefined): CardBrand => {
+  const key = (brand ?? '').trim().toLowerCase();
+  if (key in BRAND_LABELS) return key as CardBrand;
+  return BRAND_ALIASES[key] ?? 'unknown';
+};
+
 export const cardBrandLabel = (brand: string): string =>
-  BRAND_LABELS[brand as CardBrand] ?? BRAND_LABELS.unknown;
+  BRAND_LABELS[normalizeCardBrand(brand)];
 
 interface CardBrandIconProps {
   brand: string;
@@ -36,8 +63,10 @@ interface CardBrandIconProps {
  * no asset licensing, and they stay legible at 32×20. The accessible name is on
  * the <svg> so screen readers announce the detected brand as it changes.
  */
-export function CardBrandIcon({ brand, className }: CardBrandIconProps) {
-  if (!(brand in BRAND_LABELS) || brand === 'unknown') {
+export function CardBrandIcon({ brand: rawBrand, className }: CardBrandIconProps) {
+  const brand = normalizeCardBrand(rawBrand);
+
+  if (brand === 'unknown') {
     return (
       <CreditCard className={cn('h-5 w-8 shrink-0 text-ink-500', className)} aria-hidden="true" />
     );
