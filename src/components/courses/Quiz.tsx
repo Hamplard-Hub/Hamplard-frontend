@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Check, X, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { shuffleQuestions } from '@/lib/quiz';
+import { useCountdown } from '@/lib/hooks/use-countdown';
+import { QuizTimer } from '@/components/ui/QuizTimer';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -28,6 +31,16 @@ interface QuizQuestion {
 interface QuizProps {
   questions: QuizQuestion[];
   passPercentage?: number;
+  /**
+   * Optional assessment time limit, in seconds. When omitted (or non-positive)
+   * the quiz is untimed, exactly as before.
+   */
+  timeLimitSeconds?: number | null;
+  /**
+   * When `true`, question order is shuffled once per attempt. Defaults to
+   * `false` so existing quizzes keep their authored order.
+   */
+  randomizeQuestions?: boolean;
   onComplete?: (score: number, total: number, passed: boolean) => void;
   onProgressSave?: (currentIndex: number, answers: Record<string, string>) => void;
 }
@@ -38,6 +51,22 @@ interface QuizProps {
 
 const STORAGE_KEY = 'quiz-progress';
 
+function isAnswerCorrect(
+  question: QuizQuestion,
+  answer: string | undefined,
+): boolean {
+  if (!answer) return false;
+
+  if (question.type === 'short_answer') {
+    return (
+      answer.trim().toLowerCase() ===
+      (question.correctAnswer ?? '').trim().toLowerCase()
+    );
+  }
+
+  return question.options?.find((option) => option.isCorrect)?.id === answer;
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -45,6 +74,8 @@ const STORAGE_KEY = 'quiz-progress';
 export function Quiz({
   questions,
   passPercentage = 60,
+  timeLimitSeconds = null,
+  randomizeQuestions = false,
   onComplete,
   onProgressSave,
 }: QuizProps) {
@@ -52,12 +83,55 @@ export function Quiz({
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState<Record<string, boolean>>({});
   const [showResult, setShowResult] = useState(false);
-  const [score, setScore] = useState(0);
+  const [orderedQuestions, setOrderedQuestions] = useState<QuizQuestion[]>(() =>
+    randomizeQuestions ? shuffleQuestions(questions) : questions,
+  );
 
-  const total = questions.length;
-  const currentQuestion = questions[currentIndex];
+  // Keep the order in sync with the props, re-rolling once per randomization
+  // toggle so an in-flight attempt is not reordered mid-quiz.
+  useEffect(() => {
+    setOrderedQuestions(
+      randomizeQuestions ? shuffleQuestions(questions) : questions,
+    );
+  }, [questions, randomizeQuestions]);
+
+  const total = orderedQuestions.length;
+  const currentQuestion = orderedQuestions[currentIndex];
   const isLastQuestion = currentIndex === total - 1;
   const isFirstQuestion = currentIndex === 0;
+
+  // Score is derived from the recorded submissions so a timer-driven auto-submit
+  // can never double count an answer.
+  const score = useMemo(
+    () =>
+      orderedQuestions.reduce(
+        (acc, question) =>
+          submitted[question.id] && isAnswerCorrect(question, answers[question.id])
+            ? acc + 1
+            : acc,
+        0,
+      ),
+    [orderedQuestions, answers, submitted],
+  );
+
+  const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+  const passed = percentage >= passPercentage;
+
+  // Auto-submit whatever is on screen, then reveal the score summary.
+  const handleTimeUp = useCallback(() => {
+    setSubmitted((prev) => {
+      if (!currentQuestion || prev[currentQuestion.id]) return prev;
+      if (!answers[currentQuestion.id]) return prev;
+      return { ...prev, [currentQuestion.id]: true };
+    });
+    setShowResult(true);
+  }, [answers, currentQuestion]);
+
+  const { secondsLeft, isWarning, isActive, restart } = useCountdown({
+    seconds: timeLimitSeconds,
+    enabled: !showResult,
+    onExpire: handleTimeUp,
+  });
 
   // Restore saved progress on mount
   useEffect(() => {
@@ -107,27 +181,8 @@ export function Quiz({
     (questionId: string) => {
       if (!answers[questionId]) return;
       setSubmitted((prev) => ({ ...prev, [questionId]: true }));
-
-      const question = questions.find((q) => q.id === questionId);
-      if (!question) return;
-
-      const userAnswer = answers[questionId];
-      let isCorrect = false;
-
-      if (question.type === 'short_answer') {
-        isCorrect =
-          userAnswer.trim().toLowerCase() ===
-          (question.correctAnswer ?? '').trim().toLowerCase();
-      } else {
-        const correctOption = question.options?.find((o) => o.isCorrect);
-        isCorrect = correctOption?.id === userAnswer;
-      }
-
-      if (isCorrect) {
-        setScore((prev) => prev + 1);
-      }
     },
-    [answers, questions],
+    [answers],
   );
 
   const handleNext = useCallback(() => {
@@ -149,18 +204,25 @@ export function Quiz({
     setAnswers({});
     setSubmitted({});
     setShowResult(false);
-    setScore(0);
     sessionStorage.removeItem(STORAGE_KEY);
-  }, []);
 
-  const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
-  const passed = percentage >= passPercentage;
-
-  // Call onComplete when quiz finishes
-  useEffect(() => {
-    if (showResult) {
-      onComplete?.(score, total, passed);
+    if (randomizeQuestions) {
+      setOrderedQuestions(shuffleQuestions(questions));
     }
+
+    restart();
+  }, [questions, randomizeQuestions, restart]);
+
+  // Report completion exactly once per attempt (covers timer auto-submit too).
+  const hasReportedRef = useRef(false);
+  useEffect(() => {
+    if (!showResult) {
+      hasReportedRef.current = false;
+      return;
+    }
+    if (hasReportedRef.current) return;
+    hasReportedRef.current = true;
+    onComplete?.(score, total, passed);
   }, [showResult, score, total, passed, onComplete]);
 
   // ---------------------------------------------------------------------------
@@ -187,7 +249,7 @@ export function Quiz({
         <p className="mt-1 text-sm text-ink-500">
           {passed
             ? 'You passed the quiz!'
-            : You need % to pass.}
+            : `You need ${passPercentage}% to pass.`}
         </p>
 
         <div className="mt-6 flex w-full max-w-xs gap-4">
@@ -247,31 +309,31 @@ export function Quiz({
 
   const isSubmitted = submitted[currentQuestion.id] ?? false;
   const selectedAnswer = answers[currentQuestion.id] ?? '';
-  const correctOption = currentQuestion.options?.find((o) => o.isCorrect);
   const isCorrect =
-    isSubmitted &&
-    (currentQuestion.type === 'short_answer'
-      ? selectedAnswer.trim().toLowerCase() ===
-        (currentQuestion.correctAnswer ?? '').trim().toLowerCase()
-      : correctOption?.id === selectedAnswer);
+    isSubmitted && isAnswerCorrect(currentQuestion, selectedAnswer);
 
   return (
     <div className="rounded-2xl border border-ink-200 bg-white p-6">
       {/* Progress bar */}
       <div className="mb-6">
-        <div className="flex items-center justify-between text-sm text-ink-500">
+        <div className="flex items-center justify-between gap-3 text-sm text-ink-500">
           <span>
             Question {currentIndex + 1} of {total}
           </span>
-          <span>
-            {Object.keys(submitted).length} of {total} answered
-          </span>
+          <div className="flex items-center gap-3">
+            <span>
+              {Object.keys(submitted).length} of {total} answered
+            </span>
+            {isActive && (
+              <QuizTimer secondsLeft={secondsLeft} isWarning={isWarning} />
+            )}
+          </div>
         </div>
         <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-ink-100">
           <div
             className="h-full rounded-full bg-hamplard-primary transition-all duration-300"
             style={{
-              width: ${((currentIndex + 1) / total) * 100}%,
+              width: `${((currentIndex + 1) / total) * 100}%`,
             }}
           />
         </div>

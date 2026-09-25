@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import QuizComponent from "./QuizComponent";
@@ -241,5 +241,74 @@ describe("QuizComponent", () => {
     expect(
       screen.queryByRole("button", { name: "Continue to next lecture" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("is untimed and keeps the authored order by default", () => {
+    render(<QuizComponent questions={questions} />);
+
+    expect(screen.queryByRole("timer")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Which planet is closest to the Sun?"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows a countdown and warns when under 30 seconds remain", () => {
+    vi.useFakeTimers();
+    try {
+      render(<QuizComponent questions={questions} timeLimitSeconds={90} />);
+
+      expect(screen.getByRole("timer")).toHaveTextContent("1:30");
+      expect(screen.getByRole("timer")).toHaveAttribute("data-warning", "false");
+
+      act(() => {
+        vi.advanceTimersByTime(60_000);
+      });
+
+      expect(screen.getByRole("timer")).toHaveTextContent("0:30");
+      expect(screen.getByRole("timer")).toHaveAttribute("data-warning", "true");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("auto-submits and finishes the quiz when the timer expires", () => {
+    vi.useFakeTimers();
+    try {
+      const onComplete = vi.fn();
+      render(
+        <QuizComponent
+          questions={questions}
+          timeLimitSeconds={5}
+          onComplete={onComplete}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole("radio", { name: /Mercury/ }));
+
+      act(() => {
+        vi.advanceTimersByTime(5_000);
+      });
+
+      expect(screen.getByText(/You scored 1 out of 3/)).toBeInTheDocument();
+      expect(onComplete).toHaveBeenCalledWith(1, 3, false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("shuffles question order when randomizeQuestions is enabled", () => {
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0);
+    try {
+      render(<QuizComponent questions={questions} randomizeQuestions />);
+
+      // Fisher-Yates with random() === 0 promotes q2 ("Select all gas giants.")
+      // to the first slot.
+      expect(screen.getByText("Select all gas giants.")).toBeInTheDocument();
+      expect(
+        screen.queryByText("Which planet is closest to the Sun?"),
+      ).not.toBeInTheDocument();
+    } finally {
+      randomSpy.mockRestore();
+    }
   });
 });
