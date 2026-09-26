@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, Check, Play, Clock, X } from 'lucide-react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { ChevronDown, ChevronLeft, ChevronRight, Check, Play, Clock, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { CourseModule, Lesson } from '@/types';
 
@@ -12,14 +12,14 @@ import type { CourseModule, Lesson } from '@/types';
 function formatSectionDuration(totalSecs: number): string {
   const h = Math.floor(totalSecs / 3600);
   const m = Math.floor((totalSecs % 3600) / 60);
-  if (h > 0) return ${h}h m;
-  return ${m}min;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m} min`;
 }
 
 function formatLectureDuration(secs: number): string {
   const m = Math.floor(secs / 60);
   const s = secs % 60;
-  return ${m}:;
+  return `${m}:${String(s).padStart(2, '0')}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -57,6 +57,8 @@ export function LearnSidebar({
   const [collapsed, setCollapsed] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const lessonButtonRefs = useRef(new Map<string, HTMLButtonElement>());
 
   // Detect mobile viewport
   useEffect(() => {
@@ -67,6 +69,27 @@ export function LearnSidebar({
   }, []);
 
   const completedSet = useMemo(() => new Set(completedLessonIds), [completedLessonIds]);
+
+  const normalizedSearch = searchQuery.trim().toLocaleLowerCase();
+  const filteredModules = useMemo(
+    () => modules
+      .map((module) => ({
+        ...module,
+        lessons: normalizedSearch
+          ? module.lessons.filter((lesson) => lesson.title.toLocaleLowerCase().includes(normalizedSearch))
+          : module.lessons,
+      }))
+      .filter((module) => module.lessons.length > 0),
+    [modules, normalizedSearch],
+  );
+  const visibleLessonIds = useMemo(
+    () => filteredModules.flatMap((module) => module.lessons.map((lesson) => lesson.id)),
+    [filteredModules],
+  );
+  const currentLesson = useMemo(
+    () => modules.flatMap((module) => module.lessons).find((lesson) => lesson.id === currentLessonId),
+    [currentLessonId, modules],
+  );
 
   const stats = useMemo(() => {
     let totalLectures = 0;
@@ -106,6 +129,30 @@ export function LearnSidebar({
     [onSelectLesson, isMobile],
   );
 
+  const handleLessonKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>, lessonId: string) => {
+    const currentIndex = visibleLessonIds.indexOf(lessonId);
+    if (currentIndex === -1) return;
+
+    let nextIndex: number | null = null;
+    if (event.key === 'ArrowDown') nextIndex = Math.min(currentIndex + 1, visibleLessonIds.length - 1);
+    if (event.key === 'ArrowUp') nextIndex = Math.max(currentIndex - 1, 0);
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = visibleLessonIds.length - 1;
+
+    if (nextIndex !== null) {
+      event.preventDefault();
+      lessonButtonRefs.current.get(visibleLessonIds[nextIndex])?.focus();
+    }
+  }, [visibleLessonIds]);
+
+  const highlightMatch = (title: string) => {
+    if (!normalizedSearch) return title;
+    const start = title.toLocaleLowerCase().indexOf(normalizedSearch);
+    if (start === -1) return title;
+    const end = start + normalizedSearch.length;
+    return <>{title.slice(0, start)}<mark className="rounded bg-saffron-200 px-0.5 text-inherit">{title.slice(start, end)}</mark>{title.slice(end)}</>;
+  };
+
   const sidebarContent = (
     <div className="flex h-full flex-col">
       {/* Header */}
@@ -134,12 +181,41 @@ export function LearnSidebar({
             {allExpanded ? 'Collapse All' : 'Expand All'}
           </button>
         </div>
+        <div className="relative mt-3" role="search">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" aria-hidden="true" />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search lessons"
+            aria-label="Search lessons"
+            className="w-full rounded-lg border border-ink-200 bg-white py-2 pl-9 pr-8 text-sm text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-hamplard-primary focus:ring-offset-1"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-ink-500 hover:bg-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary"
+              aria-label="Clear lesson search"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Sections */}
       <div className="flex-1 overflow-y-auto divide-y divide-ink-100">
-        {modules.map((mod) => {
-          const isOpen = expandedIds.has(mod.id);
+        <p className="sr-only" aria-live="polite" aria-atomic="true">
+          {currentLesson ? `Now playing: ${currentLesson.title}` : 'No lesson is currently playing.'}
+        </p>
+        {normalizedSearch && (
+          <p className="px-4 py-2 text-xs text-ink-500" aria-live="polite">
+            {visibleLessonIds.length} {visibleLessonIds.length === 1 ? 'lesson' : 'lessons'} found
+          </p>
+        )}
+        {filteredModules.map((mod) => {
+          const isOpen = normalizedSearch ? true : expandedIds.has(mod.id);
           const sectionSecs = mod.lessons.reduce(
             (sum, l) => sum + (l.videoDuration ?? 0),
             0,
@@ -153,7 +229,7 @@ export function LearnSidebar({
                 type="button"
                 onClick={() => toggleSection(mod.id)}
                 aria-expanded={isOpen}
-                className="flex w-full items-center gap-2 bg-ink-50 px-4 py-3 text-left transition-colors hover:bg-ink-100"
+                className="flex w-full items-center gap-2 bg-ink-50 px-4 py-3 text-left transition-colors hover:bg-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-hamplard-primary"
               >
                 <ChevronDown
                   className={cn(
@@ -166,7 +242,7 @@ export function LearnSidebar({
                     {mod.title}
                   </span>
                   <span className="text-xs text-ink-500">
-                    {mod.lessons.length} lectures � {formatSectionDuration(sectionSecs)}
+                    {mod.lessons.length} lectures · {formatSectionDuration(sectionSecs)}
                   </span>
                 </div>
                 {sectionCompleted && (
@@ -176,7 +252,7 @@ export function LearnSidebar({
 
               {/* Lessons list */}
               {isOpen && (
-                <ul className="animate-fade-in">
+                <ul className="animate-fade-in" role="listbox" aria-label={`${mod.title} lessons`}>
                   {mod.lessons.map((lesson) => {
                     const isCurrent = lesson.id === currentLessonId;
                     const isCompleted = completedSet.has(lesson.id);
@@ -185,9 +261,17 @@ export function LearnSidebar({
                       <li key={lesson.id}>
                         <button
                           type="button"
+                          ref={(node) => {
+                            if (node) lessonButtonRefs.current.set(lesson.id, node);
+                            else lessonButtonRefs.current.delete(lesson.id);
+                          }}
                           onClick={() => handleSelectLesson(lesson.id)}
+                          onKeyDown={(event) => handleLessonKeyDown(event, lesson.id)}
+                          role="option"
+                          aria-selected={isCurrent}
+                          aria-current={isCurrent ? 'true' : undefined}
                           className={cn(
-                            'flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors',
+                            'flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-hamplard-primary',
                             isCurrent
                               ? 'bg-hamplard-lilac/60 border-l-2 border-hamplard-primary'
                               : 'border-l-2 border-transparent hover:bg-ink-50',
@@ -213,7 +297,7 @@ export function LearnSidebar({
                                   : 'text-ink-700',
                             )}
                           >
-                            {lesson.title}
+                            {highlightMatch(lesson.title)}
                           </span>
                           {lesson.videoDuration && lesson.videoDuration > 0 && (
                             <span className="flex items-center gap-1 flex-shrink-0 text-xs text-ink-400">
@@ -230,6 +314,11 @@ export function LearnSidebar({
             </div>
           );
         })}
+        {filteredModules.length === 0 && (
+          <div className="px-4 py-8 text-center text-sm text-ink-500">
+            No lessons match “{searchQuery.trim()}”.
+          </div>
+        )}
       </div>
     </div>
   );
