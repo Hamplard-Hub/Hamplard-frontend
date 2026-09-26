@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  Play, Pause, Volume2, VolumeX, Maximize, Minimize, Subtitles, Keyboard,
+  Play, Pause, Volume2, VolumeX, Maximize, Minimize, Subtitles, Settings,
 } from 'lucide-react';
 import { cn, formatDuration } from '@/lib/utils';
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
+import type { VideoQualityLevel, VideoQualities } from '@/types';
 
 // ── Quality option definitions ─────────────────────────────────────────────
 export const QUALITY_LEVELS: VideoQualityLevel[] = ['auto', '1080p', '720p', '480p', '360p'];
@@ -56,6 +57,20 @@ export function VideoControls({
 }: VideoControlsProps) {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const keyboardBtnRef = useRef<HTMLButtonElement>(null);
+  const [qualityOpen, setQualityOpen] = useState(false);
+  const qualityRef = useRef<HTMLDivElement>(null);
+  const availableQualities = QUALITY_LEVELS.filter(
+    (level) => level === 'auto' || Boolean(videoQualities?.[level]),
+  );
+  const showQualityButton = availableQualities.length > 1;
+
+  useEffect(() => {
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!qualityRef.current?.contains(event.target as Node)) setQualityOpen(false);
+    };
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    return () => document.removeEventListener('mousedown', closeOnOutsideClick);
+  }, []);
 
   return (
     <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-3 pt-6 pb-2 flex flex-col gap-1.5">
@@ -185,23 +200,25 @@ export function VideoControls({
           </div>
         )}
 
-        {/* Subtitles */}
-        <button
-          onClick={onSubtitles}
-          disabled={!hasCaptions}
-          title={!hasCaptions ? 'No captions available' : subtitlesOn ? 'Hide captions' : 'Show captions'}
-          className={cn(
-            'p-1 transition-colors',
-            hasCaptions
-              ? subtitlesOn
-                ? 'text-saffron-300'
-                : 'text-white hover:text-saffron-300'
-              : 'text-white/30 cursor-not-allowed',
-          )}
-          aria-label="Subtitles"
-        >
-          <Subtitles className="w-4 h-4" />
-        </button>
+        {/* Captions are only offered when this lesson has a WebVTT track. */}
+        {hasCaptions && (
+          <button
+            type="button"
+            onClick={onSubtitles}
+            title={subtitlesOn ? 'Hide captions' : 'Show captions'}
+            className={cn(
+              'rounded p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-saffron-300',
+              subtitlesOn
+                ? 'bg-saffron-500/25 text-saffron-200'
+                : 'text-white hover:text-saffron-300',
+            )}
+            aria-label={subtitlesOn ? 'Turn captions off' : 'Turn captions on'}
+            aria-pressed={subtitlesOn}
+          >
+            <Subtitles className="h-4 w-4" aria-hidden="true" />
+            <span className="sr-only">CC</span>
+          </button>
+        )}
 
         {/* Autoplay toggle */}
         <button

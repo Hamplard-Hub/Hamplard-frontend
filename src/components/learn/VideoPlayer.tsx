@@ -37,12 +37,13 @@ interface VideoPlayerProps {
 // ── Constants ─────────────────────────────────────────────────────
 const AUTOSAVE_INTERVAL_MS  = 30_000; // save every 30 s
 const COMPLETION_THRESHOLD  = 0.95;   // 95 %
+const CAPTIONS_STORAGE_KEY = 'hamplard-captions-enabled';
 
 // ── Component ─────────────────────────────────────────────────────
 export const VideoPlayer = forwardRef<
   HTMLVideoElement,
   VideoPlayerProps
->(function videoPlayer({
+>(function VideoPlayerComponent({
   src,
   videoQualities,
   captionsUrl,
@@ -62,6 +63,7 @@ export const VideoPlayer = forwardRef<
   const saveTimerRef  = useRef<ReturnType<typeof setInterval> | null>(null);
   const completedRef  = useRef(false);        // fire onComplete only once
   const controlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const captionsTrackRef = useRef<HTMLTrackElement | null>(null);
 
   // ── State ─────────────────────────────────────────────────────
   const [playing,      setPlaying]      = useState(false);
@@ -70,7 +72,10 @@ export const VideoPlayer = forwardRef<
   const [volume,       setVolume]       = useState(1);
   const [muted,        setMuted]        = useState(false);
   const [speed,        setSpeed]        = useState(1);
-  const [subtitlesOn,  setSubtitlesOn]  = useState(false);
+  const [subtitlesOn, setSubtitlesOn] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.sessionStorage.getItem(CAPTIONS_STORAGE_KEY) === 'true';
+  });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [buffering,    setBuffering]    = useState(false);
   const [showControls, setShowControls] = useState(true);
@@ -115,13 +120,17 @@ export const VideoPlayer = forwardRef<
 
   // ── Sync subtitle track visibility ───────────────────────────
   useEffect(() => {
-    const vid = videoRef.current;
-    if (!vid) return;
-    const track = vid.textTracks[0];
-    if (track) {
-      track.mode = subtitlesOn ? 'showing' : 'hidden';
-    }
+    window.sessionStorage.setItem(CAPTIONS_STORAGE_KEY, String(subtitlesOn));
   }, [subtitlesOn]);
+
+  const syncCaptionTrack = useCallback(() => {
+    const track = captionsTrackRef.current?.track;
+    if (track) track.mode = subtitlesOn && captionsUrl ? 'showing' : 'hidden';
+  }, [captionsUrl, subtitlesOn]);
+
+  useEffect(() => {
+    syncCaptionTrack();
+  }, [syncCaptionTrack, activeSrc]);
 
   // ── Fullscreen change listener ────────────────────────────────
   useEffect(() => {
@@ -344,12 +353,6 @@ export const VideoPlayer = forwardRef<
       className={`relative group bg-black rounded-2xl overflow-hidden select-none ${className}`}
       onMouseMove={resetControlsTimer}
       onMouseEnter={resetControlsTimer}
-      // Clicking on the video area (outside controls) toggles play/pause
-      onClick={(e) => {
-        // Don't fire if a child control was clicked
-        if ((e.target as HTMLElement).closest('[data-controls]')) return;
-        togglePlayPause();
-      }}
       role="region"
       aria-label="Video player"
       // Let the wrapper receive keyboard events
@@ -363,9 +366,10 @@ export const VideoPlayer = forwardRef<
       <video
         ref={videoRef}
         src={activeSrc}
-        className="w-full h-full"
+        className="lesson-caption-video w-full h-full"
         preload="metadata"
         playsInline
+        onClick={togglePlayPause}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onCanPlay={handleCanPlay}
@@ -378,13 +382,26 @@ export const VideoPlayer = forwardRef<
       >
         {captionsUrl && (
           <track
+            ref={captionsTrackRef}
             kind="subtitles"
             src={captionsUrl}
-            default={subtitlesOn}
-            label="Subtitles"
+            srcLang="en"
+            label="English captions"
+            onLoad={syncCaptionTrack}
           />
         )}
       </video>
+      <style>{`
+        .lesson-caption-video::cue {
+          background: rgba(0, 0, 0, 0.82);
+          color: #fff;
+          font-family: Arial, sans-serif;
+          font-size: 1.05em;
+          font-weight: 600;
+          line-height: 1.35;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+        }
+      `}</style>
 
       {/* Buffering spinner */}
       {buffering && (
@@ -399,7 +416,6 @@ export const VideoPlayer = forwardRef<
         className={`transition-opacity duration-300 ${
           showControls || !playing ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
-        onClick={(e) => e.stopPropagation()}
       >
         <VideoControls
           playing={playing}
