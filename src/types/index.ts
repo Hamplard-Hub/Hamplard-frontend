@@ -1,23 +1,23 @@
 // src/types/index.ts
 
-export type UserRole = 'STUDENT' | 'INSTRUCTOR' | 'ADMIN';
+export type UserRole = "STUDENT" | "INSTRUCTOR" | "ADMIN";
 
 export type CourseStatus =
-  | 'DRAFT'
-  | 'PENDING'
-  | 'ACTIVE'
-  | 'PAUSED'
-  | 'ARCHIVED';
+  | "DRAFT"
+  | "PENDING"
+  | "ACTIVE"
+  | "PAUSED"
+  | "ARCHIVED";
 
-export type EnrollmentStatus = 'ACTIVE' | 'COMPLETED' | 'REFUNDED';
+export type EnrollmentStatus = "ACTIVE" | "COMPLETED" | "REFUNDED";
 
 export type AssignmentStatus =
-  | 'PENDING'
-  | 'SUBMITTED'
-  | 'APPROVED'
-  | 'REJECTED';
+  | "PENDING"
+  | "SUBMITTED"
+  | "APPROVED"
+  | "REJECTED";
 
-export type LessonType = 'VIDEO' | 'TEXT' | 'QUIZ' | 'ASSIGNMENT';
+export type LessonType = "VIDEO" | "TEXT" | "QUIZ" | "ASSIGNMENT";
 
 export interface User {
   id: string;
@@ -32,14 +32,14 @@ export interface User {
 }
 
 /** Available quality levels for a lesson's video */
-export type VideoQualityLevel = 'auto' | '1080p' | '720p' | '480p' | '360p';
+export type VideoQualityLevel = "auto" | "1080p" | "720p" | "480p" | "360p";
 
 /** Per-resolution source URLs attached to a lesson (all optional) */
 export interface VideoQualities {
-  '1080p'?: string;
-  '720p'?: string;
-  '480p'?: string;
-  '360p'?: string;
+  "1080p"?: string;
+  "720p"?: string;
+  "480p"?: string;
+  "360p"?: string;
 }
 
 export interface Lesson {
@@ -98,7 +98,7 @@ export interface Course {
   rating?: number;
   reviewCount?: number;
   originalPrice?: number;
-  badge?: 'bestseller' | 'new' | 'hot';
+  badge?: "bestseller" | "new" | "hot";
 }
 
 export interface LessonProgress {
@@ -166,6 +166,8 @@ export interface Announcement {
   subject: string;
   message: string;
   deliveryCount: number;
+  status?: "draft" | "scheduled" | "published";
+  scheduledFor?: string | null;
   createdAt: string;
 }
 
@@ -187,7 +189,11 @@ export interface Category {
 
 // ── Review & Rating ────────────────────────────────────────────────
 
-export type ReviewSortOption = 'most_recent' | 'most_helpful' | 'highest_rated' | 'lowest_rated';
+export type ReviewSortOption =
+  | "most_recent"
+  | "most_helpful"
+  | "highest_rated"
+  | "lowest_rated";
 
 export interface InstructorReply {
   /** Instructor's display name */
@@ -230,8 +236,8 @@ export interface RatingDistribution {
 
 // ── Lesson Q&A ────────────────────────────────────────────────────
 
-export type QnaSortOption = 'most_recent' | 'most_upvoted';
-export type QnaFilterOption = 'all' | 'mine' | 'unanswered';
+export type QnaSortOption = "most_recent" | "most_upvoted";
+export type QnaFilterOption = "all" | "mine" | "unanswered";
 
 export interface QnaReply {
   id: string;
@@ -269,8 +275,8 @@ export interface Bundle {
   title: string;
   description: string | null;
   thumbnailUrl: string | null;
-  totalValue: number;       // sum of individual course prices
-  bundlePrice: number;      // discounted price
+  totalValue: number; // sum of individual course prices
+  bundlePrice: number; // discounted price
   courses: Course[];
   relatedBundles?: BundleSummary[];
   createdAt: string;
