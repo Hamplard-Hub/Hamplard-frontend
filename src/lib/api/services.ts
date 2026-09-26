@@ -1,20 +1,25 @@
-import { apiClient } from './client';
+import { apiClient } from "./client";
 import type {
-  ApiResponse, PaginatedResponse, Course, Enrollment,
-  Certificate, Notification, User, Category, Announcement,
-  Gift, LeaderboardResponse, LeaderboardPeriod, SavedPaymentMethod,
-} from '@/types';
+  ApiResponse,
+  PaginatedResponse,
+  Course,
+  Enrollment,
+  Certificate,
+  Notification,
+  User,
+  Category,
+  Announcement,
+} from "@/types";
 
-const isBrowser = typeof window !== 'undefined';
-const ANNOUNCEMENTS_STORAGE_KEY = 'hamplard_announcements';
-const NOTIFICATIONS_STORAGE_KEY = 'hamplard_notifications';
-const PAYMENT_METHODS_STORAGE_KEY = 'hamplard_payment_methods';
+const isBrowser = typeof window !== "undefined";
+const ANNOUNCEMENTS_STORAGE_KEY = "hamplard_announcements";
+const NOTIFICATIONS_STORAGE_KEY = "hamplard_notifications";
 
-const readStorage = <T,>(key: string, fallback: T): T => {
+const readStorage = <T>(key: string, fallback: T): T => {
   if (!isBrowser) return fallback;
   try {
     const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) as T : fallback;
+    return raw ? (JSON.parse(raw) as T) : fallback;
   } catch {
     return fallback;
   }
@@ -27,13 +32,13 @@ const writeStorage = (key: string, value: unknown) => {
 };
 
 const currentUserKey = () => {
-  if (!isBrowser) return 'anonymous';
-  return localStorage.getItem('hamplard_address') ?? 'anonymous';
+  if (!isBrowser) return "anonymous";
+  return localStorage.getItem("hamplard_address") ?? "anonymous";
 };
 
 const emitNotificationsUpdated = () => {
   if (isBrowser) {
-    window.dispatchEvent(new Event('hamplard:notifications-updated'));
+    window.dispatchEvent(new Event("hamplard:notifications-updated"));
   }
 };
 
@@ -51,17 +56,17 @@ export const authApi = {
     stellarAddress: string;
     signedNonce: string;
     signature: string;
-    role?: 'STUDENT' | 'INSTRUCTOR';
+    role?: "STUDENT" | "INSTRUCTOR";
   }) => {
     const { data } = await apiClient.post<
       ApiResponse<{ accessToken: string; user: User }>
-    >('/auth/login', payload);
+    >("/auth/login", payload);
     return data.data;
   },
   loginWithEmail: async (payload: { email: string; password: string }) => {
     const { data } = await apiClient.post<
       ApiResponse<{ accessToken: string; user: User }>
-    >('/auth/email/login', payload);
+    >("/auth/email/login", payload);
     return data.data;
   },
 };
@@ -77,9 +82,9 @@ export const coursesApi = {
     page?: number;
     limit?: number;
   }): Promise<PaginatedResponse<Course>> => {
-    const { data } = await apiClient.get<ApiResponse<PaginatedResponse<Course>>>(
-      '/courses', { params },
-    );
+    const { data } = await apiClient.get<
+      ApiResponse<PaginatedResponse<Course>>
+    >("/courses", { params });
     return data.data;
   },
 
@@ -89,7 +94,9 @@ export const coursesApi = {
   },
 
   getCategories: async (): Promise<Category[]> => {
-    const { data } = await apiClient.get<ApiResponse<Category[]>>('/courses/categories');
+    const { data } = await apiClient.get<ApiResponse<Category[]>>(
+      "/courses/categories",
+    );
     return data.data;
   },
 
@@ -104,12 +111,18 @@ export const coursesApi = {
     price: number;
     platformFeePercent?: number;
   }): Promise<Course> => {
-    const { data } = await apiClient.post<ApiResponse<Course>>('/courses', payload);
+    const { data } = await apiClient.post<ApiResponse<Course>>(
+      "/courses",
+      payload,
+    );
     return data.data;
   },
 
   update: async (id: string, payload: Partial<Course>): Promise<Course> => {
-    const { data } = await apiClient.patch<ApiResponse<Course>>(`/courses/${id}`, payload);
+    const { data } = await apiClient.patch<ApiResponse<Course>>(
+      `/courses/${id}`,
+      payload,
+    );
     return data.data;
   },
 
@@ -119,20 +132,23 @@ export const coursesApi = {
 
   submitForReview: async (id: string, txHash?: string): Promise<Course> => {
     const { data } = await apiClient.post<ApiResponse<Course>>(
-      `/courses/${id}/submit`, { txHash },
+      `/courses/${id}/submit`,
+      { txHash },
     );
     return data.data;
   },
 
   approve: async (id: string): Promise<Course> => {
-    const { data } = await apiClient.post<ApiResponse<Course>>(`/courses/${id}/approve`);
+    const { data } = await apiClient.post<ApiResponse<Course>>(
+      `/courses/${id}/approve`,
+    );
     return data.data;
   },
 
   getPending: async (): Promise<PaginatedResponse<Course>> => {
-    const { data } = await apiClient.get<ApiResponse<PaginatedResponse<Course>>>(
-      '/courses/admin/pending',
-    );
+    const { data } = await apiClient.get<
+      ApiResponse<PaginatedResponse<Course>>
+    >("/courses/admin/pending");
     return data.data;
   },
 };
@@ -146,14 +162,20 @@ export const enrollmentsApi = {
     txHash: string;
     amountPaid: number;
   }): Promise<Enrollment> => {
-    const { data } = await apiClient.post<ApiResponse<Enrollment>>('/enrollments', payload);
+    const { data } = await apiClient.post<ApiResponse<Enrollment>>(
+      "/enrollments",
+      payload,
+    );
     return data.data;
   },
 
-  getMy: async (page = 1, limit = 20): Promise<PaginatedResponse<Enrollment>> => {
-    const { data } = await apiClient.get<ApiResponse<PaginatedResponse<Enrollment>>>(
-      '/enrollments/my', { params: { page, limit } },
-    );
+  getMy: async (
+    page = 1,
+    limit = 20,
+  ): Promise<PaginatedResponse<Enrollment>> => {
+    const { data } = await apiClient.get<
+      ApiResponse<PaginatedResponse<Enrollment>>
+    >("/enrollments/my", { params: { page, limit } });
     return data.data;
   },
 
@@ -170,7 +192,9 @@ export const enrollmentsApi = {
         `/enrollments/${courseId}/check`,
       );
       return data.data;
-    } catch { return false; }
+    } catch {
+      return false;
+    }
   },
 };
 
@@ -178,19 +202,35 @@ export const enrollmentsApi = {
 // Lessons
 // ----------------------------------------------------------
 export const lessonsApi = {
-  markComplete: async (lessonId: string, enrollmentId: string, watchedSecs?: number) => {
+  markComplete: async (
+    lessonId: string,
+    enrollmentId: string,
+    watchedSecs?: number,
+  ) => {
     const { data } = await apiClient.post(`/lessons/${lessonId}/complete`, {
-      enrollmentId, watchedSecs,
+      enrollmentId,
+      watchedSecs,
     });
     return data.data;
   },
 
-  updateProgress: async (lessonId: string, enrollmentId: string, watchedSecs: number) => {
-    await apiClient.patch(`/lessons/${lessonId}/progress`, { enrollmentId, watchedSecs });
+  updateProgress: async (
+    lessonId: string,
+    enrollmentId: string,
+    watchedSecs: number,
+  ) => {
+    await apiClient.patch(`/lessons/${lessonId}/progress`, {
+      enrollmentId,
+      watchedSecs,
+    });
   },
 
   createModule: async (courseId: string, title: string, position: number) => {
-    const { data } = await apiClient.post('/lessons/modules', { courseId, title, position });
+    const { data } = await apiClient.post("/lessons/modules", {
+      courseId,
+      title,
+      position,
+    });
     return data.data;
   },
 
@@ -205,7 +245,7 @@ export const lessonsApi = {
     position: number;
     isFree?: boolean;
   }) => {
-    const { data } = await apiClient.post('/lessons', payload);
+    const { data } = await apiClient.post("/lessons", payload);
     return data.data;
   },
 };
@@ -219,10 +259,18 @@ export const assignmentsApi = {
     return data.data;
   },
 
-  submit: async (assignmentId: string, submissionUrl: string, notes?: string) => {
-    const { data } = await apiClient.post(`/assignments/${assignmentId}/submit`, {
-      submissionUrl, notes,
-    });
+  submit: async (
+    assignmentId: string,
+    submissionUrl: string,
+    notes?: string,
+  ) => {
+    const { data } = await apiClient.post(
+      `/assignments/${assignmentId}/submit`,
+      {
+        submissionUrl,
+        notes,
+      },
+    );
     return data.data;
   },
 
@@ -235,7 +283,7 @@ export const assignmentsApi = {
   },
 
   getPending: async () => {
-    const { data } = await apiClient.get('/assignments/instructor/pending');
+    const { data } = await apiClient.get("/assignments/instructor/pending");
     return data.data;
   },
 };
@@ -245,7 +293,9 @@ export const assignmentsApi = {
 // ----------------------------------------------------------
 export const certificatesApi = {
   getMy: async (): Promise<Certificate[]> => {
-    const { data } = await apiClient.get<ApiResponse<Certificate[]>>('/certificates/my/all');
+    const { data } = await apiClient.get<ApiResponse<Certificate[]>>(
+      "/certificates/my/all",
+    );
     return data.data;
   },
 
@@ -255,7 +305,9 @@ export const certificatesApi = {
   },
 
   get: async (id: string): Promise<Certificate> => {
-    const { data } = await apiClient.get<ApiResponse<Certificate>>(`/certificates/${id}`);
+    const { data } = await apiClient.get<ApiResponse<Certificate>>(
+      `/certificates/${id}`,
+    );
     return data.data;
   },
 };
@@ -264,11 +316,13 @@ export const certificatesApi = {
 // Announcements
 // ----------------------------------------------------------
 export const announcementsApi = {
-  list: async (params?: { courseId?: string }): Promise<PaginatedResponse<Announcement>> => {
+  list: async (params?: {
+    courseId?: string;
+  }): Promise<PaginatedResponse<Announcement>> => {
     try {
-      const { data } = await apiClient.get<ApiResponse<PaginatedResponse<Announcement>>>(
-        '/announcements', { params },
-      );
+      const { data } = await apiClient.get<
+        ApiResponse<PaginatedResponse<Announcement>>
+      >("/announcements", { params });
       return data.data;
     } catch {
       const stored = readStorage<Announcement[]>(ANNOUNCEMENTS_STORAGE_KEY, []);
@@ -276,7 +330,10 @@ export const announcementsApi = {
         ? stored.filter((item) => item.courseId === params.courseId)
         : stored;
       return {
-        data: filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+        data: filtered.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        ),
         meta: { total: filtered.length, page: 1, limit: 20, totalPages: 1 },
       };
     }
@@ -288,9 +345,14 @@ export const announcementsApi = {
     subject: string;
     message: string;
     deliveryCount?: number;
+    status?: "draft" | "scheduled" | "published";
+    scheduledFor?: string | null;
   }): Promise<Announcement> => {
     try {
-      const { data } = await apiClient.post<ApiResponse<Announcement>>('/announcements', payload);
+      const { data } = await apiClient.post<ApiResponse<Announcement>>(
+        "/announcements",
+        payload,
+      );
       return data.data;
     } catch {
       const announcement: Announcement = {
@@ -300,6 +362,8 @@ export const announcementsApi = {
         subject: payload.subject,
         message: payload.message,
         deliveryCount: payload.deliveryCount ?? 1,
+        status: payload.status ?? "published",
+        scheduledFor: payload.scheduledFor ?? null,
         createdAt: new Date().toISOString(),
       };
 
@@ -309,21 +373,74 @@ export const announcementsApi = {
 
       const notification: Notification = {
         id: `notification-${Date.now()}`,
-        type: 'COURSE_ANNOUNCEMENT',
+        type: "COURSE_ANNOUNCEMENT",
         title: payload.subject,
         message: payload.message,
         data: { announcementId: announcement.id, courseId: payload.courseId },
         read: false,
         createdAt: announcement.createdAt,
       };
-      const existingNotifications = readStorage<Notification[]>(NOTIFICATIONS_STORAGE_KEY, []);
-      const nextNotifications = [
-        { ...notification, userKey: currentUserKey() },
-        ...existingNotifications.filter((item) => item.id !== notification.id),
-      ];
-      writeStorage(NOTIFICATIONS_STORAGE_KEY, nextNotifications);
-      emitNotificationsUpdated();
+      if (announcement.status === "published") {
+        const existingNotifications = readStorage<Notification[]>(
+          NOTIFICATIONS_STORAGE_KEY,
+          [],
+        );
+        const nextNotifications = [
+          { ...notification, userKey: currentUserKey() },
+          ...existingNotifications.filter(
+            (item) => item.id !== notification.id,
+          ),
+        ];
+        writeStorage(NOTIFICATIONS_STORAGE_KEY, nextNotifications);
+        emitNotificationsUpdated();
+      }
       return announcement;
+    }
+  },
+
+  update: async (
+    id: string,
+    payload: Partial<
+      Pick<
+        Announcement,
+        | "courseId"
+        | "courseTitle"
+        | "subject"
+        | "message"
+        | "deliveryCount"
+        | "status"
+        | "scheduledFor"
+      >
+    >,
+  ): Promise<Announcement> => {
+    try {
+      const { data } = await apiClient.patch<ApiResponse<Announcement>>(
+        `/announcements/${id}`,
+        payload,
+      );
+      return data.data;
+    } catch {
+      const stored = readStorage<Announcement[]>(ANNOUNCEMENTS_STORAGE_KEY, []);
+      const current = stored.find((item) => item.id === id);
+      if (!current) throw new Error("Announcement not found");
+      const updated = { ...current, ...payload };
+      writeStorage(
+        ANNOUNCEMENTS_STORAGE_KEY,
+        stored.map((item) => (item.id === id ? updated : item)),
+      );
+      return updated;
+    }
+  },
+
+  remove: async (id: string): Promise<void> => {
+    try {
+      await apiClient.delete(`/announcements/${id}`);
+    } catch {
+      const stored = readStorage<Announcement[]>(ANNOUNCEMENTS_STORAGE_KEY, []);
+      writeStorage(
+        ANNOUNCEMENTS_STORAGE_KEY,
+        stored.filter((item) => item.id !== id),
+      );
     }
   },
 };
@@ -334,16 +451,26 @@ export const announcementsApi = {
 export const notificationsApi = {
   list: async (params?: { unreadOnly?: boolean }) => {
     try {
-      const { data } = await apiClient.get<ApiResponse<PaginatedResponse<Notification>>>(
-        '/notifications', { params },
-      );
+      const { data } = await apiClient.get<
+        ApiResponse<PaginatedResponse<Notification>>
+      >("/notifications", { params });
       return data.data;
     } catch {
-      const stored = readStorage<Array<Notification & { userKey?: string }>>(NOTIFICATIONS_STORAGE_KEY, []);
-      const forCurrentUser = stored.filter((item) => item.userKey === currentUserKey());
-      const filtered = params?.unreadOnly ? forCurrentUser.filter((item) => !item.read) : forCurrentUser;
+      const stored = readStorage<Array<Notification & { userKey?: string }>>(
+        NOTIFICATIONS_STORAGE_KEY,
+        [],
+      );
+      const forCurrentUser = stored.filter(
+        (item) => item.userKey === currentUserKey(),
+      );
+      const filtered = params?.unreadOnly
+        ? forCurrentUser.filter((item) => !item.read)
+        : forCurrentUser;
       return {
-        data: filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+        data: filtered.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        ),
         meta: { total: filtered.length, page: 1, limit: 20, totalPages: 1 },
       };
     }
@@ -352,17 +479,25 @@ export const notificationsApi = {
     try {
       await apiClient.patch(`/notifications/${id}/read`);
     } catch {
-      const stored = readStorage<Array<Notification & { userKey?: string }>>(NOTIFICATIONS_STORAGE_KEY, []);
-      const updated = stored.map((item) => (item.id === id ? { ...item, read: true } : item));
+      const stored = readStorage<Array<Notification & { userKey?: string }>>(
+        NOTIFICATIONS_STORAGE_KEY,
+        [],
+      );
+      const updated = stored.map((item) =>
+        item.id === id ? { ...item, read: true } : item,
+      );
       writeStorage(NOTIFICATIONS_STORAGE_KEY, updated);
       emitNotificationsUpdated();
     }
   },
   markAllRead: async () => {
     try {
-      await apiClient.patch('/notifications/read-all');
+      await apiClient.patch("/notifications/read-all");
     } catch {
-      const stored = readStorage<Array<Notification & { userKey?: string }>>(NOTIFICATIONS_STORAGE_KEY, []);
+      const stored = readStorage<Array<Notification & { userKey?: string }>>(
+        NOTIFICATIONS_STORAGE_KEY,
+        [],
+      );
       const updated = stored.map((item) => ({ ...item, read: true }));
       writeStorage(NOTIFICATIONS_STORAGE_KEY, updated);
       emitNotificationsUpdated();
@@ -375,18 +510,25 @@ export const notificationsApi = {
 // ----------------------------------------------------------
 export const usersApi = {
   getMe: async (): Promise<User> => {
-    const { data } = await apiClient.get<ApiResponse<User>>('/users/me');
+    const { data } = await apiClient.get<ApiResponse<User>>("/users/me");
     return data.data;
   },
-  updateMe: async (payload: { name?: string; email?: string; bio?: string }) => {
-    const { data } = await apiClient.patch<ApiResponse<User>>('/users/me', payload);
+  updateMe: async (payload: {
+    name?: string;
+    email?: string;
+    bio?: string;
+  }) => {
+    const { data } = await apiClient.patch<ApiResponse<User>>(
+      "/users/me",
+      payload,
+    );
     return data.data;
   },
   deleteAccount: async (password: string): Promise<void> => {
     await apiClient.delete('/users/me', { data: { password } });
   },
   getInstructorStats: async () => {
-    const { data } = await apiClient.get('/users/me/instructor-stats');
+    const { data } = await apiClient.get("/users/me/instructor-stats");
     return data.data;
   },
   requestDataExport: async (): Promise<{ message: string; downloadUrl?: string }> => {
@@ -408,11 +550,14 @@ export const usersApi = {
 // Uploads
 // ----------------------------------------------------------
 export const uploadsApi = {
-  upload: async (file: File, type: 'thumbnail' | 'video' | 'resource' | 'assignment') => {
+  upload: async (
+    file: File,
+    type: "thumbnail" | "video" | "resource" | "assignment",
+  ) => {
     const form = new FormData();
-    form.append('file', file);
+    form.append("file", file);
     const { data } = await apiClient.post(`/uploads/${type}`, form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { "Content-Type": "multipart/form-data" },
     });
     return data.data as { url: string; filename: string; size: number };
   },
@@ -422,18 +567,20 @@ export const uploadsApi = {
     onProgress?: (pct: number) => void,
   ): Promise<{ url: string }> => {
     const form = new FormData();
-    form.append('file', file);
+    form.append("file", file);
 
     const token =
-      typeof window !== 'undefined' ? localStorage.getItem('hamplard_token') : null;
+      typeof window !== "undefined"
+        ? localStorage.getItem("hamplard_token")
+        : null;
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open(
-        'POST',
-        `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1'}/uploads/avatar`,
+        "POST",
+        `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api/v1"}/uploads/avatar`,
       );
-      if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable && onProgress) {
@@ -445,16 +592,17 @@ export const uploadsApi = {
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             const parsed = JSON.parse(xhr.responseText);
-            resolve({ url: parsed?.data?.url ?? parsed?.url ?? '' });
+            resolve({ url: parsed?.data?.url ?? parsed?.url ?? "" });
           } catch {
-            reject(new Error('Invalid response from server'));
+            reject(new Error("Invalid response from server"));
           }
         } else {
           reject(new Error(`Upload failed (${xhr.status})`));
         }
       };
 
-      xhr.onerror = () => reject(new Error('Network error — please try again.'));
+      xhr.onerror = () =>
+        reject(new Error("Network error — please try again."));
       xhr.send(form);
     });
   },
@@ -465,12 +613,14 @@ export const uploadsApi = {
 // ----------------------------------------------------------
 export const bundlesApi = {
   getBySlug: async (slug: string) => {
-    const { data } = await apiClient.get<ApiResponse<Bundle>>(`/bundles/${slug}`);
+    const { data } = await apiClient.get<ApiResponse<Bundle>>(
+      `/bundles/${slug}`,
+    );
     return data.data;
   },
 
   list: async (): Promise<Bundle[]> => {
-    const { data } = await apiClient.get<ApiResponse<Bundle[]>>('/bundles');
+    const { data } = await apiClient.get<ApiResponse<Bundle[]>>("/bundles");
     return data.data;
   },
 };
@@ -484,9 +634,9 @@ export const instructorAnalyticsApi = {
     page?: number;
     limit?: number;
   }): Promise<PaginatedResponse<StudentEnrollmentRow>> => {
-    const { data } = await apiClient.get<ApiResponse<PaginatedResponse<StudentEnrollmentRow>>>(
-      '/users/me/instructor-students', { params },
-    );
+    const { data } = await apiClient.get<
+      ApiResponse<PaginatedResponse<StudentEnrollmentRow>>
+    >("/users/me/instructor-students", { params });
     return data.data;
   },
 
@@ -504,12 +654,12 @@ export const instructorAnalyticsApi = {
 export const promoCodesApi = {
   create: async (payload: {
     code: string;
-    discountType: 'PERCENTAGE' | 'FIXED';
+    discountType: "PERCENTAGE" | "FIXED";
     discountValue: number;
     expiryDate: string;
     maxUses: number;
   }) => {
-    const { data } = await apiClient.post('/promo-codes', payload);
+    const { data } = await apiClient.post("/promo-codes", payload);
     return data.data;
   },
 
@@ -518,18 +668,24 @@ export const promoCodesApi = {
     limit?: number;
   }): Promise<PaginatedResponse<any>> => {
     const { data } = await apiClient.get<ApiResponse<PaginatedResponse<any>>>(
-      '/promo-codes/my', { params },
+      "/promo-codes/my",
+      { params },
     );
     return data.data;
   },
 
   toggleActive: async (promoCodeId: string, isActive: boolean) => {
-    const { data } = await apiClient.patch(`/promo-codes/${promoCodeId}`, { isActive });
+    const { data } = await apiClient.patch(`/promo-codes/${promoCodeId}`, {
+      isActive,
+    });
     return data.data;
   },
 
   validate: async (code: string, courseId: string) => {
-    const { data } = await apiClient.post(`/promo-codes/validate`, { code, courseId });
+    const { data } = await apiClient.post(`/promo-codes/validate`, {
+      code,
+      courseId,
+    });
     return data.data;
   },
 };
