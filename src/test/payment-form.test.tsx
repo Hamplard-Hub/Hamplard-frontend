@@ -1,9 +1,35 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { createPaymentMethod } = vi.hoisted(() => ({ createPaymentMethod: vi.fn() }));
+const { createPaymentMethod, wallet } = vi.hoisted(() => {
+  /** Stand-in for Stripe's PaymentRequest: records handlers so tests can fire them. */
+  const handlers: Record<string, (event?: unknown) => unknown> = {};
+  const request = {
+    canMakePayment: vi.fn(),
+    update: vi.fn(),
+    on: vi.fn((type: string, handler: (event?: unknown) => unknown) => {
+      handlers[type] = handler;
+      return request;
+    }),
+    off: vi.fn((type: string) => {
+      delete handlers[type];
+      return request;
+    }),
+  };
+  const createPaymentMethod = vi.fn();
+  return {
+    createPaymentMethod,
+    wallet: {
+      handlers,
+      request,
+      paymentRequest: vi.fn(() => request),
+      // useStripe returns the same instance on every render, like the real hook.
+      stripe: { createPaymentMethod, paymentRequest: vi.fn() },
+    },
+  };
+});
 
 /**
  * Stripe renders its fields in cross-origin iframes, which jsdom cannot host.
@@ -40,7 +66,17 @@ vi.mock('@stripe/react-stripe-js', () => {
     CardCvcElement: stripeInput('card-cvc', false),
     Elements: ({ children }: { children: React.ReactNode }) =>
       React.createElement(React.Fragment, null, children),
-    useStripe: () => ({ createPaymentMethod }),
+    PaymentRequestButtonElement: ({
+      onClick,
+    }: {
+      onClick?: (event: { preventDefault: () => void }) => void;
+    }) =>
+      React.createElement(
+        'button',
+        { type: 'button', onClick: () => onClick?.({ preventDefault: () => {} }) },
+        'Wallet pay',
+      ),
+    useStripe: () => wallet.stripe,
     useElements: () => ({ getElement: () => ({}) }),
   };
 });
@@ -80,6 +116,11 @@ describe('PaymentForm', () => {
   beforeEach(() => {
     createPaymentMethod.mockReset();
     createPaymentMethod.mockResolvedValue({ paymentMethod: PAYMENT_METHOD });
+    wallet.stripe.paymentRequest.mockReset();
+    wallet.stripe.paymentRequest.mockImplementation(wallet.paymentRequest);
+    wallet.request.canMakePayment.mockReset();
+    // Most browsers have no wallet set up.
+    wallet.request.canMakePayment.mockResolvedValue(null);
   });
 
   it('renders the card fields, PayPal alternative and secure payment badge', () => {
@@ -193,5 +234,118 @@ describe('PaymentForm', () => {
     expect(screen.queryByTestId('card-number')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /continue to paypal/i }));
     expect(onPayPalSelected).toHaveBeenCalled();
+  });
+
+  describe('Apple Pay / Google Pay', () => {
+    const WALLET_METHOD = { id: 'pm_wallet_123', card: { last4: '4242' } };
+
+    /** Fires Stripe's `paymentmethod` event the way the wallet sheet would. */
+    const payWithWallet = async () => {
+      const complete = vi.fn();
+      await act(async () => {
+        await wallet.handlers.paymentmethod?.({ paymentMethod: WALLET_METHOD, complete });
+      });
+      return complete;
+    };
+
+    it('keeps the card form as the only option when no wallet is available', async () => {
+      renderForm();
+
+      await waitFor(() => expect(wallet.request.canMakePayment).toHaveBeenCalled());
+      expect(screen.queryByRole('button', { name: /wallet pay/i })).not.toBeInTheDocument();
+      expect(screen.getByTestId('card-number')).toBeInTheDocument();
+    });
+
+    it('does not offer Link-only support as a wallet', async () => {
+      wallet.request.canMakePayment.mockResolvedValue({ applePay: false, googlePay: false, link: true });
+      renderForm();
+
+      await waitFor(() => expect(wallet.request.canMakePayment).toHaveBeenCalled());
+      expect(screen.queryByRole('button', { name: /wallet pay/i })).not.toBeInTheDocument();
+    });
+
+    it('renders the wallet button above the card form with the order total and currency', async () => {
+      wallet.request.canMakePayment.mockResolvedValue({ applePay: true, googlePay: false });
+      renderForm({ amount: 129.49 });
+
+      expect(await screen.findByRole('button', { name: /wallet pay/i })).toBeInTheDocument();
+      expect(screen.getByText(/or pay with card/i)).toBeInTheDocument();
+      expect(screen.getByTestId('card-number')).toBeInTheDocument();
+      expect(wallet.stripe.paymentRequest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          currency: 'usd',
+          total: expect.objectContaining({ amount: 12949 }),
+          disableWallets: ['link', 'browserCard'],
+        }),
+      );
+    });
+
+    it('shows a spinner while the sheet is open and completes checkout on success', async () => {
+      wallet.request.canMakePayment.mockResolvedValue({ applePay: false, googlePay: true });
+      const onConfirmPayment = vi.fn().mockResolvedValue(undefined);
+      const onSuccess = vi.fn();
+      renderForm({ onConfirmPayment, onSuccess });
+
+      fireEvent.click(await screen.findByRole('button', { name: /wallet pay/i }));
+      expect(screen.getByText(/waiting for google pay/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/cardholder name/i)).toBeDisabled();
+
+      const complete = await payWithWallet();
+
+      expect(onConfirmPayment).toHaveBeenCalledWith(WALLET_METHOD);
+      expect(complete).toHaveBeenCalledWith('success');
+      expect(onSuccess).toHaveBeenCalledWith(WALLET_METHOD);
+      expect(screen.getByText(/payment successful/i)).toBeInTheDocument();
+      expect(createPaymentMethod).not.toHaveBeenCalled();
+    });
+
+    it('surfaces wallet failures in the same error UI as card payments', async () => {
+      wallet.request.canMakePayment.mockResolvedValue({ applePay: true });
+      const onConfirmPayment = vi
+        .fn()
+        .mockRejectedValue({ code: 'card_declined', decline_code: 'insufficient_funds' });
+      const onSuccess = vi.fn();
+      renderForm({ onConfirmPayment, onSuccess });
+
+      fireEvent.click(await screen.findByRole('button', { name: /wallet pay/i }));
+      const complete = await payWithWallet();
+
+      expect(complete).toHaveBeenCalledWith('fail');
+      expect(onSuccess).not.toHaveBeenCalled();
+      const alert = screen.getByRole('alert');
+      expect(alert).toHaveTextContent(/payment not completed/i);
+      expect(alert).toHaveTextContent(/enough funds/i);
+      expect(screen.queryByText(/waiting for apple pay/i)).not.toBeInTheDocument();
+      expect(screen.getByLabelText(/cardholder name/i)).toBeEnabled();
+    });
+
+    it('clears the spinner when the learner cancels the sheet', async () => {
+      wallet.request.canMakePayment.mockResolvedValue({ applePay: true });
+      renderForm();
+
+      fireEvent.click(await screen.findByRole('button', { name: /wallet pay/i }));
+      expect(screen.getByText(/waiting for apple pay/i)).toBeInTheDocument();
+
+      act(() => {
+        wallet.handlers.cancel?.();
+      });
+
+      expect(screen.queryByText(/waiting for apple pay/i)).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /pay \$/i })).toBeEnabled();
+    });
+
+    it('keeps the wallet total in sync when the order amount changes', async () => {
+      wallet.request.canMakePayment.mockResolvedValue({ applePay: true });
+      const { rerender } = renderForm({ amount: 10 });
+      await screen.findByRole('button', { name: /wallet pay/i });
+
+      rerender(React.createElement(PaymentForm, { amount: 25.5 }));
+
+      await waitFor(() =>
+        expect(wallet.request.update).toHaveBeenLastCalledWith({
+          total: expect.objectContaining({ amount: 2550 }),
+        }),
+      );
+    });
   });
 });

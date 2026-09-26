@@ -14,6 +14,7 @@ import {
   formatUsdc, formatDuration, levelChip, timeAgo, usdcToStroops,
 } from '@/lib/utils';
 import type { Course, Enrollment } from '@/types';
+import { Breadcrumb } from '@/components/ui';
 
 const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS!;
 
@@ -78,11 +79,14 @@ export default function CourseDetailPage() {
 
   return (
     <div>
-      <Link href="/"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900 mb-5 transition-colors">
-        <ArrowLeft className="w-4 h-4" />
-        All courses
-      </Link>
+      <Breadcrumb
+        items={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'My Courses', href: '/dashboard/courses' },
+          { label: course.title },
+        ]}
+        className="mb-5"
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}

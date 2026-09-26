@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Search, Users, BookOpen, Award } from "lucide-react";
+import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 
 const CATEGORIES = ["Tailoring", "Makeup Artistry", "Baking", "Hairstyling", "Photography", "Nail Technology", "Fashion Design", "Eyelash Extension"];
 
 const TRUST_STATS = [
-  { icon: <Users size={13} aria-hidden />, stat: "10,000+", label: "students" },
-  { icon: <BookOpen size={13} aria-hidden />, stat: "500+", label: "courses" },
-  { icon: <Award size={13} aria-hidden />, stat: "200+", label: "instructors" },
+  { icon: <Users size={13} aria-hidden />, value: 10000, suffix: "+", label: "students" },
+  { icon: <BookOpen size={13} aria-hidden />, value: 500, suffix: "+", label: "courses" },
+  { icon: <Award size={13} aria-hidden />, value: 200, suffix: "+", label: "instructors" },
 ];
 
 export function HeroSection() {
@@ -128,14 +129,23 @@ export function HeroSection() {
             >
               Browse courses
             </Link>
+            <Link
+              href="/courses/free"
+              className="inline-flex items-center justify-center font-semibold text-sm text-white md:px-7 px-4 py-3 border border-[#EEEDFE]/35 hover:bg-[#EEEDFE]/10 hover:border-[#EEEDFE]/65 transition-all duration-150"
+              style={{ borderRadius: "var(--radius-pill)" }}
+            >
+              Free courses
+            </Link>
           </div>
 
           {/* Trust bar */}
           <div className="flex flex-wrap items-center md:gap-6 gap-4 pb-2">
-            {TRUST_STATS.map(({ icon, stat, label }) => (
+            {TRUST_STATS.map(({ icon, value, suffix, label }) => (
               <div key={label} className="flex items-center gap-1.5">
                 <span className="text-[#EEEDFE]/50 flex">{icon}</span>
-                <span className="text-sm font-extrabold text-white">{stat}</span>
+                <span className="text-sm font-extrabold text-white">
+                  <AnimatedCounter value={value} suffix={suffix} />
+                </span>
                 <span className="text-[0.82rem] text-[#EEEDFE]/60">{label}</span>
               </div>
             ))}

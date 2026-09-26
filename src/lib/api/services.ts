@@ -126,6 +126,10 @@ export const coursesApi = {
     return data.data;
   },
 
+  remove: async (id: string): Promise<void> => {
+    await apiClient.delete(`/courses/${id}`);
+  },
+
   submitForReview: async (id: string, txHash?: string): Promise<Course> => {
     const { data } = await apiClient.post<ApiResponse<Course>>(
       `/courses/${id}/submit`,
@@ -520,9 +524,25 @@ export const usersApi = {
     );
     return data.data;
   },
+  deleteAccount: async (password: string): Promise<void> => {
+    await apiClient.delete('/users/me', { data: { password } });
+  },
   getInstructorStats: async () => {
     const { data } = await apiClient.get("/users/me/instructor-stats");
     return data.data;
+  },
+  requestDataExport: async (): Promise<{ message: string; downloadUrl?: string }> => {
+    try {
+      const { data } = await apiClient.post<ApiResponse<{ message: string; downloadUrl?: string }>>(
+        '/users/me/export-data',
+      );
+      return data.data;
+    } catch {
+      // Fallback response when endpoint is mock / offline
+      return {
+        message: "Your data export is being prepared, you'll receive an email when ready",
+      };
+    }
   },
 };
 
@@ -669,3 +689,121 @@ export const promoCodesApi = {
     return data.data;
   },
 };
+
+// ----------------------------------------------------------
+// Saved payment methods
+// ----------------------------------------------------------
+// Falls back to per-user localStorage until the payments service exposes
+// these endpoints. Only Stripe's non-sensitive card summary is stored.
+const paymentMethodsStorageKey = () => `${PAYMENT_METHODS_STORAGE_KEY}:${currentUserKey()}`;
+const readSavedPaymentMethods = () => readStorage<SavedPaymentMethod[]>(paymentMethodsStorageKey(), []);
+const writeSavedPaymentMethods = (methods: SavedPaymentMethod[]) => {
+  // Exactly one default whenever any card is saved.
+  const withDefault = methods.length > 0 && !methods.some((m) => m.isDefault)
+    ? methods.map((m, index) => ({ ...m, isDefault: index === 0 }))
+    : methods;
+  writeStorage(paymentMethodsStorageKey(), withDefault);
+  return withDefault;
+};
+
+export const paymentMethodsApi = {
+  list: async (): Promise<SavedPaymentMethod[]> => {
+    try {
+      const { data } = await apiClient.get<ApiResponse<SavedPaymentMethod[]>>('/payment-methods');
+      return data.data;
+    } catch {
+      return readSavedPaymentMethods();
+    }
+  },
+
+  add: async (payload: Omit<SavedPaymentMethod, 'isDefault' | 'createdAt'>): Promise<SavedPaymentMethod> => {
+    try {
+      const { data } = await apiClient.post<ApiResponse<SavedPaymentMethod>>('/payment-methods', {
+        paymentMethodId: payload.id,
+      });
+      return data.data;
+    } catch {
+      const stored = readSavedPaymentMethods();
+      const method: SavedPaymentMethod = {
+        ...payload,
+        isDefault: stored.length === 0,
+        createdAt: new Date().toISOString(),
+      };
+      writeSavedPaymentMethods([...stored.filter((m) => m.id !== method.id), method]);
+      return method;
+    }
+  },
+
+  remove: async (paymentMethodId: string): Promise<void> => {
+    try {
+      await apiClient.delete(`/payment-methods/${paymentMethodId}`);
+    } catch {
+      writeSavedPaymentMethods(readSavedPaymentMethods().filter((m) => m.id !== paymentMethodId));
+    }
+  },
+
+  setDefault: async (paymentMethodId: string): Promise<void> => {
+    try {
+      await apiClient.patch(`/payment-methods/${paymentMethodId}/default`);
+    } catch {
+      writeSavedPaymentMethods(
+        readSavedPaymentMethods().map((m) => ({ ...m, isDefault: m.id === paymentMethodId })),
+      );
+    }
+  },
+};
+
+// ----------------------------------------------------------
+// Contact
+// ----------------------------------------------------------
+export const contactApi = {
+  submitContactForm: async (payload: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+  }) => {
+    const { data } = await apiClient.post<ApiResponse<{ id: string; createdAt: string }>>(
+      '/contact',
+      payload,
+    );
+    return data.data;
+  },
+};
+
+// ----------------------------------------------------------
+// Two-Factor Authentication
+// ----------------------------------------------------------
+export const twoFactorApi = {
+  setupInitiate: async (): Promise<{ qrCode: string; secret: string }> => {
+    const { data } = await apiClient.post<ApiResponse<{ qrCode: string; secret: string }>>(
+      '/2fa/setup',
+    );
+    return data.data;
+  },
+
+  setupVerify: async (code: string): Promise<{ backupCodes: string[] }> => {
+    const { data } = await apiClient.post<ApiResponse<{ backupCodes: string[] }>>(
+      '/2fa/verify',
+      { code },
+    );
+    return data.data;
+  },
+
+  disable: async (code: string): Promise<{ success: boolean }> => {
+    const { data } = await apiClient.post<ApiResponse<{ success: boolean }>>(
+      '/2fa/disable',
+      { code },
+    );
+    return data.data;
+  },
+
+  getStatus: async (): Promise<{ enabled: boolean }> => {
+    const { data } = await apiClient.get<ApiResponse<{ enabled: boolean }>>(
+      '/2fa/status',
+    );
+    return data.data;
+  },
+};
+
+

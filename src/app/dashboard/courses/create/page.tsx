@@ -8,6 +8,7 @@ import { registerCourseOnChain } from '@/lib/stellar/contract';
 import { coursesApi, uploadsApi } from '@/lib/api/services';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { generateCourseId, usdcToStroops } from '@/lib/utils';
+import { TagInput } from '@/components/ui/TagInput';
 
 const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS!;
 
@@ -27,6 +28,7 @@ export default function CreateCoursePage() {
   const [level,       setLevel]       = useState('Beginner');
   const [language,    setLanguage]    = useState('English');
   const [price,       setPrice]       = useState('');
+  const [tags,        setTags]        = useState<string[]>([]);
   const [thumbnail,   setThumbnail]   = useState<File | null>(null);
   const [thumbnailUrl,setThumbnailUrl]= useState('');
   const [loading,     setLoading]     = useState(false);
@@ -175,6 +177,21 @@ export default function CreateCoursePage() {
                 <option>French</option>
                 <option>Pidgin</option>
               </select>
+            </div>
+
+            <div>
+              <label className="label" htmlFor="course-tags">
+                Skills &amp; tags
+              </label>
+              <TagInput
+                id="course-tags"
+                value={tags}
+                onChange={setTags}
+                placeholder="e.g. Tailoring, Hand sewing…"
+              />
+              <p className="mt-1 text-xs text-ink-400">
+                Helps students discover your course by topic or skill.
+              </p>
             </div>
           </div>
         </div>

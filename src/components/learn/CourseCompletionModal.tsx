@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Copy, X } from 'lucide-react';
+import { useReducedMotion } from '@/lib/hooks/use-reduced-motion';
 
 type CourseCompletionModalProps = {
   open: boolean;
@@ -18,13 +19,14 @@ export default function CourseCompletionModal({
   onClose,
 }: CourseCompletionModalProps) {
   const [isVisible, setIsVisible] = useState(open);
+  const { prefersReducedMotion, mounted } = useReducedMotion();
 
   useEffect(() => {
     setIsVisible(open);
   }, [open]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !mounted || prefersReducedMotion) return;
 
     let cancelled = false;
 
@@ -46,7 +48,7 @@ export default function CourseCompletionModal({
     return () => {
       cancelled = true;
     };
-  }, [open]);
+  }, [open, mounted, prefersReducedMotion]);
 
   useEffect(() => {
     if (!open) return;

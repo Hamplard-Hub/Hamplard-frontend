@@ -9,16 +9,18 @@ const FOOTER_COLUMNS = [
   {
     title: 'About Hamplard',
     links: [
-      { label: 'Our story', href: '/#about' },
+      { label: 'Our story', href: '/about' },
+      { label: 'Teach on Hamplard', href: '/teach' },
+      { label: 'Team plans', href: '/teams' },
       { label: 'Careers', href: '/#careers' },
       { label: 'Partner with us', href: '/#partners' },
-      { label: 'Blog', href: '/#blog' },
     ],
   },
   {
     title: 'Courses',
     links: [
       { label: 'All courses', href: '/dashboard/courses' },
+      { label: 'Free courses', href: '/courses/free' },
       { label: 'Tailoring', href: '/dashboard/courses?category=tailoring' },
       { label: 'Makeup Artistry', href: '/dashboard/courses?category=makeup' },
       { label: 'Baking', href: '/dashboard/courses?category=baking' },
@@ -28,18 +30,18 @@ const FOOTER_COLUMNS = [
   {
     title: 'Support',
     links: [
-      { label: 'Help center', href: '/#help' },
+      { label: 'Help center', href: '/help' },
+      { label: 'Contact us', href: '/contact' },
       { label: 'Community', href: '/#community' },
-      { label: 'Contact us', href: '/#contact' },
       { label: 'FAQs', href: '/#faqs' },
     ],
   },
   {
     title: 'Legal',
     links: [
-      { label: 'Terms of service', href: '/#terms' },
-      { label: 'Privacy policy', href: '/#privacy' },
-      { label: 'Cookie policy', href: '/#cookies' },
+      { label: 'Terms of service', href: '/terms' },
+      { label: 'Privacy policy', href: '/privacy' },
+      { label: 'Cookie policy', href: '/privacy#cookies' },
       { label: 'Accessibility', href: '/#accessibility' },
     ],
   },

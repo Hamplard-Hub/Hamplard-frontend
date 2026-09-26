@@ -2,13 +2,14 @@
 
 import React, {
   useRef, useState, useEffect, useCallback,
+  forwardRef, useImperativeHandle
 } from 'react';
 import { Loader2 } from 'lucide-react';
 import { VideoControls } from './VideoControls';
 import type { VideoQualityLevel, VideoQualities } from '@/types';
 
 // ── Types ──────────────────────────────────────────────────────────
-export interface VideoPlayerProps {
+interface VideoPlayerProps {
   /** URL of the video to play */
   src: string;
   /** Per-resolution source URLs for the quality selector */
@@ -38,7 +39,10 @@ const AUTOSAVE_INTERVAL_MS  = 30_000; // save every 30 s
 const COMPLETION_THRESHOLD  = 0.95;   // 95 %
 
 // ── Component ─────────────────────────────────────────────────────
-export function VideoPlayer({
+export const VideoPlayer = forwardRef<
+  HTMLVideoElement,
+  VideoPlayerProps
+>(function videoPlayer({
   src,
   videoQualities,
   captionsUrl,
@@ -50,9 +54,10 @@ export function VideoPlayer({
   autoplay = false,
   onAutoplayChange,
   className = '',
-}: VideoPlayerProps) {
+}, ref) {
   // ── Refs ──────────────────────────────────────────────────────
   const videoRef      = useRef<HTMLVideoElement | null>(null);
+  useImperativeHandle(ref, () => videoRef.current!, [])
   const wrapperRef    = useRef<HTMLDivElement | null>(null);
   const saveTimerRef  = useRef<ReturnType<typeof setInterval> | null>(null);
   const completedRef  = useRef(false);        // fire onComplete only once
@@ -162,7 +167,29 @@ export function VideoPlayer({
           e.preventDefault();
           handleSeek(Math.min(vid.duration || Infinity, vid.currentTime + 10));
           break;
-        default:
+        case 'ArrowUp':
+          e.preventDefault();
+          handleVolume(Math.min(1, vid.volume + 0.1));
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          handleVolume(Math.max(0, vid.volume - 0.1));
+          break;
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+          if (vid.duration) {
+            e.preventDefault();
+            const pct = parseInt(e.key, 10) / 10;
+            handleSeek(vid.duration * pct);
+          }
           break;
       }
     };
@@ -400,4 +427,5 @@ export function VideoPlayer({
       </div>
     </div>
   );
-}
+});
+

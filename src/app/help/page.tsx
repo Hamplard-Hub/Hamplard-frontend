@@ -1,11 +1,13 @@
 import type { Metadata } from 'next';
 import { TopBar } from '@/components/layout/TopBar';
 import { FAQAccordion } from '@/components/ui/FAQAccordion';
+import { buildMetadata } from '@/lib/seo';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildMetadata({
   title: 'Help Center',
   description: 'Find quick answers about learning, billing, and certificates on Hamplard.',
-};
+  path: '/help',
+});
 
 const helpItems = [
   {
@@ -39,6 +41,12 @@ export default function HelpPage() {
           <p className="mt-4 max-w-2xl text-lg leading-8 text-[#5A5578]">
             Whether you are a student, instructor, or new to the platform, these answers will help you get moving quickly.
           </p>
+          <a
+            href="/contact"
+            className="mt-6 inline-block rounded-xl bg-[#7F77DD] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#3C3489]"
+          >
+            Can't find what you need? Contact us
+          </a>
         </section>
 
         <section className="rounded-[32px] border border-[#D5D2F6] bg-[#FAF9FF] p-6 sm:p-8">

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import {
-  Play, Pause, Volume2, VolumeX, Maximize, Minimize, Subtitles, Settings,
+  Play, Pause, Volume2, VolumeX, Maximize, Minimize, Subtitles, Keyboard,
 } from 'lucide-react';
 import { cn, formatDuration } from '@/lib/utils';
-import type { VideoQualityLevel, VideoQualities } from '@/types';
+import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 
 // ── Quality option definitions ─────────────────────────────────────────────
 export const QUALITY_LEVELS: VideoQualityLevel[] = ['auto', '1080p', '720p', '480p', '360p'];
@@ -54,28 +54,8 @@ export function VideoControls({
   quality, videoQualities, onQualityChange,
   onPlayPause, onSeek, onVolume, onMute, onSpeed, onSubtitles, onFullscreen,
 }: VideoControlsProps) {
-  const [qualityOpen, setQualityOpen] = useState(false);
-  const qualityRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    if (!qualityOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (qualityRef.current && !qualityRef.current.contains(e.target as Node)) {
-        setQualityOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [qualityOpen]);
-
-  // Build the list of selectable quality options:
-  // 'auto' is always available; specific levels only if a URL exists for them.
-  const availableQualities: VideoQualityLevel[] = QUALITY_LEVELS.filter(
-    (q) => q === 'auto' || (videoQualities && videoQualities[q as keyof VideoQualities]),
-  );
-
-  const showQualityButton = availableQualities.length > 1;
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const keyboardBtnRef = useRef<HTMLButtonElement>(null);
 
   return (
     <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-3 pt-6 pb-2 flex flex-col gap-1.5">
@@ -92,7 +72,7 @@ export function VideoControls({
       />
 
       {/* Controls row */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
         {/* Play / Pause */}
         <button
           onClick={onPlayPause}
@@ -123,12 +103,12 @@ export function VideoControls({
           step={0.05}
           value={muted ? 0 : volume}
           onChange={(e) => onVolume(parseFloat(e.target.value))}
-          className="w-16 h-1 accent-saffron-500 cursor-pointer"
+          className="hidden md:block w-16 h-1 accent-saffron-500 cursor-pointer"
           aria-label="Volume"
         />
 
         {/* Time */}
-        <span className="text-white text-[10px] tabular-nums ml-1 select-none">
+        <span className="block text-white text-[10px] tabular-nums ml-1 select-none">
           {formatDuration(Math.floor(currentTime))} / {formatDuration(Math.floor(duration))}
         </span>
 
@@ -138,7 +118,7 @@ export function VideoControls({
         <select
           value={speed}
           onChange={(e) => onSpeed(parseFloat(e.target.value))}
-          className="bg-transparent text-white text-xs cursor-pointer outline-none border border-white/20 rounded px-1 py-0.5 hover:border-white/50 transition-colors"
+          className="block bg-transparent text-white text-xs cursor-pointer outline-none border border-white/20 rounded px-1 py-0.5 hover:border-white/50 transition-colors"
           aria-label="Playback speed"
         >
           {SPEEDS.map((s) => (
@@ -266,6 +246,13 @@ export function VideoControls({
           }
         </button>
       </div>
+
+      <KeyboardShortcutsModal
+        isOpen={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+        triggerRef={keyboardBtnRef}
+      />
     </div>
   );
 }
+

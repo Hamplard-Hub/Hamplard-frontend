@@ -12,11 +12,13 @@ import {
   LogOut,
   User,
   Settings,
+  Trophy,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { useWishlistCount } from '@/lib/hooks/use-wishlist-store';
 import { shortAddress, cn } from '@/lib/utils';
+import { ProfileCompletion } from '@/components/dashboard/ProfileCompletion';
 
 interface NavItem {
   href:  string;
@@ -28,17 +30,18 @@ interface NavItem {
 
 const STUDENT_NAV: NavItem[] = [
   { href: '/dashboard/my-courses',  label: 'My Courses',     icon: BookOpen },
+  { href: '/dashboard/progress',    label: 'Progress',        icon: BarChart2 },
   { href: '/dashboard/wishlist',    label: 'Wishlist',       icon: Heart, showWishlistCount: true },
   { href: '/dashboard/certificates',label: 'Certificates',   icon: Award },
+  { href: '/leaderboard',           label: 'Leaderboard',    icon: Trophy },
   { href: '/dashboard/profile',    label: 'Profile',        icon: User },
   { href: '/dashboard/settings',   label: 'Settings',       icon: Settings },
   { href: '/notifications',         label: 'Notifications',  icon: Bell },
 ];
 
-
-const INSTRUCTOR_NAV: NavItem[] = [
+const INSTRUCTOR_NAV = [
   { href: '/dashboard/instructor',  label: 'Dashboard',      icon: BarChart2 },
-  { href: '/dashboard/courses',     label: 'My Courses',     icon: BookOpen },
+  { href: '/dashboard/instructor/courses', label: 'My Courses', icon: BookOpen },
   { href: '/dashboard/courses/create', label: 'New Course',  icon: Video },
   { href: '/dashboard/instructor/announcements', label: 'Announcements', icon: Bell },
   { href: '/notifications',         label: 'Notifications',  icon: Bell },
@@ -52,7 +55,7 @@ export function Sidebar() {
   const nav = isInstructor ? INSTRUCTOR_NAV : STUDENT_NAV;
 
   return (
-    <aside className="w-60 bg-white border-r border-ink-100 flex flex-col flex-shrink-0">
+    <aside className="hidden w-60 flex-shrink-0 flex-col border-r border-ink-100 bg-white lg:flex">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-ink-100">
         <Link href="/" className="font-display text-xl font-semibold text-ink-900">
@@ -115,6 +118,11 @@ export function Sidebar() {
           <LogOut className="w-4 h-4" />
           Sign out
         </button>
+
+        {/* Profile Completion for Students */}
+        {user && user.role === 'STUDENT' && (
+          <ProfileCompletion variant="sidebar" className="mt-0 pt-4 px-0 border-t" />
+        )}
       </div>
     </aside>
   );

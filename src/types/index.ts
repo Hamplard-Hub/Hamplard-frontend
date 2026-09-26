@@ -19,6 +19,22 @@ export type AssignmentStatus =
 
 export type LessonType = "VIDEO" | "TEXT" | "QUIZ" | "ASSIGNMENT";
 
+export type QuizType = 'multiple_choice' | 'multi_select' | 'true_false';
+
+export interface QuizOption {
+  id: string;
+  text: string;
+  isCorrect: boolean;
+}
+
+export interface QuizQuestion {
+  id: string;
+  type: QuizType;
+  question: string;
+  options?: QuizOption[];
+  explanation?: string;
+}
+
 export interface User {
   id: string;
   stellarAddress: string;
@@ -52,6 +68,7 @@ export interface Lesson {
   videoDuration: number | null; // seconds
   content: string | null;
   resourceUrl: string | null;
+  quiz?: QuizQuestion[] | null;
   position: number;
   isFree: boolean;
   /** Optional per-resolution URLs. When absent only 'auto' is available. */
@@ -85,6 +102,7 @@ export interface Course {
   totalRevenue: number;
   txHash: string | null;
   approvedAt: string | null;
+  publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   instructor: {
@@ -168,6 +186,18 @@ export interface Announcement {
   deliveryCount: number;
   status?: "draft" | "scheduled" | "published";
   scheduledFor?: string | null;
+  createdAt: string;
+}
+
+/** A card the learner saved for future checkouts. Card details never leave Stripe. */
+export interface SavedPaymentMethod {
+  /** Stripe PaymentMethod id (`pm_…`). */
+  id: string;
+  brand: string;
+  last4: string;
+  expMonth: number;
+  expYear: number;
+  isDefault: boolean;
   createdAt: string;
 }
 
@@ -291,6 +321,44 @@ export interface BundleSummary {
   bundlePrice: number;
   totalValue: number;
   courseCount: number;
+}
+
+// ── Gift ─────────────────────────────────────────────────────────────────
+
+export type GiftStatus = 'PENDING' | 'CLAIMED' | 'EXPIRED';
+
+export interface Gift {
+  id: string;
+  courseId: string;
+  senderEmail: string | null;
+  recipientEmail: string;
+  message: string | null;
+  deliveryDate: string;
+  claimToken: string;
+  status: GiftStatus;
+  claimedAt: string | null;
+  createdAt: string;
+  course?: Course;
+}
+
+// ── Leaderboard ───────────────────────────────────────────────────────────
+
+export type LeaderboardPeriod = 'week' | 'month' | 'all';
+
+export interface LeaderboardEntry {
+  rank: number;
+  userId: string;
+  name: string | null;
+  avatarUrl: string | null;
+  coursesCompleted: number;
+  hoursLearned: number;
+  streakDays: number;
+}
+
+export interface LeaderboardResponse {
+  entries: LeaderboardEntry[];
+  currentUser: LeaderboardEntry | null;
+  period: LeaderboardPeriod;
 }
 
 // ── Instructor Student Analytics ─────────────────────────────────────────

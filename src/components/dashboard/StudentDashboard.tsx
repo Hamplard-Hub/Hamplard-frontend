@@ -3,6 +3,7 @@
 import React from 'react';
 import { ContinueLearning } from '@/components/dashboard/ContinueLearning';
 import { QuickStats } from '@/components/dashboard/QuickStats';
+import { StreakTracker } from '@/components/dashboard/StreakTracker';
 import Link from 'next/link';
 
 interface InProgressItem {
@@ -81,6 +82,7 @@ export function StudentDashboard({
       {/* Aside — stats + achievements */}
       <aside className="col-span-12 lg:col-span-4 space-y-4">
         <QuickStats stats={resolvedStats} />
+        <StreakTracker />
 
         <div className="card p-4">
           <h3 className="text-sm font-semibold">Achievements</h3>

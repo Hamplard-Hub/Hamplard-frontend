@@ -9,6 +9,15 @@ const mockUseSearchParams = vi.fn(() => ({ get: (key: string) => (key === 'q' ? 
 
 vi.mock('next/navigation', () => ({
   useSearchParams: () => mockUseSearchParams(),
+  // CourseCard's hover prefetch calls useRouter().prefetch() — provide a stub.
+  useRouter: () => ({
+    prefetch: vi.fn(),
+    push: vi.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+  }),
 }));
 
 vi.mock('@/components/search/SearchBar', () => ({

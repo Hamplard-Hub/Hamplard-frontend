@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { usersApi } from '@/lib/api/services';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { AvatarUpload } from '@/components/ui/AvatarUpload';
+import { Breadcrumb } from '@/components/ui';
+import { ProfileCompletion } from '@/components/dashboard/ProfileCompletion';
 import type { User as UserType } from '@/types';
 
 export default function ProfilePage() {
@@ -75,6 +77,13 @@ export default function ProfilePage() {
     <div>
       {/* ── Page header ── */}
       <div className="mb-6">
+        <Breadcrumb
+          items={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Profile' },
+          ]}
+          className="mb-3"
+        />
         <h1 className="section-heading">Profile</h1>
         <p className="text-sm text-ink-500 mt-1">Update your public information.</p>
       </div>
@@ -99,6 +108,9 @@ export default function ProfilePage() {
               }
             />
           </div>
+
+          {/* Profile Completion Indicator */}
+          <ProfileCompletion variant="card" className="mt-5" />
         </div>
 
         {/* ── Col 2: Info form ── */}
