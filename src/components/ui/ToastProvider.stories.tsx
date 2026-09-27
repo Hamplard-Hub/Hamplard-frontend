@@ -62,6 +62,35 @@ function ToastShowcase() {
   );
 }
 
+function ToastStackLimitShowcase() {
+  const toast = useToastContext();
+
+  return (
+    <div className="space-y-4 p-8">
+      <h2 className="text-2xl font-bold mb-6">Toast Stack Limit</h2>
+      <p className="text-sm text-gray-600 mb-4">
+        Fires 6 toasts at once. Only 3 render simultaneously; the rest queue in
+        order and appear as space frees up. Swipe a toast left or right on a
+        touch device to dismiss it.
+      </p>
+
+      <Button
+        variant="primary"
+        onClick={() => {
+          for (let i = 1; i <= 6; i += 1) {
+            toast.info({
+              title: `Queued toast ${i}`,
+              description: `Toast ${i} of 6 — extras wait their turn.`,
+            });
+          }
+        }}
+      >
+        Show 6 Toasts
+      </Button>
+    </div>
+  );
+}
+
 const meta = {
   title: 'UI/ToastProvider',
   component: ToastProvider,
@@ -78,6 +107,14 @@ export const Default: Story = {
   render: () => (
     <ToastProvider>
       <ToastShowcase />
+    </ToastProvider>
+  ),
+};
+
+export const StackLimitAndSwipe: Story = {
+  render: () => (
+    <ToastProvider>
+      <ToastStackLimitShowcase />
     </ToastProvider>
   ),
 };

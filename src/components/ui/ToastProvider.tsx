@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -32,6 +32,9 @@ type ToastContextValue = {
   info: (toast: ToastOptions) => void;
 };
 
+const MAX_VISIBLE_TOASTS = 3;
+const SWIPE_DISMISS_THRESHOLD = 80;
+
 const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 function createToastId() {
@@ -46,6 +49,8 @@ function ToastCard({
   onDismiss: (id: string) => void;
 }) {
   const [isLeaving, setIsLeaving] = useState(false);
+  const [dragX, setDragX] = useState(0);
+  const touchStartX = useRef<number | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -55,6 +60,26 @@ function ToastCard({
 
     return () => window.clearTimeout(timer);
   }, [onDismiss, toast.duration, toast.id]);
+
+  const handleTouchStart = useCallback((event: React.TouchEvent<HTMLDivElement>) => {
+    touchStartX.current = event.touches[0]?.clientX ?? null;
+  }, []);
+
+  const handleTouchMove = useCallback((event: React.TouchEvent<HTMLDivElement>) => {
+    if (touchStartX.current === null) return;
+    const currentX = event.touches[0]?.clientX ?? touchStartX.current;
+    setDragX(currentX - touchStartX.current);
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    if (Math.abs(dragX) >= SWIPE_DISMISS_THRESHOLD) {
+      setIsLeaving(true);
+      window.setTimeout(() => onDismiss(toast.id), 180);
+    } else {
+      setDragX(0);
+    }
+    touchStartX.current = null;
+  }, [dragX, onDismiss, toast.id]);
 
   const accent = {
     success: 'border-emerald-300 bg-emerald-50 text-emerald-900',
@@ -66,8 +91,12 @@ function ToastCard({
   return (
     <div
       role={toast.role}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={dragX !== 0 ? { transform: `translateX(${dragX}px)` } : undefined}
       className={cn(
-        'pointer-events-auto w-[min(22rem,calc(100vw-2rem))] rounded-2xl border p-4 shadow-lg backdrop-blur transition-all duration-300',
+        'pointer-events-auto w-[min(22rem,calc(100vw-2rem))] touch-pan-y rounded-2xl border p-4 shadow-lg backdrop-blur transition-all duration-300',
         accent,
         isLeaving ? 'translate-x-4 opacity-0' : 'translate-x-0 opacity-100',
       )}
@@ -104,7 +133,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     ({ title, description, duration = 4000, variant = 'info', role }: ToastOptions & { variant?: ToastVariant; role?: ToastRole }) => {
       const id = createToastId();
       const toast: ToastItem = { id, title, description, variant, role: role ?? (variant === 'error' ? 'alert' : 'status'), duration };
-      setToasts((current) => [...current, toast].slice(-4));
+      setToasts((current) => [...current, toast]);
     },
     [],
   );
@@ -119,11 +148,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     [dismiss, error, info, push, success, toasts, warning],
   );
 
+  const visibleToasts = toasts.slice(0, MAX_VISIBLE_TOASTS);
+
   return (
     <ToastContext.Provider value={value}>
       {children}
       <div className="pointer-events-none fixed right-4 top-4 z-[80] flex flex-col gap-3" aria-live="polite" aria-label="Notifications">
-        {toasts.map((toast) => (
+        {visibleToasts.map((toast) => (
           <ToastCard key={toast.id} toast={toast} onDismiss={dismiss} />
         ))}
       </div>
