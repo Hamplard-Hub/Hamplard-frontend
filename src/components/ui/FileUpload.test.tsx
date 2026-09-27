@@ -1,541 +1,350 @@
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen, fireEvent, createEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { FileUpload } from './FileUpload';
 
+// ── Controllable XMLHttpRequest mock ─────────────────────────────────────
+
+class MockXHR {
+  static instances: MockXHR[] = [];
+
+  status = 0;
+  responseText = '';
+  upload: { onprogress: ((e: Partial<ProgressEvent>) => void) | null } = { onprogress: null };
+  onload: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  onabort: (() => void) | null = null;
+  open = vi.fn();
+  setRequestHeader = vi.fn();
+  send = vi.fn();
+  abort = vi.fn(() => this.onabort?.());
+
+  constructor() {
+    MockXHR.instances.push(this);
+  }
+
+  progress(percent: number) {
+    act(() => this.upload.onprogress?.({ lengthComputable: true, loaded: percent, total: 100 }));
+  }
+
+  succeed(url = 'https://cdn.example.com/file') {
+    this.status = 200;
+    this.responseText = JSON.stringify({ data: { url } });
+    act(() => this.onload?.());
+  }
+
+  fail(status = 500) {
+    this.status = status;
+    act(() => this.onload?.());
+  }
+
+  networkError() {
+    act(() => this.onerror?.());
+  }
+}
+
+// jsdom has no DataTransfer, so pass plain file arrays through the events
+function makeFile(name: string, size = 10, type = 'image/jpeg') {
+  return new File(['x'.repeat(size)], name, { type });
+}
+
+function getInput(container: HTMLElement) {
+  return container.querySelector('input[type="file"]') as HTMLInputElement;
+}
+
+function selectFiles(container: HTMLElement, files: File[]) {
+  fireEvent.change(getInput(container), { target: { files } });
+}
+
+function dropFiles(files: File[]) {
+  fireEvent.drop(screen.getByRole('button', { name: /upload files/i }), {
+    dataTransfer: { files },
+  });
+}
+
+const uploadUrl = 'http://api.example.com/upload';
+
 describe('FileUpload', () => {
-  const mockUploadUrl = 'http://api.example.com/upload';
-  const mockFile = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
-  const mockVideoFile = new File(['video content'], 'test.mp4', { type: 'video/mp4' });
-
   beforeEach(() => {
-    // Mock localStorage
+    MockXHR.instances = [];
+    vi.stubGlobal('XMLHttpRequest', MockXHR);
     localStorage.setItem('hamplard_token', 'mock-token');
-
-    // Mock XMLHttpRequest
-    global.XMLHttpRequest = vi.fn(() => ({
-      open: vi.fn(),
-      setRequestHeader: vi.fn(),
-      send: vi.fn(),
-      upload: {},
-      onload: null,
-      onerror: null,
-      onabort: null,
-      abort: vi.fn(),
-    })) as any;
   });
 
   afterEach(() => {
     localStorage.clear();
-    vi.clearAllMocks();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   describe('Drag and drop', () => {
-    it('activates on drag over', async () => {
-      render(<FileUpload uploadUrl={mockUploadUrl} />);
-
+    it('highlights on drag over and resets on drag leave', () => {
+      render(<FileUpload uploadUrl={uploadUrl} />);
       const dropZone = screen.getByRole('button', { name: /upload files/i });
+
       fireEvent.dragOver(dropZone);
+      expect(dropZone).toHaveClass('border-hamplard-primary', 'bg-hamplard-lilac');
+
+      fireEvent.dragLeave(dropZone);
+      expect(dropZone).toHaveClass('border-ink-200', 'bg-ink-50');
+    });
+
+    it('stays highlighted when the pointer moves onto a child element', () => {
+      render(<FileUpload uploadUrl={uploadUrl} />);
+      const dropZone = screen.getByRole('button', { name: /upload files/i });
+      const child = screen.getByText(/click to upload/i);
+
+      fireEvent.dragOver(dropZone);
+      // jsdom drops relatedTarget from drag event init, so set it directly
+      const leave = createEvent.dragLeave(dropZone);
+      Object.defineProperty(leave, 'relatedTarget', { value: child });
+      fireEvent(dropZone, leave);
 
       expect(dropZone).toHaveClass('border-hamplard-primary');
-      expect(dropZone).toHaveClass('bg-hamplard-lilac');
     });
 
-    it('deactivates on drag leave', async () => {
-      render(<FileUpload uploadUrl={mockUploadUrl} />);
+    it('queues every dropped file with its own upload request', async () => {
+      render(<FileUpload uploadUrl={uploadUrl} />);
 
-      const dropZone = screen.getByRole('button', { name: /upload files/i });
-      fireEvent.dragOver(dropZone);
-      fireEvent.dragLeave(dropZone);
+      dropFiles([makeFile('a.jpg'), makeFile('b.jpg'), makeFile('c.jpg')]);
 
-      expect(dropZone).toHaveClass('border-ink-200');
-      expect(dropZone).toHaveClass('bg-ink-50');
-    });
-
-    it('handles dropped files', async () => {
-      const onUploadComplete = vi.fn();
-      render(
-        <FileUpload uploadUrl={mockUploadUrl} onUploadComplete={onUploadComplete} />,
-      );
-
-      const dropZone = screen.getByRole('button', { name: /upload files/i });
-
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(mockFile);
-
-      fireEvent.drop(dropZone, { dataTransfer });
-
-      // Should show file in list
-      await waitFor(() => {
-        expect(screen.getByText('test.jpg')).toBeInTheDocument();
-      });
+      await waitFor(() => expect(screen.getAllByRole('progressbar')).toHaveLength(3));
+      expect(MockXHR.instances).toHaveLength(3);
+      expect(screen.getByText('a.jpg')).toBeInTheDocument();
+      expect(screen.getByText('b.jpg')).toBeInTheDocument();
+      expect(screen.getByText('c.jpg')).toBeInTheDocument();
     });
   });
 
   describe('Browse files', () => {
-    it('opens file picker on click', async () => {
-      const user = userEvent.setup();
-      render(<FileUpload uploadUrl={mockUploadUrl} />);
-
+    it('opens the file picker on click, Enter and Space', () => {
+      const { container } = render(<FileUpload uploadUrl={uploadUrl} />);
       const dropZone = screen.getByRole('button', { name: /upload files/i });
-      const input = screen.getByDisplayValue('');
+      const clickSpy = vi.spyOn(getInput(container), 'click');
 
-      vi.spyOn(input, 'click');
-      await user.click(dropZone);
-
-      expect(input.click).toHaveBeenCalled();
-    });
-
-    it('opens file picker on Enter key', async () => {
-      render(<FileUpload uploadUrl={mockUploadUrl} />);
-
-      const dropZone = screen.getByRole('button', { name: /upload files/i });
-      const input = screen.getByDisplayValue('');
-
-      vi.spyOn(input, 'click');
+      fireEvent.click(dropZone);
       fireEvent.keyDown(dropZone, { key: 'Enter' });
-
-      expect(input.click).toHaveBeenCalled();
-    });
-
-    it('opens file picker on Space key', async () => {
-      render(<FileUpload uploadUrl={mockUploadUrl} />);
-
-      const dropZone = screen.getByRole('button', { name: /upload files/i });
-      const input = screen.getByDisplayValue('');
-
-      vi.spyOn(input, 'click');
       fireEvent.keyDown(dropZone, { key: ' ' });
 
-      expect(input.click).toHaveBeenCalled();
+      expect(clickSpy).toHaveBeenCalledTimes(3);
+    });
+
+    it('has an sr-only file input that allows multiple files by default', () => {
+      const { container } = render(<FileUpload uploadUrl={uploadUrl} />);
+      expect(getInput(container)).toHaveClass('sr-only');
+      expect(getInput(container)).toHaveAttribute('multiple');
     });
   });
 
-  describe('File validation', () => {
-    it('rejects files that do not match accept filter', async () => {
+  describe('Validation', () => {
+    it('rejects files that do not match the accept filter without retry', async () => {
       const onUploadError = vi.fn();
-      render(
-        <FileUpload uploadUrl={mockUploadUrl} accept={['image/*']} onUploadError={onUploadError} />,
+      const { container } = render(
+        <FileUpload uploadUrl={uploadUrl} accept={['image/*']} onUploadError={onUploadError} />,
       );
 
-      const pdfFile = new File(['content'], 'test.pdf', { type: 'application/pdf' });
-      const input = screen.getByDisplayValue('');
+      selectFiles(container, [makeFile('doc.pdf', 10, 'application/pdf')]);
 
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(pdfFile);
-      fireEvent.change(input, { target: { files: dataTransfer.files } });
-
-      await waitFor(() => {
-        expect(onUploadError).toHaveBeenCalledWith(
-          'test.pdf',
-          expect.stringContaining('not an accepted file type'),
-        );
-      });
-
-      expect(screen.getByText("test.pdf\" isn't an accepted file type")).toBeInTheDocument();
+      await waitFor(() => expect(screen.getByText(/isn't an accepted file type/)).toBeInTheDocument());
+      expect(onUploadError).toHaveBeenCalledWith('doc.pdf', expect.stringContaining('accepted file type'));
+      expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument();
+      expect(MockXHR.instances).toHaveLength(0);
     });
 
-    it('rejects files that exceed max size', async () => {
-      const onUploadError = vi.fn();
-      const maxSize = 1024; // 1KB
-      render(
-        <FileUpload
-          uploadUrl={mockUploadUrl}
-          maxSizeBytes={maxSize}
-          onUploadError={onUploadError}
-        />,
-      );
+    it('rejects files that exceed the max size without retry', async () => {
+      const { container } = render(<FileUpload uploadUrl={uploadUrl} maxSizeBytes={5} />);
 
-      const largeFile = new File(['x'.repeat(2000)], 'large.jpg', { type: 'image/jpeg' });
-      const input = screen.getByDisplayValue('');
+      selectFiles(container, [makeFile('big.jpg', 50)]);
 
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(largeFile);
-      fireEvent.change(input, { target: { files: dataTransfer.files } });
-
-      await waitFor(() => {
-        expect(onUploadError).toHaveBeenCalledWith(
-          'large.jpg',
-          expect.stringContaining('too large'),
-        );
-      });
-
-      expect(screen.getByText(/too large/)).toBeInTheDocument();
-    });
-
-    it('accepts files that pass validation', async () => {
-      render(<FileUpload uploadUrl={mockUploadUrl} accept={['image/*']} />);
-
-      const input = screen.getByDisplayValue('');
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(mockFile);
-
-      fireEvent.change(input, { target: { files: dataTransfer.files } });
-
-      await waitFor(() => {
-        expect(screen.getByText('test.jpg')).toBeInTheDocument();
-      });
+      await waitFor(() => expect(screen.getByText(/too large/)).toBeInTheDocument());
+      expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument();
     });
   });
 
-  describe('Upload progress', () => {
-    it('shows progress bar during upload', async () => {
-      render(<FileUpload uploadUrl={mockUploadUrl} />);
-
-      const input = screen.getByDisplayValue('');
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(mockFile);
-
-      fireEvent.change(input, { target: { files: dataTransfer.files } });
-
-      await waitFor(() => {
-        expect(screen.getByRole('progressbar')).toBeInTheDocument();
-      });
-    });
-
-    it('updates progress percentage', async () => {
-      render(<FileUpload uploadUrl={mockUploadUrl} />);
-
-      const input = screen.getByDisplayValue('');
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(mockFile);
-
-      fireEvent.change(input, { target: { files: dataTransfer.files } });
-
-      await waitFor(() => {
-        expect(screen.getByText('0%')).toBeInTheDocument();
-      });
-    });
-
-    it('calls onProgress callback during upload', async () => {
+  describe('Per-file progress', () => {
+    it('tracks progress independently for each file', async () => {
       const onProgress = vi.fn();
-      render(<FileUpload uploadUrl={mockUploadUrl} onProgress={onProgress} />);
+      render(<FileUpload uploadUrl={uploadUrl} onProgress={onProgress} />);
 
-      const input = screen.getByDisplayValue('');
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(mockFile);
+      dropFiles([makeFile('a.jpg'), makeFile('b.jpg')]);
+      await waitFor(() => expect(MockXHR.instances).toHaveLength(2));
 
-      fireEvent.change(input, { target: { files: dataTransfer.files } });
+      MockXHR.instances[0].progress(40);
+      MockXHR.instances[1].progress(75);
 
-      await waitFor(() => {
-        expect(onProgress).toHaveBeenCalled();
-      });
-    });
-  });
-
-  describe('Cancel button', () => {
-    it('appears during upload', async () => {
-      render(<FileUpload uploadUrl={mockUploadUrl} />);
-
-      const input = screen.getByDisplayValue('');
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(mockFile);
-
-      fireEvent.change(input, { target: { files: dataTransfer.files } });
-
-      await waitFor(() => {
-        const removeButton = screen.getByRole('button', {
-          name: /cancel test.jpg/i,
-        });
-        expect(removeButton).toBeInTheDocument();
-      });
+      const bars = screen.getAllByRole('progressbar');
+      expect(bars[0]).toHaveAttribute('aria-valuenow', '40');
+      expect(bars[1]).toHaveAttribute('aria-valuenow', '75');
+      expect(screen.getByText('40%')).toBeInTheDocument();
+      expect(screen.getByText('75%')).toBeInTheDocument();
+      expect(onProgress).toHaveBeenCalledWith(40);
     });
 
-    it('stops upload when clicked', async () => {
-      const xhrMock = {
-        open: vi.fn(),
-        setRequestHeader: vi.fn(),
-        send: vi.fn(),
-        upload: {},
-        abort: vi.fn(),
-        onload: null,
-        onerror: null,
-        onabort: null,
-      };
-
-      global.XMLHttpRequest = vi.fn(() => xhrMock) as any;
-
-      render(<FileUpload uploadUrl={mockUploadUrl} />);
-
-      const input = screen.getByDisplayValue('');
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(mockFile);
-
-      fireEvent.change(input, { target: { files: dataTransfer.files } });
-
-      await waitFor(() => {
-        const removeButton = screen.getByRole('button', {
-          name: /cancel test.jpg/i,
-        });
-        fireEvent.click(removeButton);
-      });
-
-      expect(xhrMock.abort).toHaveBeenCalled();
-    });
-
-    it('removes file from list when clicked', async () => {
-      render(<FileUpload uploadUrl={mockUploadUrl} />);
-
-      const input = screen.getByDisplayValue('');
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(mockFile);
-
-      fireEvent.change(input, { target: { files: dataTransfer.files } });
-
-      await waitFor(() => {
-        expect(screen.getByText('test.jpg')).toBeInTheDocument();
-      });
-
-      const removeButton = screen.getByRole('button', {
-        name: /remove test.jpg/i,
-      });
-      fireEvent.click(removeButton);
-
-      await waitFor(() => {
-        expect(screen.queryByText('test.jpg')).not.toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Success state', () => {
-    it('shows success icon when upload completes', async () => {
-      render(<FileUpload uploadUrl={mockUploadUrl} />);
-
-      const input = screen.getByDisplayValue('');
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(mockFile);
-
-      fireEvent.change(input, { target: { files: dataTransfer.files } });
-
-      await waitFor(() => {
-        expect(screen.getByLabelText('Upload complete')).toBeInTheDocument();
-      });
-    });
-
-    it('calls onUploadComplete callback on success', async () => {
+    it('shows file name, size and success state', async () => {
       const onUploadComplete = vi.fn();
-      render(
-        <FileUpload uploadUrl={mockUploadUrl} onUploadComplete={onUploadComplete} />,
+      render(<FileUpload uploadUrl={uploadUrl} onUploadComplete={onUploadComplete} />);
+
+      dropFiles([makeFile('a.jpg', 10)]);
+      await waitFor(() => expect(MockXHR.instances).toHaveLength(1));
+      expect(screen.getByText('10 B')).toBeInTheDocument();
+
+      MockXHR.instances[0].succeed('https://cdn.example.com/a.jpg');
+
+      expect(screen.getByLabelText('Upload complete')).toBeInTheDocument();
+      expect(onUploadComplete).toHaveBeenCalledWith(
+        expect.objectContaining({ fileName: 'a.jpg', url: 'https://cdn.example.com/a.jpg' }),
       );
-
-      const input = screen.getByDisplayValue('');
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(mockFile);
-
-      fireEvent.change(input, { target: { files: dataTransfer.files } });
-
-      await waitFor(() => {
-        expect(onUploadComplete).toHaveBeenCalled();
-      });
     });
   });
 
-  describe('Error state', () => {
-    it('shows error message on upload failure', async () => {
-      const xhrMock = {
-        open: vi.fn(),
-        setRequestHeader: vi.fn(),
-        send: vi.fn(),
-        upload: {},
-        onload: vi.fn(),
-        onerror: vi.fn(),
-        onabort: null,
-        abort: vi.fn(),
-        status: 500,
-      };
+  describe('Summary', () => {
+    it('shows "X of Y uploaded" above the list and updates as files finish', async () => {
+      render(<FileUpload uploadUrl={uploadUrl} />);
 
-      global.XMLHttpRequest = vi.fn(() => xhrMock) as any;
+      dropFiles([makeFile('a.jpg'), makeFile('b.jpg'), makeFile('c.jpg')]);
+      await waitFor(() => expect(MockXHR.instances).toHaveLength(3));
 
-      render(<FileUpload uploadUrl={mockUploadUrl} />);
+      const summary = screen.getByTestId('upload-summary');
+      expect(summary).toHaveTextContent('0 of 3 uploaded');
+      expect(summary).toHaveTextContent('3 in progress');
 
-      const input = screen.getByDisplayValue('');
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(mockFile);
+      MockXHR.instances[0].succeed();
+      MockXHR.instances[1].succeed();
+      MockXHR.instances[2].fail();
 
-      fireEvent.change(input, { target: { files: dataTransfer.files } });
+      expect(summary).toHaveTextContent('2 of 3 uploaded');
+      expect(summary).toHaveTextContent('1 failed');
+      expect(summary).not.toHaveTextContent('in progress');
+    });
 
-      // Simulate error
-      await waitFor(() => {
-        xhrMock.onerror?.();
-      });
+    it('is hidden when there are no files', () => {
+      render(<FileUpload uploadUrl={uploadUrl} />);
+      expect(screen.queryByTestId('upload-summary')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Cancel', () => {
+    it('cancelling one file does not affect the others', async () => {
+      const onUploadError = vi.fn();
+      render(<FileUpload uploadUrl={uploadUrl} onUploadError={onUploadError} />);
+
+      dropFiles([makeFile('a.jpg'), makeFile('b.jpg')]);
+      await waitFor(() => expect(MockXHR.instances).toHaveLength(2));
+      MockXHR.instances[1].progress(50);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel a.jpg' }));
+
+      expect(MockXHR.instances[0].abort).toHaveBeenCalled();
+      expect(MockXHR.instances[1].abort).not.toHaveBeenCalled();
+      expect(screen.queryByText('a.jpg')).not.toBeInTheDocument();
+      expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50');
+      // A user cancel is not an upload failure
+      expect(onUploadError).not.toHaveBeenCalled();
+
+      MockXHR.instances[1].succeed();
+      expect(screen.getByTestId('upload-summary')).toHaveTextContent('1 of 1 uploaded');
+    });
+
+    it('removes a finished file from the list', async () => {
+      render(<FileUpload uploadUrl={uploadUrl} />);
+
+      dropFiles([makeFile('a.jpg')]);
+      await waitFor(() => expect(MockXHR.instances).toHaveLength(1));
+      MockXHR.instances[0].succeed();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Remove a.jpg' }));
+      expect(screen.queryByText('a.jpg')).not.toBeInTheDocument();
+    });
+
+    it('aborts in-flight uploads on unmount', async () => {
+      const { unmount } = render(<FileUpload uploadUrl={uploadUrl} />);
+
+      dropFiles([makeFile('a.jpg'), makeFile('b.jpg')]);
+      await waitFor(() => expect(MockXHR.instances).toHaveLength(2));
+
+      unmount();
+
+      MockXHR.instances.forEach((xhr) => expect(xhr.abort).toHaveBeenCalled());
+    });
+  });
+
+  describe('Errors and retry', () => {
+    it('shows a per-file error and retries only that file', async () => {
+      const onUploadError = vi.fn();
+      render(<FileUpload uploadUrl={uploadUrl} onUploadError={onUploadError} />);
+
+      dropFiles([makeFile('a.jpg'), makeFile('b.jpg')]);
+      await waitFor(() => expect(MockXHR.instances).toHaveLength(2));
+
+      MockXHR.instances[0].networkError();
+      MockXHR.instances[1].progress(30);
 
       expect(screen.getByText(/Network error/)).toBeInTheDocument();
+      expect(onUploadError).toHaveBeenCalledWith('a.jpg', expect.stringContaining('Network error'));
+      expect(screen.queryByRole('button', { name: 'Retry b.jpg' })).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Retry a.jpg' }));
+
+      expect(MockXHR.instances).toHaveLength(3);
+      expect(MockXHR.instances[1].abort).not.toHaveBeenCalled();
+      expect(screen.queryByText(/Network error/)).not.toBeInTheDocument();
+
+      MockXHR.instances[2].succeed();
+      MockXHR.instances[1].succeed();
+      expect(screen.getByTestId('upload-summary')).toHaveTextContent('2 of 2 uploaded');
     });
 
-    it('shows retry button on error', async () => {
-      const xhrMock = {
-        open: vi.fn(),
-        setRequestHeader: vi.fn(),
-        send: vi.fn(),
-        upload: {},
-        onload: null,
-        onerror: vi.fn(),
-        onabort: null,
-        abort: vi.fn(),
-        status: 500,
-      };
+    it('shows the HTTP status for server failures', async () => {
+      render(<FileUpload uploadUrl={uploadUrl} />);
 
-      global.XMLHttpRequest = vi.fn(() => xhrMock) as any;
+      dropFiles([makeFile('a.jpg')]);
+      await waitFor(() => expect(MockXHR.instances).toHaveLength(1));
+      MockXHR.instances[0].fail(413);
 
-      render(<FileUpload uploadUrl={mockUploadUrl} />);
-
-      const input = screen.getByDisplayValue('');
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(mockFile);
-
-      fireEvent.change(input, { target: { files: dataTransfer.files } });
-
-      // Simulate error
-      await waitFor(() => {
-        xhrMock.onerror?.();
-      });
-
-      expect(screen.getByRole('button', { name: /Retry/i })).toBeInTheDocument();
-    });
-
-    it('does not show retry for validation errors', async () => {
-      const onUploadError = vi.fn();
-      render(
-        <FileUpload
-          uploadUrl={mockUploadUrl}
-          maxSizeBytes={10}
-          onUploadError={onUploadError}
-        />,
-      );
-
-      const input = screen.getByDisplayValue('');
-      const largeFile = new File(['x'.repeat(100)], 'large.jpg', {
-        type: 'image/jpeg',
-      });
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(largeFile);
-
-      fireEvent.change(input, { target: { files: dataTransfer.files } });
-
-      await waitFor(() => {
-        expect(screen.getByText(/too large/)).toBeInTheDocument();
-      });
-
-      // Retry button should not be present for validation errors
-      expect(
-        screen.queryByRole('button', { name: /Retry/i }),
-      ).not.toBeInTheDocument();
+      expect(screen.getByText('Upload failed (413)')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Retry a.jpg' })).toBeInTheDocument();
     });
   });
 
-  describe('File metadata', () => {
-    it('displays file size', async () => {
-      render(<FileUpload uploadUrl={mockUploadUrl} />);
+  describe('Single-file mode', () => {
+    it('keeps only the first file when multiple=false', async () => {
+      const { container } = render(<FileUpload uploadUrl={uploadUrl} multiple={false} />);
 
-      const input = screen.getByDisplayValue('');
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(mockFile);
+      selectFiles(container, [makeFile('a.jpg'), makeFile('b.jpg')]);
 
-      fireEvent.change(input, { target: { files: dataTransfer.files } });
-
-      await waitFor(() => {
-        expect(screen.getByText(/B/)).toBeInTheDocument();
-      });
+      await waitFor(() => expect(screen.getByText('a.jpg')).toBeInTheDocument());
+      expect(screen.queryByText('b.jpg')).not.toBeInTheDocument();
     });
 
+    it('aborts the previous upload when a new file replaces it', async () => {
+      const { container } = render(<FileUpload uploadUrl={uploadUrl} multiple={false} />);
+
+      selectFiles(container, [makeFile('a.jpg')]);
+      await waitFor(() => expect(MockXHR.instances).toHaveLength(1));
+
+      selectFiles(container, [makeFile('b.jpg')]);
+      await waitFor(() => expect(screen.getByText('b.jpg')).toBeInTheDocument());
+
+      expect(MockXHR.instances[0].abort).toHaveBeenCalled();
+      expect(screen.queryByText('a.jpg')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Video metadata', () => {
     it('displays video duration when available', async () => {
-      // Mock video duration detection
-      const createElementSpy = vi.spyOn(document, 'createElement');
-      createElementSpy.mockImplementation((tagName) => {
-        const element = document.createElement(tagName);
+      const realCreateElement = document.createElement.bind(document);
+      vi.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
+        const element = realCreateElement(tagName);
         if (tagName === 'video') {
-          Object.defineProperty(element, 'duration', {
-            value: 120,
-            configurable: true,
-          });
-          // Trigger metadata loaded event immediately
-          setTimeout(() => {
-            element.onloadedmetadata?.({} as any);
-          }, 0);
+          Object.defineProperty(element, 'duration', { value: 120 });
+          setTimeout(() => (element as HTMLVideoElement).onloadedmetadata?.({} as Event), 0);
         }
         return element;
       });
 
-      render(<FileUpload uploadUrl={mockUploadUrl} />);
+      render(<FileUpload uploadUrl={uploadUrl} />);
+      dropFiles([makeFile('clip.mp4', 10, 'video/mp4')]);
 
-      const input = screen.getByDisplayValue('');
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(mockVideoFile);
-
-      fireEvent.change(input, { target: { files: dataTransfer.files } });
-
-      await waitFor(() => {
-        // Duration should be displayed (2:00 for 120 seconds)
-        expect(screen.getByText(/2:00/)).toBeInTheDocument();
-      });
-
-      createElementSpy.mockRestore();
-    });
-  });
-
-  describe('Multiple files', () => {
-    it('allows multiple files when multiple=true', async () => {
-      render(<FileUpload uploadUrl={mockUploadUrl} multiple={true} />);
-
-      const input = screen.getByDisplayValue('');
-      const file1 = new File(['content1'], 'test1.jpg', { type: 'image/jpeg' });
-      const file2 = new File(['content2'], 'test2.jpg', { type: 'image/jpeg' });
-
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(file1);
-      dataTransfer.items.add(file2);
-
-      fireEvent.change(input, { target: { files: dataTransfer.files } });
-
-      await waitFor(() => {
-        expect(screen.getByText('test1.jpg')).toBeInTheDocument();
-        expect(screen.getByText('test2.jpg')).toBeInTheDocument();
-      });
-    });
-
-    it('allows only single file when multiple=false', async () => {
-      render(<FileUpload uploadUrl={mockUploadUrl} multiple={false} />);
-
-      const input = screen.getByDisplayValue('');
-      const file1 = new File(['content1'], 'test1.jpg', { type: 'image/jpeg' });
-      const file2 = new File(['content2'], 'test2.jpg', { type: 'image/jpeg' });
-
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(file1);
-      dataTransfer.items.add(file2);
-
-      fireEvent.change(input, { target: { files: dataTransfer.files } });
-
-      await waitFor(() => {
-        expect(screen.getByText('test1.jpg')).toBeInTheDocument();
-        expect(screen.queryByText('test2.jpg')).not.toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Accessibility', () => {
-    it('has proper progressbar ARIA attributes', async () => {
-      render(<FileUpload uploadUrl={mockUploadUrl} />);
-
-      const input = screen.getByDisplayValue('');
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(mockFile);
-
-      fireEvent.change(input, { target: { files: dataTransfer.files } });
-
-      await waitFor(() => {
-        const progressbar = screen.getByRole('progressbar');
-        expect(progressbar).toHaveAttribute('aria-valuenow');
-        expect(progressbar).toHaveAttribute('aria-valuemin', '0');
-        expect(progressbar).toHaveAttribute('aria-valuemax', '100');
-        expect(progressbar).toHaveAttribute('aria-label');
-      });
-    });
-
-    it('has sr-only file input', () => {
-      render(<FileUpload uploadUrl={mockUploadUrl} />);
-      const input = screen.getByDisplayValue('');
-      expect(input).toHaveClass('sr-only');
+      await waitFor(() => expect(screen.getByText('2:00')).toBeInTheDocument());
     });
   });
 });
