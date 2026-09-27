@@ -326,6 +326,8 @@ export default function LearnPage() {
               courseId={id}
               lectureId={activeLesson.id}
               videoRef={videoRef}
+              courseTitle={course.title}
+              lectureTitle={activeLesson.title}
             />
           </div>
         )}

@@ -1,8 +1,14 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Clock, Trash2, Download, FileText, Plus } from 'lucide-react';
+import { Clock, Trash2, Download, FileText, Plus, FileDown, ChevronDown } from 'lucide-react';
 import { formatDuration } from '@/lib/utils';
+import {
+  downloadMarkdown,
+  notesFilename,
+  notesToMarkdown,
+  printNotesAsPdf,
+} from '@/lib/utils/notes-export';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -17,6 +23,8 @@ interface NotesPanelProps {
   courseId: string;
   lectureId: string;
   videoRef: React.RefObject<HTMLVideoElement | null>;
+  courseTitle?: string;
+  lectureTitle?: string;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────
@@ -47,11 +55,36 @@ const generateId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 8)
 
 // ── Component ──────────────────────────────────────────────────────
 
-export default function NotesPanel({ courseId, lectureId, videoRef }: NotesPanelProps) {
+export default function NotesPanel({
+  courseId,
+  lectureId,
+  videoRef,
+  courseTitle,
+  lectureTitle,
+}: NotesPanelProps) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [text, setText] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close the export menu on outside click / Escape
+  useEffect(() => {
+    if (!exportMenuOpen) return;
+    const onPointerDown = (e: MouseEvent) => {
+      if (!exportMenuRef.current?.contains(e.target as Node)) setExportMenuOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setExportMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [exportMenuOpen]);
 
   // Load notes on mount / when lecture changes
   useEffect(() => {
@@ -114,25 +147,22 @@ export default function NotesPanel({ courseId, lectureId, videoRef }: NotesPanel
     }
   };
 
-  const handleExportAll = () => {
-    // Collect all notes for this course+lecture
-    const allNotes = loadNotes(courseId, lectureId);
-    if (allNotes.length === 0) return;
+  const exportMeta = { courseTitle, lectureTitle };
+  const fallbackName = `${courseId}-${lectureId}`;
 
-    const lines = allNotes.map(
-      (n) => `[${formatDuration(n.timestamp)}] ${n.text}`,
+  const handleExportMarkdown = () => {
+    setExportMenuOpen(false);
+    if (notes.length === 0) return;
+    downloadMarkdown(
+      notesFilename(exportMeta, fallbackName, 'md'),
+      notesToMarkdown(notes, exportMeta),
     );
-    const content = lines.join('\n');
+  };
 
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `notes-${courseId}-${lectureId}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleExportPdf = () => {
+    setExportMenuOpen(false);
+    if (notes.length === 0) return;
+    printNotesAsPdf(notes, exportMeta);
   };
 
   return (
@@ -145,14 +175,42 @@ export default function NotesPanel({ courseId, lectureId, videoRef }: NotesPanel
             Notes
           </h3>
           {notes.length > 0 && (
-            <button
-              onClick={handleExportAll}
-              className="flex items-center gap-1 text-xs font-medium text-ink-500 hover:text-ink-700 transition-colors"
-              title="Export all notes as .txt"
-            >
-              <Download className="w-3.5 h-3.5" />
-              Export
-            </button>
+            <div ref={exportMenuRef} className="relative">
+              <button
+                onClick={() => setExportMenuOpen((o) => !o)}
+                className="flex items-center gap-1 text-xs font-medium text-ink-500 hover:text-ink-700 transition-colors"
+                aria-haspopup="menu"
+                aria-expanded={exportMenuOpen}
+                title="Export notes"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export
+                <ChevronDown className="w-3 h-3" />
+              </button>
+              {exportMenuOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 mt-1 w-40 z-20 bg-white border border-ink-100 rounded-lg shadow-lg py-1"
+                >
+                  <button
+                    role="menuitem"
+                    onClick={handleExportMarkdown}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-ink-700 hover:bg-ink-50 text-left"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-ink-400" />
+                    Markdown (.md)
+                  </button>
+                  <button
+                    role="menuitem"
+                    onClick={handleExportPdf}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-ink-700 hover:bg-ink-50 text-left"
+                  >
+                    <FileDown className="w-3.5 h-3.5 text-ink-400" />
+                    PDF
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
 

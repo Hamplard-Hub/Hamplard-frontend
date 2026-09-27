@@ -14,6 +14,12 @@ import {
 import { usersApi, coursesApi } from '@/lib/api/services';
 import { CourseCard } from '@/components/courses/CourseCard';
 import { RevenueChart } from '@/components/instructor/RevenueChart';
+import {
+  RevenueDateRangePicker,
+  formatRangeLabel,
+  rangeForPreset,
+  type RevenueDateRange,
+} from '@/components/instructor/RevenueDateRangePicker';
 import { courseStatusBadge, formatUsdc } from '@/lib/utils';
 import type { Course } from '@/types';
 
@@ -23,7 +29,7 @@ export default function InstructorDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [revenueData, setRevenueData] = useState<any[]>([]);
   const [revenueLoading, setRevenueLoading] = useState(true);
-  const [dateRange, setDateRange] = useState<'3m' | '6m' | '12m'>('12m');
+  const [dateRange, setDateRange] = useState<RevenueDateRange>(() => rangeForPreset('12m'));
   const [thisMonthRevenue, setThisMonthRevenue] = useState(0);
   const [pendingPayout, setPendingPayout] = useState(0);
 
@@ -40,15 +46,18 @@ export default function InstructorDashboardPage() {
   useEffect(() => {
     setRevenueLoading(true);
     const timer = setTimeout(() => {
-      const months = dateRange === '3m' ? 3 : dateRange === '6m' ? 6 : 12;
-      const data = generateRevenueData(months);
+      const data = generateRevenueData(dateRange.from, dateRange.to);
       setRevenueData(data);
 
       // Calculate this month's revenue
       const today = new Date();
-      const currentMonth = data.find(
-        (d) => new Date(d.date).getMonth() === today.getMonth(),
-      );
+      const currentMonth = data.find((d) => {
+        const date = new Date(d.date);
+        return (
+          date.getMonth() === today.getMonth() &&
+          date.getFullYear() === today.getFullYear()
+        );
+      });
       setThisMonthRevenue(currentMonth?.revenue || 0);
 
       // Simulate pending payout (15% of total revenue)
@@ -59,7 +68,7 @@ export default function InstructorDashboardPage() {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [dateRange]);
+  }, [dateRange.from, dateRange.to]);
 
   return (
     <div>
@@ -110,30 +119,12 @@ export default function InstructorDashboardPage() {
 
       {/* Revenue Analytics Section */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <h2 className="font-display text-lg font-semibold text-ink-900 flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-hamplard-primary" />
             Revenue Analytics
           </h2>
-          <div className="flex items-center gap-2">
-            {(['3m', '6m', '12m'] as const).map((range) => (
-              <button
-                key={range}
-                onClick={() => setDateRange(range)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                  dateRange === range
-                    ? 'bg-hamplard-primary text-white'
-                    : 'bg-ink-100 text-ink-700 hover:bg-ink-200'
-                }`}
-              >
-                {range === '3m'
-                  ? 'Last 3M'
-                  : range === '6m'
-                    ? 'Last 6M'
-                    : 'Last 12M'}
-              </button>
-            ))}
-          </div>
+          <RevenueDateRangePicker value={dateRange} onChange={setDateRange} />
         </div>
 
         {/* Summary Cards */}
@@ -165,7 +156,13 @@ export default function InstructorDashboardPage() {
 
         {/* Chart */}
         <div className="card p-6">
-          <RevenueChart data={revenueData} isLoading={revenueLoading} height={350} />
+          <RevenueChart
+            data={revenueData}
+            isLoading={revenueLoading}
+            height={350}
+            rangeLabel={formatRangeLabel(dateRange)}
+            exportFilename={`revenue-${dateRange.from}-to-${dateRange.to}`}
+          />
         </div>
       </div>
 
@@ -216,22 +213,26 @@ export default function InstructorDashboardPage() {
  * Generate mock revenue data for the chart
  * In production, this would come from the backend API
  */
-function generateRevenueData(months: number) {
+function generateRevenueData(from: string, to: string) {
   const data = [];
-  const today = new Date();
+  const start = new Date(`${from}T00:00:00`);
+  const end = new Date(`${to}T00:00:00`);
+  const spansYears = start.getFullYear() !== end.getFullYear();
 
-  for (let i = months - 1; i >= 0; i--) {
-    const date = new Date(today);
-    date.setMonth(date.getMonth() - i);
-
-    const monthName = date.toLocaleString('en-US', { month: 'short' });
+  const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+  while (cursor <= end) {
+    const monthName = cursor.toLocaleString('en-US', {
+      month: 'short',
+      ...(spansYears ? { year: '2-digit' } : {}),
+    });
     const revenue = Math.floor(Math.random() * 4000) + 500; // Random revenue between $500-$4500
 
     data.push({
       month: monthName,
       revenue,
-      date: date.toISOString(),
+      date: cursor.toISOString(),
     });
+    cursor.setMonth(cursor.getMonth() + 1);
   }
 
   return data;
