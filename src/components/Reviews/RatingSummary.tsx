@@ -68,8 +68,6 @@ export function RatingSummary({
   onStarFilter,
   className,
 }: RatingSummaryProps) {
-  const maxCount = Math.max(...distribution.map((d) => d.count), 1);
-
   // Sort descending: 5 → 1
   const sortedDist = [...distribution].sort((a, b) => b.stars - a.stars);
 
@@ -112,80 +110,85 @@ export function RatingSummary({
 
         {/* ── Right: Distribution bars ── */}
         <div className="flex-1 w-full space-y-1.5" role="list" aria-label="Rating distribution">
-          {sortedDist.map(({ stars, count }) => {
-            const pct = maxCount > 0 ? (count / maxCount) * 100 : 0;
-            const reviewPct =
-              totalReviews > 0 ? Math.round((count / totalReviews) * 100) : 0;
-            const isHighlighted = highlightedStar === stars;
-            const isActive = !!onStarFilter; // clickable?
+          {totalReviews === 0 ? (
+            <p className="text-sm text-semantic-text-muted py-4 text-center">
+              No reviews yet — be the first to share your experience.
+            </p>
+          ) : (
+            sortedDist.map(({ stars, count }) => {
+              const reviewPct =
+                totalReviews > 0 ? Math.round((count / totalReviews) * 100) : 0;
+              const isHighlighted = highlightedStar === stars;
+              const isActive = !!onStarFilter; // clickable?
 
-            return (
-              <div
-                key={stars}
-                role="listitem"
-                onClick={() => handleBarClick(stars)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleBarClick(stars);
-                  }
-                }}
-                tabIndex={isActive ? 0 : undefined}
-                aria-label={`${stars} stars — ${count} reviews (${reviewPct}%)${isHighlighted ? ', currently filtered' : ''}`}
-                className={cn(
-                  'group flex items-center gap-2.5 py-0.5 rounded-lg transition-colors',
-                  isActive && 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary focus-visible:ring-offset-1',
-                  isActive && !isHighlighted && 'hover:bg-hamplard-lilac/40 px-1 -mx-1',
-                  isHighlighted && 'bg-hamplard-lilac px-1 -mx-1',
-                )}
-              >
-                {/* Star label */}
-                <span className="text-xs font-semibold text-hamplard-deep w-5 text-right shrink-0">
-                  {stars}
-                </span>
-
-                {/* Mini star icon */}
-                <Star
+              return (
+                <div
+                  key={stars}
+                  role="listitem"
+                  onClick={() => handleBarClick(stars)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleBarClick(stars);
+                    }
+                  }}
+                  tabIndex={isActive ? 0 : undefined}
+                  aria-label={`${stars} stars — ${count} reviews (${reviewPct}%)${isHighlighted ? ', currently filtered' : ''}`}
                   className={cn(
-                    'w-3.5 h-3.5 shrink-0 transition-colors',
-                    isHighlighted
-                      ? 'fill-hamplard-primary text-hamplard-primary'
-                      : 'fill-amber-400 text-amber-400',
-                  )}
-                  aria-hidden="true"
-                />
-
-                {/* Bar track */}
-                <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
-                  <div
-                    className={cn(
-                      'h-full rounded-full transition-all duration-500',
-                      isHighlighted
-                        ? 'bg-hamplard-primary'
-                        : highlightedStar !== null
-                        ? 'bg-hamplard-primary/30'
-                        : 'bg-hamplard-primary/70',
-                    )}
-                    style={{ width: `${pct}%` }}
-                    role="progressbar"
-                    aria-valuenow={reviewPct}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                  />
-                </div>
-
-                {/* Count */}
-                <span
-                  className={cn(
-                    'text-xs w-7 text-right shrink-0 tabular-nums transition-colors',
-                    isHighlighted ? 'text-hamplard-mid font-semibold' : 'text-semantic-text-muted',
+                    'group flex items-center gap-2.5 py-0.5 rounded-lg transition-colors',
+                    isActive && 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary focus-visible:ring-offset-1',
+                    isActive && !isHighlighted && 'hover:bg-hamplard-lilac/40 px-1 -mx-1',
+                    isHighlighted && 'bg-hamplard-lilac px-1 -mx-1',
                   )}
                 >
-                  {count}
-                </span>
-              </div>
-            );
-          })}
+                  {/* Star label */}
+                  <span className="text-xs font-semibold text-hamplard-deep w-5 text-right shrink-0">
+                    {stars}
+                  </span>
+
+                  {/* Mini star icon */}
+                  <Star
+                    className={cn(
+                      'w-3.5 h-3.5 shrink-0 transition-colors',
+                      isHighlighted
+                        ? 'fill-hamplard-primary text-hamplard-primary'
+                        : 'fill-amber-400 text-amber-400',
+                    )}
+                    aria-hidden="true"
+                  />
+
+                  {/* Bar track */}
+                  <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                    <div
+                      className={cn(
+                        'h-full rounded-full transition-all duration-500',
+                        isHighlighted
+                          ? 'bg-hamplard-primary'
+                          : highlightedStar !== null
+                          ? 'bg-hamplard-primary/30'
+                          : 'bg-hamplard-primary/70',
+                      )}
+                      style={{ width: `${reviewPct}%` }}
+                      role="progressbar"
+                      aria-valuenow={reviewPct}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                    />
+                  </div>
+
+                  {/* Count + percentage */}
+                  <span
+                    className={cn(
+                      'text-xs w-16 text-right shrink-0 tabular-nums transition-colors',
+                      isHighlighted ? 'text-hamplard-mid font-semibold' : 'text-semantic-text-muted',
+                    )}
+                  >
+                    {count} ({reviewPct}%)
+                  </span>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 

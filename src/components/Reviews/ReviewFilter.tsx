@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowUpDown, Clock, ThumbsUp, Star, ChevronDown } from 'lucide-react';
+import { ArrowUpDown, Clock, ThumbsUp, Star, ChevronDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ReviewSortOption } from '@/types';
 import { useState, useRef, useEffect } from 'react';
@@ -10,6 +10,10 @@ interface ReviewFilterProps {
   onSortChange: (sort: ReviewSortOption) => void;
   /** Total count shown as contextual info */
   totalReviews?: number;
+  /** Active star-level filter (1-5), or null when showing all ratings */
+  starFilter?: number | null;
+  /** Called when a star-level filter is applied or cleared */
+  onStarFilterChange?: (star: number | null) => void;
   className?: string;
 }
 
@@ -52,11 +56,16 @@ const SORT_OPTIONS: {
  *   The active option uses hamplard-primary fill; inactive options use ghost style.
  *
  * A `totalReviews` count label is rendered to the left of the controls.
+ *
+ * When `starFilter` is provided, an active star-level chip is rendered so the
+ * rating-distribution bars in `RatingSummary` can drive the review list filter.
  */
 export function ReviewFilter({
   sortBy,
   onSortChange,
   totalReviews,
+  starFilter = null,
+  onStarFilterChange,
   className,
 }: ReviewFilterProps) {
   const activeLabel = SORT_OPTIONS.find((o) => o.value === sortBy)?.label ?? 'Sort';
@@ -86,6 +95,20 @@ export function ReviewFilter({
           <span className="font-semibold">{totalReviews.toLocaleString()}</span>{' '}
           {totalReviews === 1 ? 'review' : 'reviews'}
         </p>
+      )}
+
+      {/* ── Active star-level filter chip ── */}
+      {starFilter !== null && onStarFilterChange && (
+        <button
+          type="button"
+          onClick={() => onStarFilterChange(null)}
+          aria-label={`Clear ${starFilter}-star filter`}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-xs font-medium bg-hamplard-lilac text-hamplard-primary border border-hamplard-primary transition-colors hover:bg-hamplard-primary hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary"
+        >
+          <Star className="w-3.5 h-3.5 fill-current" aria-hidden="true" />
+          {starFilter} {starFilter === 1 ? 'star' : 'stars'}
+          <X className="w-3.5 h-3.5" aria-hidden="true" />
+        </button>
       )}
 
       {/* ── Mobile dropdown (< sm) ── */}
