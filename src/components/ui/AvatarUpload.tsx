@@ -9,8 +9,9 @@
  * Flow:
  *  1. User clicks "Change photo" → file picker opens
  *  2. After file selection the crop UI (canvas) appears
- *  3. User drags to position / uses slider to zoom, then clicks "Crop"
- *  4. A circular preview of the cropped result is shown
+ *  3. User drags to position and zooms (slider, pinch, or scroll wheel),
+ *     then clicks "Crop". "Cancel" discards the file and keeps the old avatar.
+ *  4. The exact 1:1 region is exported (≤ EXPORT_MAX_SIZE px) and previewed
  *  5. User clicks "Save" → XHR upload with progress bar
  *  6. On success the auth-store is patched → Header avatar updates instantly
  */
@@ -33,10 +34,15 @@ const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 const ACCEPT_ATTR    = 'image/jpeg,image/png,image/webp';
 const ACCEPT_TYPES   = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
-/** Size (px) of the square crop canvas shown in the UI */
+/** Size (px) of the square crop canvas's drawing buffer */
 const CANVAS_SIZE = 320;
-/** Size (px) of the exported circular crop */
-const EXPORT_SIZE = 400;
+/** Max edge (px) of the exported square crop; smaller crops are never upscaled */
+export const EXPORT_MAX_SIZE = 512;
+/** Zoom is a multiplier on the "cover" scale that just fills the crop area */
+export const MIN_ZOOM = 1;
+export const MAX_ZOOM = 4;
+/** Pixels moved per arrow-key press when panning with the keyboard */
+const KEYBOARD_PAN_STEP = 10;
 
 /* ─── helpers ────────────────────────────────────────────────────────────── */
 
@@ -45,9 +51,62 @@ function clamp(v: number, min: number, max: number) {
   return Math.max(min, Math.min(max, v));
 }
 
+interface Offset { x: number; y: number }
+
 /**
- * Render the current view (image translated + scaled inside the crop circle)
- * onto a 2-D canvas context and return the context.
+ * Keep the scaled image covering the whole crop square, so no empty edges
+ * ever end up in the saved avatar.
+ */
+export function clampOffset(
+  offset: Offset,
+  imgWidth: number,
+  imgHeight: number,
+  scale: number,
+  canvasSize: number = CANVAS_SIZE,
+): Offset {
+  const minX = Math.min(canvasSize - imgWidth  * scale, 0);
+  const minY = Math.min(canvasSize - imgHeight * scale, 0);
+  return { x: clamp(offset.x, minX, 0), y: clamp(offset.y, minY, 0) };
+}
+
+/**
+ * Return the offset that keeps the image point under (anchorX, anchorY)
+ * fixed when the scale changes from `prevScale` to `nextScale`.
+ */
+export function zoomAround(
+  offset: Offset,
+  prevScale: number,
+  nextScale: number,
+  anchorX: number,
+  anchorY: number,
+): Offset {
+  const ratio = nextScale / prevScale;
+  return {
+    x: anchorX - (anchorX - offset.x) * ratio,
+    y: anchorY - (anchorY - offset.y) * ratio,
+  };
+}
+
+/**
+ * Map the visible crop square back onto the source image. `size` is the
+ * edge length (in source pixels) of the 1:1 region the user selected.
+ */
+export function getSourceCropRect(
+  offset: Offset,
+  scale: number,
+  canvasSize: number = CANVAS_SIZE,
+) {
+  return {
+    x: -offset.x / scale,
+    y: -offset.y / scale,
+    size: canvasSize / scale,
+  };
+}
+
+/**
+ * Render the image translated + scaled with a circular guide overlay.
+ * The whole square is what gets saved; the circle shows how it will look
+ * once rendered as a round avatar.
  */
 function drawCropPreview(
   ctx: CanvasRenderingContext2D,
@@ -58,20 +117,15 @@ function drawCropPreview(
   canvasSize: number,
 ) {
   ctx.clearRect(0, 0, canvasSize, canvasSize);
+  ctx.drawImage(img, offsetX, offsetY, img.naturalWidth * scale, img.naturalHeight * scale);
 
-  // Dim background
-  ctx.fillStyle = 'rgba(0,0,0,0.7)';
-  ctx.fillRect(0, 0, canvasSize, canvasSize);
-
-  // Clip to circle
+  // Dim everything outside the circle
   ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
   ctx.beginPath();
-  ctx.arc(canvasSize / 2, canvasSize / 2, canvasSize / 2 - 2, 0, Math.PI * 2);
-  ctx.clip();
-
-  const w = img.naturalWidth  * scale;
-  const h = img.naturalHeight * scale;
-  ctx.drawImage(img, offsetX, offsetY, w, h);
+  ctx.rect(0, 0, canvasSize, canvasSize);
+  ctx.arc(canvasSize / 2, canvasSize / 2, canvasSize / 2 - 2, 0, Math.PI * 2, true);
+  ctx.fill();
   ctx.restore();
 
   // Circle border
@@ -83,40 +137,36 @@ function drawCropPreview(
 }
 
 /**
- * Export the current crop to a JPEG Blob at EXPORT_SIZE × EXPORT_SIZE.
+ * Export exactly the selected square region to a JPEG Blob, resized down to
+ * at most EXPORT_MAX_SIZE px per edge.
  */
 function exportCrop(
   img: HTMLImageElement,
-  offsetX: number,
-  offsetY: number,
+  offset: Offset,
   scale: number,
   canvasSize: number,
 ): Promise<Blob> {
-  const ratio   = EXPORT_SIZE / canvasSize;
+  const rect = getSourceCropRect(offset, scale, canvasSize);
+  const outSize = Math.max(1, Math.round(Math.min(EXPORT_MAX_SIZE, rect.size)));
+
   const offCanvas = document.createElement('canvas');
-  offCanvas.width  = EXPORT_SIZE;
-  offCanvas.height = EXPORT_SIZE;
+  offCanvas.width  = outSize;
+  offCanvas.height = outSize;
 
-  const ctx = offCanvas.getContext('2d')!;
+  const ctx = offCanvas.getContext('2d');
+  if (!ctx) return Promise.reject(new Error('Canvas not supported'));
 
-  // Circular clip
-  ctx.beginPath();
-  ctx.arc(EXPORT_SIZE / 2, EXPORT_SIZE / 2, EXPORT_SIZE / 2, 0, Math.PI * 2);
-  ctx.clip();
-
-  ctx.drawImage(
-    img,
-    offsetX * ratio,
-    offsetY * ratio,
-    img.naturalWidth  * scale * ratio,
-    img.naturalHeight * scale * ratio,
-  );
+  // JPEG has no alpha: flatten transparent PNG/WebP pixels onto white
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, outSize, outSize);
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, rect.x, rect.y, rect.size, rect.size, 0, 0, outSize, outSize);
 
   return new Promise<Blob>((resolve, reject) => {
     offCanvas.toBlob(
       (b) => (b ? resolve(b) : reject(new Error('Canvas export failed'))),
       'image/jpeg',
-      0.92,
+      0.9,
     );
   });
 }
@@ -141,9 +191,14 @@ export function AvatarUpload({ currentAvatarUrl, userName, onSaved }: Props) {
   const rawSrcRef = useRef<string | null>(null);
 
   /* ── crop pan/zoom state ── */
-  const offsetRef  = useRef({ x: 0, y: 0 });
-  const scaleRef   = useRef(1);
-  const dragRef    = useRef<{ startX: number; startY: number; ox: number; oy: number } | null>(null);
+  const offsetRef    = useRef<Offset>({ x: 0, y: 0 });
+  /** Scale at which the image just covers the crop square (zoom = 1) */
+  const baseScaleRef = useRef(1);
+  const zoomRef      = useRef(1);
+  const dragRef      = useRef<{ startX: number; startY: number; ox: number; oy: number } | null>(null);
+  /** Active pointers, used to detect two-finger pinch gestures */
+  const pointersRef  = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinchRef     = useRef<{ startDist: number; startZoom: number } | null>(null);
 
   /* ── react state ── */
   const [showCropper, setShowCropper]   = useState(false);
@@ -155,20 +210,78 @@ export function AvatarUpload({ currentAvatarUrl, userName, onSaved }: Props) {
   const [error, setError]               = useState<string | null>(null);
   const [saved, setSaved]               = useState(false);
 
-  /* ── redraw whenever zoom changes ── */
   const redraw = useCallback(() => {
     const canvas = canvasRef.current;
     const img    = imgRef.current;
     if (!canvas || !img) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    drawCropPreview(ctx, img, offsetRef.current.x, offsetRef.current.y, scaleRef.current, CANVAS_SIZE);
+    const scale = baseScaleRef.current * zoomRef.current;
+    drawCropPreview(ctx, img, offsetRef.current.x, offsetRef.current.y, scale, CANVAS_SIZE);
   }, []);
 
-  useEffect(() => {
-    scaleRef.current = zoom;
+  /* ── redraw when zoom changes or the cropper (re)mounts its canvas ── */
+  useLayoutEffect(() => {
+    if (showCropper) redraw();
+  }, [zoom, showCropper, redraw]);
+
+  /* ── release object URLs on unmount ── */
+  const previewSrcRef = useRef<string | null>(null);
+  previewSrcRef.current = previewSrc;
+  useEffect(() => () => {
+    if (rawSrcRef.current) URL.revokeObjectURL(rawSrcRef.current);
+    if (previewSrcRef.current) URL.revokeObjectURL(previewSrcRef.current);
+  }, []);
+
+  /**
+   * Apply a new zoom level, keeping the point under (anchorX, anchorY)
+   * (canvas coordinates) fixed, and re-clamp so the crop stays covered.
+   */
+  const applyZoom = useCallback((nextZoom: number, anchorX = CANVAS_SIZE / 2, anchorY = CANVAS_SIZE / 2) => {
+    const img = imgRef.current;
+    if (!img) return;
+    const z = clamp(nextZoom, MIN_ZOOM, MAX_ZOOM);
+    const prevScale = baseScaleRef.current * zoomRef.current;
+    const nextScale = baseScaleRef.current * z;
+    offsetRef.current = clampOffset(
+      zoomAround(offsetRef.current, prevScale, nextScale, anchorX, anchorY),
+      img.naturalWidth,
+      img.naturalHeight,
+      nextScale,
+    );
+    zoomRef.current = z;
+    setZoom(z);
     redraw();
-  }, [zoom, redraw]);
+  }, [redraw]);
+
+  /** Convert a client (CSS px) point to canvas-buffer coordinates */
+  function toCanvasPoint(clientX: number, clientY: number) {
+    const canvas = canvasRef.current;
+    const rect = canvas?.getBoundingClientRect();
+    if (!rect || !rect.width || !rect.height) return { x: clientX, y: clientY };
+    return {
+      x: ((clientX - rect.left) * CANVAS_SIZE) / rect.width,
+      y: ((clientY - rect.top) * CANVAS_SIZE) / rect.height,
+    };
+  }
+
+  /** CSS px → canvas px ratio (the canvas shrinks on narrow screens) */
+  function cssToCanvasRatio() {
+    const width = canvasRef.current?.getBoundingClientRect().width;
+    return width ? CANVAS_SIZE / width : 1;
+  }
+
+  function panBy(dx: number, dy: number, from: Offset = offsetRef.current) {
+    const img = imgRef.current;
+    if (!img) return;
+    offsetRef.current = clampOffset(
+      { x: from.x + dx, y: from.y + dy },
+      img.naturalWidth,
+      img.naturalHeight,
+      baseScaleRef.current * zoomRef.current,
+    );
+    redraw();
+  }
 
   /* ── file selection ── */
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -198,26 +311,39 @@ export function AvatarUpload({ currentAvatarUrl, userName, onSaved }: Props) {
     img.onload = () => {
       imgRef.current = img;
 
-      // Centre the image inside the crop circle at fit-scale
-      const fitScale = Math.max(CANVAS_SIZE / img.naturalWidth, CANVAS_SIZE / img.naturalHeight);
-      const initScale = fitScale;
-      scaleRef.current = initScale;
+      // Centre the image at the scale where it just covers the crop square
+      const coverScale = Math.max(CANVAS_SIZE / img.naturalWidth, CANVAS_SIZE / img.naturalHeight);
+      baseScaleRef.current = coverScale;
+      zoomRef.current = MIN_ZOOM;
 
       offsetRef.current = {
-        x: (CANVAS_SIZE - img.naturalWidth  * initScale) / 2,
-        y: (CANVAS_SIZE - img.naturalHeight * initScale) / 2,
+        x: (CANVAS_SIZE - img.naturalWidth  * coverScale) / 2,
+        y: (CANVAS_SIZE - img.naturalHeight * coverScale) / 2,
       };
 
-      setZoom(initScale);
+      setZoom(MIN_ZOOM);
       setShowCropper(true);
     };
     img.onerror = () => setError('Failed to load image.');
     img.src = src;
   }
 
-  /* ── canvas pointer events (drag to pan) ── */
+  /* ── canvas pointer events (drag to pan, two-finger pinch to zoom) ── */
+  function pinchDistance() {
+    const [p1, p2] = Array.from(pointersRef.current.values());
+    return Math.hypot(p2.x - p1.x, p2.y - p1.y);
+  }
+
   function handlePointerDown(e: React.PointerEvent<HTMLCanvasElement>) {
-    canvasRef.current?.setPointerCapture(e.pointerId);
+    canvasRef.current?.setPointerCapture?.(e.pointerId);
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (pointersRef.current.size === 2) {
+      dragRef.current = null;
+      pinchRef.current = { startDist: pinchDistance(), startZoom: zoomRef.current };
+      return;
+    }
+
     dragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
@@ -227,25 +353,55 @@ export function AvatarUpload({ currentAvatarUrl, userName, onSaved }: Props) {
   }
 
   function handlePointerMove(e: React.PointerEvent<HTMLCanvasElement>) {
-    if (!dragRef.current || !imgRef.current) return;
-    const dx = e.clientX - dragRef.current.startX;
-    const dy = e.clientY - dragRef.current.startY;
-    const img = imgRef.current;
-    const s   = scaleRef.current;
+    if (!pointersRef.current.has(e.pointerId)) return;
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-    // Constrain so image always covers the circle
-    const minX = CANVAS_SIZE - img.naturalWidth  * s;
-    const minY = CANVAS_SIZE - img.naturalHeight * s;
+    if (pinchRef.current && pointersRef.current.size === 2) {
+      const { startDist, startZoom } = pinchRef.current;
+      if (!startDist) return;
+      const [p1, p2] = Array.from(pointersRef.current.values());
+      const mid = toCanvasPoint((p1.x + p2.x) / 2, (p1.y + p2.y) / 2);
+      applyZoom(startZoom * (pinchDistance() / startDist), mid.x, mid.y);
+      return;
+    }
 
-    offsetRef.current = {
-      x: clamp(dragRef.current.ox + dx, Math.min(minX, 0), 0),
-      y: clamp(dragRef.current.oy + dy, Math.min(minY, 0), 0),
-    };
-    redraw();
+    if (!dragRef.current) return;
+    const ratio = cssToCanvasRatio();
+    panBy(
+      (e.clientX - dragRef.current.startX) * ratio,
+      (e.clientY - dragRef.current.startY) * ratio,
+      { x: dragRef.current.ox, y: dragRef.current.oy },
+    );
   }
 
-  function handlePointerUp() {
+  function handlePointerUp(e: React.PointerEvent<HTMLCanvasElement>) {
+    pointersRef.current.delete(e.pointerId);
+    if (pointersRef.current.size < 2) pinchRef.current = null;
     dragRef.current = null;
+  }
+
+  function handleWheel(e: React.WheelEvent<HTMLCanvasElement>) {
+    const point = toCanvasPoint(e.clientX, e.clientY);
+    applyZoom(zoomRef.current * (e.deltaY < 0 ? 1.1 : 1 / 1.1), point.x, point.y);
+  }
+
+  function handleCanvasKeyDown(e: React.KeyboardEvent<HTMLCanvasElement>) {
+    const moves: Record<string, [number, number]> = {
+      ArrowLeft:  [KEYBOARD_PAN_STEP, 0],
+      ArrowRight: [-KEYBOARD_PAN_STEP, 0],
+      ArrowUp:    [0, KEYBOARD_PAN_STEP],
+      ArrowDown:  [0, -KEYBOARD_PAN_STEP],
+    };
+    if (moves[e.key]) {
+      e.preventDefault();
+      panBy(...moves[e.key]);
+    } else if (e.key === '+' || e.key === '=') {
+      e.preventDefault();
+      applyZoom(zoomRef.current + 0.1);
+    } else if (e.key === '-') {
+      e.preventDefault();
+      applyZoom(zoomRef.current - 0.1);
+    }
   }
 
   /* ── "Crop" button ── */
@@ -256,9 +412,8 @@ export function AvatarUpload({ currentAvatarUrl, userName, onSaved }: Props) {
     try {
       const blob = await exportCrop(
         img,
-        offsetRef.current.x,
-        offsetRef.current.y,
-        scaleRef.current,
+        offsetRef.current,
+        baseScaleRef.current * zoomRef.current,
         CANVAS_SIZE,
       );
       setCroppedBlob(blob);
@@ -280,6 +435,9 @@ export function AvatarUpload({ currentAvatarUrl, userName, onSaved }: Props) {
   /* ── "Cancel crop" button ── */
   function handleCancelCrop() {
     setShowCropper(false);
+    pointersRef.current.clear();
+    pinchRef.current = null;
+    dragRef.current = null;
     if (rawSrcRef.current) { URL.revokeObjectURL(rawSrcRef.current); rawSrcRef.current = null; }
     imgRef.current = null;
   }
@@ -356,20 +514,31 @@ export function AvatarUpload({ currentAvatarUrl, userName, onSaved }: Props) {
 
       {/* ── Canvas crop UI ── */}
       {showCropper && (
-        <div className="w-full rounded-2xl overflow-hidden border border-ink-100 bg-[#111] shadow-lg">
+        <div
+          role="dialog"
+          aria-label="Crop profile photo"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') handleCancelCrop();
+          }}
+          className="w-full rounded-2xl overflow-hidden border border-ink-100 bg-[#111] shadow-lg"
+        >
 
           {/* Canvas */}
-          <div className="flex justify-center py-4 bg-[#111]">
+          <div className="flex justify-center p-4 bg-[#111]">
             <canvas
               ref={canvasRef}
               width={CANVAS_SIZE}
               height={CANVAS_SIZE}
-              className="cursor-grab active:cursor-grabbing rounded-full touch-none"
-              style={{ width: CANVAS_SIZE, height: CANVAS_SIZE }}
+              tabIndex={0}
+              aria-label="Crop area. Drag or use arrow keys to reposition; pinch, scroll, or plus and minus keys to zoom."
+              className="aspect-square w-full cursor-grab touch-none active:cursor-grabbing focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary"
+              style={{ maxWidth: CANVAS_SIZE }}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
               onPointerCancel={handlePointerUp}
+              onWheel={handleWheel}
+              onKeyDown={handleCanvasKeyDown}
             />
           </div>
 
@@ -378,26 +547,14 @@ export function AvatarUpload({ currentAvatarUrl, userName, onSaved }: Props) {
             <ZoomOut className="h-4 w-4 text-white/50 shrink-0" />
             <input
               type="range"
-              min={zoom * 0.5}
-              max={zoom * 3}
+              min={MIN_ZOOM}
+              max={MAX_ZOOM}
               step={0.01}
               value={zoom}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                const img = imgRef.current;
-                if (!img) return;
-                // Keep centre anchor when zooming
-                const cx = CANVAS_SIZE / 2;
-                const cy = CANVAS_SIZE / 2;
-                const ratio = v / scaleRef.current;
-                offsetRef.current = {
-                  x: cx - (cx - offsetRef.current.x) * ratio,
-                  y: cy - (cy - offsetRef.current.y) * ratio,
-                };
-                setZoom(v);
-              }}
+              onChange={(e) => applyZoom(Number(e.target.value))}
               className="flex-1 accent-hamplard-primary"
               aria-label="Zoom"
+              aria-valuetext={`${Math.round(zoom * 100)}%`}
             />
             <ZoomIn className="h-4 w-4 text-white/50 shrink-0" />
           </div>
