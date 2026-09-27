@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -69,6 +69,7 @@ export function Pagination({
 
   const pageButtonRefs = useRef<Map<number, HTMLButtonElement>>(new Map());
   const hasMounted = useRef(false);
+  const [jumpValue, setJumpValue] = useState('');
 
   // Focus management for keyboard accessibility on page change
   useEffect(() => {
@@ -98,6 +99,24 @@ export function Pagination({
       router.push(targetUrl, { scroll: false });
     }
   };
+
+  function handleJump() {
+    const parsed = parseInt(jumpValue, 10);
+    setJumpValue('');
+    if (isNaN(parsed)) return;
+    // Clamp out-of-range values to the nearest valid page
+    handlePageChange(Math.min(Math.max(parsed, 1), finalTotalPages));
+  }
+
+  function handleJumpKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    // Keep arrow keys inside the input from triggering the nav's prev/next shortcut
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.stopPropagation();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      handleJump();
+    }
+  }
 
   function handleArrowKey(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.key === 'ArrowLeft' && activePage > 1) {
@@ -176,6 +195,34 @@ export function Pagination({
       >
         <ChevronRight className="h-4 w-4" aria-hidden="true" />
       </button>
+
+      {/* ── Jump to page ── */}
+      <div className="ml-2 flex items-center gap-1">
+        <label htmlFor={`${paramName}-jump`} className="sr-only">
+          Jump to page
+        </label>
+        <input
+          id={`${paramName}-jump`}
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={finalTotalPages}
+          placeholder="Page"
+          value={jumpValue}
+          onChange={(e) => setJumpValue(e.target.value)}
+          onKeyDown={handleJumpKeyDown}
+          className="h-9 w-16 rounded-xl border border-ink-200 px-2 text-center text-sm text-ink-700 focus:border-[#7F77DD] focus:outline-none focus:ring-1 focus:ring-[#7F77DD] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        />
+        <button
+          type="button"
+          onClick={handleJump}
+          disabled={jumpValue.trim() === ''}
+          aria-label="Go to entered page"
+          className="inline-flex h-9 items-center justify-center rounded-xl border border-ink-200 px-3 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Go
+        </button>
+      </div>
     </nav>
   );
 }
