@@ -47,6 +47,8 @@ interface UploadItem {
   status: ItemStatus;
   progress: number;
   errorMessage?: string;
+  /** Validation failures (type/size) can't be fixed by retrying the same file */
+  retryable?: boolean;
   resultUrl?: string;
 }
 
@@ -79,6 +81,14 @@ function describeAccept(accept?: string[]): string {
   return accept.map((a) => a.replace('.', '').replace('/*', '')).join(', ').toUpperCase();
 }
 
+function detachAndAbort(xhr: XMLHttpRequest) {
+  xhr.upload.onprogress = null;
+  xhr.onload = null;
+  xhr.onerror = null;
+  xhr.onabort = null;
+  xhr.abort();
+}
+
 // ── Component ────────────────────────────────────────────────────────────
 
 export function FileUpload({
@@ -99,7 +109,19 @@ export function FileUpload({
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const xhrRefs = useRef<Record<string, XMLHttpRequest>>({});
+  const itemsRef = useRef<UploadItem[]>([]);
   const inputId = useId();
+
+  itemsRef.current = items;
+
+  // Abort in-flight uploads and release preview URLs on unmount
+  useEffect(() => {
+    const xhrs = xhrRefs.current;
+    return () => {
+      Object.values(xhrs).forEach((xhr) => detachAndAbort(xhr));
+      itemsRef.current.forEach((it) => it.previewUrl && URL.revokeObjectURL(it.previewUrl));
+    };
+  }, []);
 
   function updateItem(id: string, patch: Partial<UploadItem>) {
     setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
@@ -169,20 +191,20 @@ export function FileUpload({
           });
         } else {
           const message = `Upload failed (${xhr.status})`;
-          updateItem(item.id, { status: 'error', errorMessage: message });
+          updateItem(item.id, { status: 'error', errorMessage: message, retryable: true });
           onUploadError?.(item.file.name, message);
         }
       };
 
       xhr.onerror = () => {
         const message = 'Network error — please try again.';
-        updateItem(item.id, { status: 'error', errorMessage: message });
+        updateItem(item.id, { status: 'error', errorMessage: message, retryable: true });
         onUploadError?.(item.file.name, message);
       };
 
       xhr.onabort = () => {
         const message = 'Upload cancelled.';
-        updateItem(item.id, { status: 'error', errorMessage: message });
+        updateItem(item.id, { status: 'error', errorMessage: message, retryable: true });
         onUploadError?.(item.file.name, message);
       };
 
@@ -231,6 +253,7 @@ export function FileUpload({
             status: 'error',
             progress: 0,
             errorMessage: message,
+            retryable: false,
           });
           continue;
         }
@@ -244,6 +267,7 @@ export function FileUpload({
             status: 'error',
             progress: 0,
             errorMessage: message,
+            retryable: false,
           });
           continue;
         }
@@ -258,6 +282,16 @@ export function FileUpload({
           videoDuration: duration,
           status: 'uploading',
           progress: 0,
+        });
+      }
+
+      if (!multiple) {
+        // Single-file mode replaces the current file, so stop its upload too
+        itemsRef.current.forEach((it) => {
+          const xhr = xhrRefs.current[it.id];
+          if (xhr) detachAndAbort(xhr);
+          delete xhrRefs.current[it.id];
+          if (it.previewUrl) URL.revokeObjectURL(it.previewUrl);
         });
       }
 
@@ -298,6 +332,25 @@ export function FileUpload({
       xhrRefs.current = {};
     };
   }, []);
+  function handleDragLeave(e: React.DragEvent<HTMLDivElement>) {
+    // Ignore dragleave fired when the pointer moves onto a child element
+    if (e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget)) return;
+    setDragActive(false);
+  }
+
+  function handleRetry(item: UploadItem) {
+    updateItem(item.id, { status: 'uploading', progress: 0, errorMessage: undefined });
+    startUpload({ ...item, status: 'uploading', progress: 0 });
+  }
+
+  function handleCancel(item: UploadItem) {
+    const xhr = xhrRefs.current[item.id];
+    // User-initiated cancel removes the item, so don't surface it as an upload error
+    if (xhr && item.status === 'uploading') detachAndAbort(xhr);
+    delete xhrRefs.current[item.id];
+    if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+    setItems((prev) => prev.filter((it) => it.id !== item.id));
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) void addFiles(e.target.files);
@@ -310,15 +363,32 @@ export function FileUpload({
     if (e.dataTransfer.files?.length) void addFiles(e.dataTransfer.files);
   };
 
+  const uploadedCount = items.filter((it) => it.status === 'success').length;
+  const failedCount = items.filter((it) => it.status === 'error').length;
+  const inProgressCount = items.filter((it) => it.status === 'uploading').length;
+
   return (
     <div className={cn('w-full', className)}>
       <label
         htmlFor={inputId}
+      {/* ── Drop zone ── */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label={label}
+        onClick={(e) => {
+          // The input's own click bubbles back up here; don't re-open the picker
+          if (e.target === inputRef.current) return;
+          inputRef.current?.click();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') inputRef.current?.click();
+        }}
         onDragOver={(e) => {
           e.preventDefault();
           setDragActive(true);
         }}
-        onDragLeave={() => setDragActive(false)}
+        onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
           'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 text-center transition-colors',
@@ -345,6 +415,23 @@ export function FileUpload({
 
       {items.length > 0 && (
         <ul className="mt-4 space-y-3">
+        <div
+          className="mt-4 flex items-center justify-between gap-2 text-xs text-ink-500"
+          aria-live="polite"
+          data-testid="upload-summary"
+        >
+          <span className="font-medium text-ink-700">
+            {uploadedCount} of {items.length} uploaded
+          </span>
+          <span className="flex items-center gap-2">
+            {inProgressCount > 0 && <span>{inProgressCount} in progress</span>}
+            {failedCount > 0 && <span className="text-rose-600">{failedCount} failed</span>}
+          </span>
+        </div>
+      )}
+
+      {items.length > 0 && (
+        <ul className="mt-2 space-y-3" aria-label="Uploads">
           {items.map((item) => (
             <li
               key={item.id}
@@ -408,6 +495,21 @@ export function FileUpload({
                   >
                     <RotateCcw className="h-4 w-4" aria-hidden="true" />
                   </button>
+                  <div className="mt-1.5 flex items-center gap-1.5 text-xs text-rose-600">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                    <span className="flex-1">{item.errorMessage}</span>
+                    {item.retryable && (
+                      <button
+                        type="button"
+                        onClick={() => handleRetry(item)}
+                        aria-label={`Retry ${item.file.name}`}
+                        className="inline-flex items-center gap-1 font-semibold text-rose-700 hover:text-rose-900 transition-colors"
+                      >
+                        <RotateCcw className="w-3 h-3" aria-hidden="true" />
+                        Retry
+                      </button>
+                    )}
+                  </div>
                 )}
                 <button
                   type="button"

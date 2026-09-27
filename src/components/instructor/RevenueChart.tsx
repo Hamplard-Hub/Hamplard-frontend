@@ -11,8 +11,10 @@ import {
   ResponsiveContainer,
   TooltipProps,
 } from 'recharts';
+import { Download } from 'lucide-react';
+import { format } from 'date-fns';
 import { formatUsdc } from '@/lib/utils';
-import { cn } from '@/lib/utils';
+import { downloadCsv, toCsv } from '@/lib/utils/csv';
 
 interface RevenueData {
   month: string;
@@ -24,6 +26,10 @@ interface RevenueChartProps {
   data: RevenueData[];
   isLoading?: boolean;
   height?: number;
+  /** Shown above the chart, e.g. the selected date range */
+  rangeLabel?: string;
+  /** CSV filename (without extension). Hides the export button when omitted. */
+  exportFilename?: string;
 }
 
 /**
@@ -72,6 +78,8 @@ export function RevenueChart({
   data,
   isLoading = false,
   height = 300,
+  rangeLabel,
+  exportFilename,
 }: RevenueChartProps) {
   const chartData = useMemo(() => {
     // Ensure data is sorted by date
@@ -79,6 +87,17 @@ export function RevenueChart({
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
     );
   }, [data]);
+
+  const handleExportCsv = () => {
+    if (!exportFilename || chartData.length === 0) return;
+    const total = chartData.reduce((sum, d) => sum + d.revenue, 0);
+    const rows = [
+      ['Month', 'Period Start', 'Revenue (USDC)'],
+      ...chartData.map((d) => [d.month, format(new Date(d.date), 'yyyy-MM-dd'), d.revenue.toFixed(2)]),
+      ['Total', '', total.toFixed(2)],
+    ];
+    downloadCsv(`${exportFilename}.csv`, toCsv(rows));
+  };
 
   if (isLoading) {
     return <ChartSkeleton height={height} />;
@@ -99,6 +118,21 @@ export function RevenueChart({
 
   return (
     <div className="w-full rounded-lg bg-white p-4">
+      {(rangeLabel || exportFilename) && (
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <p className="text-xs text-ink-500">{rangeLabel}</p>
+          {exportFilename && (
+            <button
+              onClick={handleExportCsv}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-ink-100 text-ink-700 hover:bg-ink-200 transition-colors"
+              title="Download revenue data as CSV"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Export CSV
+            </button>
+          )}
+        </div>
+      )}
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={chartData}>
           <CartesianGrid
