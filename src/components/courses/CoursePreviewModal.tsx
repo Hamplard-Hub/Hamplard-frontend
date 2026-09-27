@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { X, Volume2, VolumeX, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface CoursePreviewModalProps {
@@ -10,11 +10,13 @@ export interface CoursePreviewModalProps {
   videoUrl: string;
   courseTitle: string;
   instructorName?: string;
+  /** Optional static thumbnail shown when autoplay is blocked or reduced motion is set. */
+  posterUrl?: string;
 }
 
 /**
  * CoursePreviewModal
- * 
+ *
  * A modal dialog that displays a free preview video for a course.
  * Features:
  * - Overlay backdrop that dismisses modal on click
@@ -23,6 +25,10 @@ export interface CoursePreviewModalProps {
  * - Focus trap to keep focus within modal when open
  * - Responsive: full-screen on mobile, centered on desktop
  * - HTML5 video player with controls
+ * - Muted autoplay preview on open with a visible unmute control
+ * - Pauses when the modal closes or loses focus
+ * - Falls back to a static thumbnail with a manual play button if autoplay is blocked
+ * - Respects prefers-reduced-motion by not autoplaying
  */
 export function CoursePreviewModal({
   isOpen,
@@ -30,9 +36,13 @@ export function CoursePreviewModal({
   videoUrl,
   courseTitle,
   instructorName,
+  posterUrl,
 }: CoursePreviewModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const [isMuted, setIsMuted] = useState(true);
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
 
   // Handle ESC key to close modal
   useEffect(() => {
@@ -61,12 +71,75 @@ export function CoursePreviewModal({
     };
   }, [isOpen]);
 
+  // Autoplay muted preview on open, respecting prefers-reduced-motion.
+  // Falls back to a static thumbnail if the browser blocks autoplay.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const video = videoRef.current;
+    if (!video) return;
+
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReducedMotion) {
+      setAutoplayBlocked(true);
+      return;
+    }
+
+    setAutoplayBlocked(false);
+    video.muted = true;
+    setIsMuted(true);
+
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(() => {
+        // Autoplay was blocked by the browser — show the static fallback.
+        setAutoplayBlocked(true);
+      });
+    }
+  }, [isOpen, videoUrl]);
+
   // Pause video when modal closes
   useEffect(() => {
     if (!isOpen && videoRef.current) {
       videoRef.current.pause();
     }
   }, [isOpen]);
+
+  // Pause when the modal loses focus (e.g. user switches tabs/windows)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleBlur = () => {
+      videoRef.current?.pause();
+    };
+
+    window.addEventListener('blur', handleBlur);
+    return () => window.removeEventListener('blur', handleBlur);
+  }, [isOpen]);
+
+  const toggleMute = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const nextMuted = !video.muted;
+    video.muted = nextMuted;
+    setIsMuted(nextMuted);
+  }, []);
+
+  const handleManualPlay = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    setAutoplayBlocked(false);
+    video.muted = true;
+    setIsMuted(true);
+    const playPromise = video.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(() => setAutoplayBlocked(true));
+    }
+  }, []);
 
   if (!isOpen) return null;
 
@@ -125,18 +198,73 @@ export function CoursePreviewModal({
           </div>
 
           {/* Video container */}
-          <div className="flex-1 bg-black flex items-center justify-center overflow-hidden">
+          <div className="relative flex-1 bg-black flex items-center justify-center overflow-hidden">
             <video
               ref={videoRef}
               src={videoUrl}
               controls
+              muted
+              autoPlay
+              playsInline
+              preload="metadata"
+              poster={posterUrl ?? ''}
               className="w-full h-full"
               controlsList="nodownload"
-              poster=""
             >
               <track kind="captions" />
               Your browser does not support the video tag.
             </video>
+
+            {/* Static fallback when autoplay is blocked or reduced motion is set */}
+            {autoplayBlocked && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black">
+                {posterUrl ? (
+                  <img
+                    src={posterUrl}
+                    alt={`${courseTitle} preview thumbnail`}
+                    className="absolute inset-0 w-full h-full object-cover opacity-70"
+                  />
+                ) : null}
+                <button
+                  type="button"
+                  onClick={handleManualPlay}
+                  aria-label="Play preview video"
+                  className={cn(
+                    'relative z-10 flex items-center justify-center gap-2 rounded-full',
+                    'bg-hamplard-primary px-5 py-3 text-white font-medium',
+                    'hover:bg-hamplard-primary/90 transition-colors',
+                    'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-hamplard-primary',
+                  )}
+                >
+                  <Play className="w-5 h-5" aria-hidden="true" />
+                  Play preview
+                </button>
+              </div>
+            )}
+
+            {/* Unmute / mute control */}
+            {!autoplayBlocked && (
+              <button
+                type="button"
+                onClick={toggleMute}
+                aria-label={isMuted ? 'Unmute preview' : 'Mute preview'}
+                aria-pressed={!isMuted}
+                className={cn(
+                  'absolute bottom-4 right-4 z-10 flex items-center gap-2 rounded-lg px-3 py-2',
+                  'bg-black/60 text-white hover:bg-black/80 transition-colors',
+                  'focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-hamplard-primary',
+                )}
+              >
+                {isMuted ? (
+                  <VolumeX className="w-4 h-4" aria-hidden="true" />
+                ) : (
+                  <Volume2 className="w-4 h-4" aria-hidden="true" />
+                )}
+                <span className="text-xs font-medium">
+                  {isMuted ? 'Unmute' : 'Mute'}
+                </span>
+              </button>
+            )}
           </div>
 
           {/* Info footer */}
