@@ -24,6 +24,8 @@ interface FileUploadProps {
   maxSizeBytes?: number;
   /** Allow selecting/dropping more than one file at once. Defaults to true. */
   multiple?: boolean;
+  /** Max number of files allowed. When exceeded, extra files are rejected with a message. */
+  maxFiles?: number;
   /** Called after a file finishes uploading successfully */
   onUploadComplete?: (file: UploadedFileResult) => void;
   /** Called if a file fails validation or upload */
@@ -85,6 +87,7 @@ export function FileUpload({
   accept,
   maxSizeBytes = DEFAULT_MAX_SIZE,
   multiple = true,
+  maxFiles,
   onUploadComplete,
   onUploadError,
   onProgress,
@@ -190,13 +193,33 @@ export function FileUpload({
 
   const addFiles = useCallback(
     async (fileList: FileList | File[]) => {
-      const files = multiple ? Array.from(fileList) : Array.from(fileList).slice(0, 1);
+      const incoming = Array.from(fileList);
+      const files = multiple ? incoming : incoming.slice(0, 1);
 
       const newItems: UploadItem[] = [];
 
-      for (const file of files) {
+      // Enforce maxFiles against already-tracked items plus this batch.
+      const existingCount = items.length;
+      const remaining = maxFiles != null ? Math.max(0, maxFiles - existingCount) : Infinity;
+
+      for (let index = 0; index < files.length; index++) {
+        const file = files[index];
         const id = `${file.name}-${file.size}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
         const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : null;
+
+        if (index >= remaining) {
+          const message = `You can attach at most ${maxFiles} file${maxFiles === 1 ? '' : 's'}.`;
+          onUploadError?.(file.name, message);
+          newItems.push({
+            id,
+            file,
+            previewUrl,
+            status: 'error',
+            progress: 0,
+            errorMessage: message,
+          });
+          continue;
+        }
 
         if (!matchesAccept(file, accept)) {
           const message = `"${file.name}" isn't an accepted file type (${describeAccept(accept)}).`;
@@ -242,47 +265,55 @@ export function FileUpload({
 
       newItems.filter((it) => it.status === 'uploading').forEach((it) => startUpload(it));
     },
-    [multiple, accept, maxSizeBytes, onUploadError, startUpload, getVideoDuration],
+    [multiple, maxFiles, items.length, accept, maxSizeBytes, onUploadError, startUpload, getVideoDuration],
   );
 
-  function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+  const removeItem = useCallback((id: string) => {
+    xhrRefs.current[id]?.abort();
+    delete xhrRefs.current[id];
+    setItems((prev) => {
+      const target = prev.find((it) => it.id === id);
+      if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((it) => it.id !== id);
+    });
+  }, []);
+
+  const retryItem = useCallback(
+    (id: string) => {
+      setItems((prev) => {
+        const target = prev.find((it) => it.id === id);
+        if (target) {
+          updateItem(id, { status: 'uploading', progress: 0, errorMessage: undefined });
+          startUpload({ ...target, status: 'uploading', progress: 0, errorMessage: undefined });
+        }
+        return prev;
+      });
+    },
+    [startUpload],
+  );
+
+  useEffect(() => {
+    return () => {
+      Object.values(xhrRefs.current).forEach((xhr) => xhr.abort());
+      xhrRefs.current = {};
+    };
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) void addFiles(e.target.files);
+    e.target.value = '';
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
     setDragActive(false);
-    if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files);
-  }
-
-  function handleRetry(item: UploadItem) {
-    updateItem(item.id, { status: 'uploading', progress: 0, errorMessage: undefined });
-    startUpload({ ...item, status: 'uploading', progress: 0 });
-  }
-
-  function handleCancel(item: UploadItem) {
-    if (item.status === 'uploading') {
-      xhrRefs.current[item.id]?.abort();
-    }
-    delete xhrRefs.current[item.id];
-    if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
-    setItems((prev) => prev.filter((it) => it.id !== item.id));
-  }
-
-  function formatDuration(seconds?: number): string {
-    if (!seconds) return '';
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${String(secs).padStart(2, '0')}`;
-  }
+    if (e.dataTransfer.files?.length) void addFiles(e.dataTransfer.files);
+  };
 
   return (
     <div className={cn('w-full', className)}>
-      {/* ── Drop zone ── */}
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label={label}
-        onClick={() => inputRef.current?.click()}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') inputRef.current?.click();
-        }}
+      <label
+        htmlFor={inputId}
         onDragOver={(e) => {
           e.preventDefault();
           setDragActive(true);
@@ -290,135 +321,103 @@ export function FileUpload({
         onDragLeave={() => setDragActive(false)}
         onDrop={handleDrop}
         className={cn(
-          'flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-6 py-10 text-center cursor-pointer transition-colors duration-150',
-          'focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary focus-visible:ring-offset-2',
+          'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 text-center transition-colors',
           dragActive
-            ? 'border-hamplard-primary bg-hamplard-lilac'
-            : 'border-ink-200 bg-ink-50 hover:border-hamplard-primary/60 hover:bg-hamplard-lilac/40',
+            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'
+            : 'border-slate-300 hover:border-indigo-400 dark:border-slate-700',
         )}
       >
-        <UploadCloud
-          className={cn('w-8 h-8', dragActive ? 'text-hamplard-primary' : 'text-ink-400')}
-          aria-hidden="true"
-        />
-        <p className="text-sm font-medium text-ink-700">
-          <span className="text-hamplard-primary font-semibold">Click to upload</span> or drag
-          and drop
-        </p>
-        <p className="text-xs text-ink-400">
-          {hint ?? `${describeAccept(accept)} · up to ${formatBytes(maxSizeBytes)}`}
-        </p>
-
+        <UploadCloud className="h-8 w-8 text-indigo-500" aria-hidden="true" />
+        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{label}</span>
+        <span className="text-xs text-slate-500 dark:text-slate-400">
+          {hint ?? `Drag & drop or click to browse · ${describeAccept(accept)} · up to ${formatBytes(maxSizeBytes)}`}
+        </span>
         <input
-          ref={inputRef}
           id={inputId}
+          ref={inputRef}
           type="file"
-          multiple={multiple}
           accept={accept?.join(',')}
-          onChange={(e) => {
-            if (e.target.files?.length) addFiles(e.target.files);
-            e.target.value = '';
-          }}
+          multiple={multiple}
+          onChange={handleInputChange}
           className="sr-only"
         />
-      </div>
+      </label>
 
-      {/* ── File list ── */}
       {items.length > 0 && (
-        <ul className="mt-4 space-y-3" aria-label="Uploads">
+        <ul className="mt-4 space-y-3">
           {items.map((item) => (
             <li
               key={item.id}
-              className="flex items-start gap-3 rounded-xl border border-ink-100 bg-white p-3"
+              className="flex items-center gap-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700"
             >
-              {/* Thumbnail / file icon / video preview */}
-              {item.previewUrl ? (
-                <div className="relative w-11 h-11 rounded-lg overflow-hidden shrink-0 border border-ink-100">
-                  <img
-                    src={item.previewUrl}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ) : item.file.type.startsWith('video/') ? (
-                <div className="w-11 h-11 rounded-lg bg-ink-50 flex items-center justify-center shrink-0 border border-ink-100">
-                  <Play className="w-5 h-5 text-ink-400" aria-hidden="true" />
-                </div>
-              ) : (
-                <div className="w-11 h-11 rounded-lg bg-ink-50 flex items-center justify-center shrink-0 border border-ink-100">
-                  <FileText className="w-5 h-5 text-ink-400" aria-hidden="true" />
-                </div>
-              )}
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-ink-900 truncate">{item.file.name}</p>
-                  {item.status === 'success' && (
-                    <CheckCircle2
-                      className="w-4 h-4 text-leaf-500 shrink-0"
-                      aria-label="Upload complete"
-                    />
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-ink-400">
-                  <span>{formatBytes(item.file.size)}</span>
-                  {item.videoDuration && (
-                    <>
-                      <span>·</span>
-                      <span>{formatDuration(item.videoDuration)}</span>
-                    </>
-                  )}
-                </div>
-
-                {/* Progress bar */}
-                {item.status === 'uploading' && (
-                  <div
-                    className="mt-2 h-2 w-full rounded-full bg-ink-100 overflow-hidden"
-                    role="progressbar"
-                    aria-valuenow={item.progress}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={`Upload progress: ${item.progress}%`}
-                  >
-                    <div
-                      className="h-full rounded-full transition-all duration-200 bg-gradient-to-r from-saffron-500 to-hamplard-primary"
-                      style={{ width: `${item.progress}%` }}
-                    />
-                  </div>
-                )}
-
-                {/* Progress percentage for uploading */}
-                {item.status === 'uploading' && (
-                  <p className="mt-1 text-xs font-medium text-ink-500">{item.progress}%</p>
-                )}
-
-                {/* Error message */}
-                {item.status === 'error' && (
-                  <div className="mt-1.5 flex items-center gap-1.5 text-xs text-rose-600">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                    <span className="flex-1">{item.errorMessage}</span>
-                    {item.errorMessage?.includes('too large') || item.errorMessage?.includes('file type') ? null : (
-                      <button
-                        type="button"
-                        onClick={() => handleRetry(item)}
-                        className="inline-flex items-center gap-1 font-semibold text-rose-700 hover:text-rose-900 transition-colors"
-                      >
-                        <RotateCcw className="w-3 h-3" aria-hidden="true" />
-                        Retry
-                      </button>
-                    )}
-                  </div>
+              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-slate-100 dark:bg-slate-800">
+                {item.previewUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.previewUrl} alt={item.file.name} className="h-full w-full object-cover" />
+                ) : item.file.type.startsWith('video/') ? (
+                  <span className="flex h-full w-full items-center justify-center">
+                    <Play className="h-5 w-5 text-indigo-500" aria-hidden="true" />
+                  </span>
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center">
+                    <FileText className="h-5 w-5 text-slate-400" aria-hidden="true" />
+                  </span>
                 )}
               </div>
 
-              <button
-                type="button"
-                onClick={() => handleCancel(item)}
-                aria-label={`${item.status === 'uploading' ? 'Cancel' : 'Remove'} ${item.file.name}`}
-                className="text-ink-300 hover:text-ink-600 transition-colors shrink-0"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-200">
+                  {item.file.name}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {formatBytes(item.file.size)}
+                  {item.videoDuration != null && ` · ${item.videoDuration}s`}
+                </p>
+
+                {item.status === 'uploading' && (
+                  <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                    <div
+                      className="h-full rounded-full bg-indigo-500 transition-all"
+                      style={{ width: `${item.progress}%` }}
+                      role="progressbar"
+                      aria-valuenow={item.progress}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                    />
+                  </div>
+                )}
+
+                {item.status === 'error' && item.errorMessage && (
+                  <p className="mt-1 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                    <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                    {item.errorMessage}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex shrink-0 items-center gap-1">
+                {item.status === 'success' && (
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500" aria-hidden="true" />
+                )}
+                {item.status === 'error' && (
+                  <button
+                    type="button"
+                    onClick={() => retryItem(item.id)}
+                    className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    aria-label={`Retry ${item.file.name}`}
+                  >
+                    <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => removeItem(item.id)}
+                  className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  aria-label={`Remove ${item.file.name}`}
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
             </li>
           ))}
         </ul>
@@ -426,3 +425,5 @@ export function FileUpload({
     </div>
   );
 }
+
+export default FileUpload;
