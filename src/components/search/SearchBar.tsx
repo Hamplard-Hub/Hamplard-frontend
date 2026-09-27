@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, X, Loader2, BookOpen, FolderOpen, User, TrendingUp } from 'lucide-react';
+import { Search, X, Loader2, BookOpen, FolderOpen, User, TrendingUp, Clock, Bookmark, Trash2 } from 'lucide-react';
 import { useSearchStore } from '@/lib/hooks/use-search-store';
 import { cn } from '@/lib/utils';
 import type { Course } from '@/types';
@@ -55,7 +55,16 @@ export function SearchBar({
   const inputRef = useRef<HTMLInputElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const { query, setQuery } = useSearchStore();
+  const {
+    query,
+    setQuery,
+    recentSearches,
+    savedSearches,
+    addRecentSearch,
+    clearRecentSearches,
+    saveSearch,
+    removeSavedSearch,
+  } = useSearchStore();
   const [localQuery, setLocalQuery] = useState(query);
 
   const suggestions = useMemo<Suggestion[]>(() => {
@@ -129,6 +138,7 @@ export function SearchBar({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (localQuery.trim()) {
+      addRecentSearch(localQuery);
       onSearch?.(localQuery);
       router.push(`/search?q=${encodeURIComponent(localQuery)}`);
       setIsOpen(false);
@@ -141,10 +151,12 @@ export function SearchBar({
     } else if (suggestion.type === 'instructor') {
       setLocalQuery(suggestion.label);
       setQuery(suggestion.label);
+      addRecentSearch(suggestion.label);
       router.push(`/search?q=${encodeURIComponent(suggestion.label)}`);
     } else {
       setLocalQuery(suggestion.label);
       setQuery(suggestion.label);
+      addRecentSearch(suggestion.label);
       router.push(`/search?category=${encodeURIComponent(suggestion.label)}`);
     }
     setIsOpen(false);
@@ -153,8 +165,38 @@ export function SearchBar({
   const handleTrendingSelect = (category: string) => {
     setLocalQuery(category);
     setQuery(category);
+    addRecentSearch(category);
     router.push(`/search?category=${encodeURIComponent(category)}`);
     setIsOpen(false);
+  };
+
+  const handleRecentSelect = (recentQuery: string) => {
+    setLocalQuery(recentQuery);
+    setQuery(recentQuery);
+    addRecentSearch(recentQuery);
+    onSearch?.(recentQuery);
+    router.push(`/search?q=${encodeURIComponent(recentQuery)}`);
+    setIsOpen(false);
+  };
+
+  const handleSavedSelect = (saved: { query: string; filters?: Record<string, string> }) => {
+    setLocalQuery(saved.query);
+    setQuery(saved.query);
+    addRecentSearch(saved.query);
+    onSearch?.(saved.query);
+    const params = new URLSearchParams({ q: saved.query });
+    if (saved.filters) {
+      Object.entries(saved.filters).forEach(([key, value]) => {
+        if (value) params.set(key, value);
+      });
+    }
+    router.push(`/search?${params.toString()}`);
+    setIsOpen(false);
+  };
+
+  const handleSaveCurrentSearch = () => {
+    if (!localQuery.trim()) return;
+    saveSearch(localQuery);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -242,101 +284,147 @@ export function SearchBar({
           )}
         </div>
 
-        {/* Empty state — trending categories */}
+        {/* Empty state — recent searches, saved searches, trending categories */}
         {showTrending && (
           <div
             id="search-suggestions"
-            className="absolute left-0 right-0 top-full z-50 mt-2 rounded-lg border border-ink-200 bg-white shadow-lg"
+            className="absolute z-50 mt-2 w-full overflow-hidden rounded-lg border border-ink-200 bg-white shadow-lg"
           >
-            <p className="flex items-center gap-2 px-4 pb-1 pt-3 text-xs font-semibold uppercase tracking-wide text-ink-400">
-              <TrendingUp className="h-3.5 w-3.5" /> Trending
-            </p>
-            <ul className="pb-2">
-              {TRENDING_CATEGORIES.map((category) => (
-                <li key={category}>
+            {recentSearches.length > 0 && (
+              <div className="border-b border-ink-100 p-2">
+                <div className="flex items-center justify-between px-2 py-1">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-ink-400">
+                    <Clock className="h-3.5 w-3.5" />
+                    Recent
+                  </span>
                   <button
                     type="button"
-                    onClick={() => handleTrendingSelect(category)}
-                    className="flex w-full items-center gap-3 px-4 py-2 text-left text-sm text-ink-700 transition-colors hover:bg-ink-50"
+                    onClick={clearRecentSearches}
+                    className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
                   >
-                    <FolderOpen className="h-4 w-4 text-hamplard-primary" />
-                    <span>{category}</span>
+                    <Trash2 className="h-3 w-3" />
+                    Clear history
                   </button>
-                </li>
+                </div>
+                {recentSearches.slice(0, 5).map((recent) => (
+                  <button
+                    key={recent}
+                    type="button"
+                    onClick={() => handleRecentSelect(recent)}
+                    className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-ink-700 transition-colors hover:bg-ink-50"
+                  >
+                    <Clock className="h-3.5 w-3.5 text-ink-400" />
+                    <span className="truncate">{recent}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {savedSearches.length > 0 && (
+              <div className="border-b border-ink-100 p-2">
+                <span className="flex items-center gap-1.5 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-ink-400">
+                  <Bookmark className="h-3.5 w-3.5" />
+                  Saved searches
+                </span>
+                {savedSearches.map((saved) => (
+                  <div key={saved.id} className="group flex items-center">
+                    <button
+                      type="button"
+                      onClick={() => handleSavedSelect(saved)}
+                      className="flex flex-1 items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-ink-700 transition-colors hover:bg-ink-50"
+                    >
+                      <Bookmark className="h-3.5 w-3.5 text-hamplard-primary" />
+                      <span className="truncate">{saved.query}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeSavedSearch(saved.id)}
+                      className="rounded p-1 text-ink-400 opacity-0 transition-opacity hover:bg-ink-100 hover:text-ink-700 group-hover:opacity-100"
+                      aria-label={`Remove saved search ${saved.query}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="p-2">
+              <span className="flex items-center gap-1.5 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-ink-400">
+                <TrendingUp className="h-3.5 w-3.5" />
+                Trending
+              </span>
+              {TRENDING_CATEGORIES.map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => handleTrendingSelect(category)}
+                  className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-ink-700 transition-colors hover:bg-ink-50"
+                >
+                  <TrendingUp className="h-3.5 w-3.5 text-ink-400" />
+                  <span className="truncate">{category}</span>
+                </button>
               ))}
-            </ul>
+            </div>
           </div>
         )}
 
-        {/* Results dropdown — loading, results, or no-results */}
+        {/* Results dropdown */}
         {showResultsDropdown && (
           <div
             id="search-suggestions"
-            className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-lg border border-ink-200 bg-white shadow-lg"
+            className="absolute z-50 mt-2 w-full overflow-hidden rounded-lg border border-ink-200 bg-white shadow-lg"
           >
-            {isLoading ? (
-              <ul className="py-2" aria-label="Loading suggestions">
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <li key={index} className="flex items-center gap-3 px-4 py-2.5">
-                    <span className="h-4 w-4 animate-pulse rounded bg-hamplard-lilac" />
-                    <span className="h-4 flex-1 animate-pulse rounded bg-hamplard-lilac" />
-                  </li>
-                ))}
-              </ul>
-            ) : suggestions.length > 0 ? (
-              <>
-                <ul role="listbox" className="max-h-80 overflow-y-auto py-1">
-                  {suggestions.map((suggestion, index) => (
+            {suggestions.length > 0 ? (
+              <ul role="listbox" className="max-h-80 overflow-y-auto py-1">
+                {suggestions.map((suggestion, index) => {
+                  const meta = TYPE_META[suggestion.type];
+                  return (
                     <li key={suggestion.id} role="option" aria-selected={index === selectedIndex}>
                       <button
                         type="button"
                         onClick={() => handleSuggestionSelect(suggestion)}
                         onMouseEnter={() => setSelectedIndex(index)}
                         className={cn(
-                          'flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors',
-                          index === selectedIndex
-                            ? 'bg-hamplard-lilac text-hamplard-deep'
-                            : 'text-ink-700 hover:bg-ink-50',
+                          'flex w-full items-center gap-3 px-3 py-2 text-left transition-colors',
+                          index === selectedIndex ? 'bg-ink-50' : 'hover:bg-ink-50',
                         )}
                       >
-                        {TYPE_META[suggestion.type].icon}
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium">{suggestion.label}</p>
+                        {meta.icon}
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm text-ink-900">
+                            {suggestion.label}
+                          </span>
                           {suggestion.subtitle && (
-                            <p className="truncate text-xs text-ink-400">{suggestion.subtitle}</p>
+                            <span className="block truncate text-xs text-ink-400">
+                              {suggestion.subtitle}
+                            </span>
                           )}
-                        </div>
-                        <span className="whitespace-nowrap text-xs text-ink-400">
-                          {TYPE_META[suggestion.type].badge}
+                        </span>
+                        <span className="rounded bg-ink-100 px-1.5 py-0.5 text-[10px] font-medium uppercase text-ink-500">
+                          {meta.badge}
                         </span>
                       </button>
                     </li>
-                  ))}
-                </ul>
-
-                {/* Keyboard navigation hints */}
-                <div className="flex items-center gap-3 border-t border-ink-100 bg-ink-50 px-4 py-2 text-xs text-ink-400">
-                  <span className="flex items-center gap-1">
-                    <kbd className="rounded border border-ink-200 bg-white px-1 font-sans">↑</kbd>
-                    <kbd className="rounded border border-ink-200 bg-white px-1 font-sans">↓</kbd>
-                    navigate
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <kbd className="rounded border border-ink-200 bg-white px-1 font-sans">↵</kbd>
-                    select
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <kbd className="rounded border border-ink-200 bg-white px-1 font-sans">esc</kbd>
-                    dismiss
-                  </span>
-                </div>
-              </>
+                  );
+                })}
+              </ul>
             ) : (
-              <div className="p-4 text-center">
-                <p className="text-sm text-ink-500">No courses or categories found</p>
-                <p className="mt-1 text-xs text-ink-400">Try searching for a different term</p>
+              <div className="px-3 py-4 text-center text-sm text-ink-400">
+                No results for “{localQuery}”
               </div>
             )}
+
+            <div className="border-t border-ink-100 p-2">
+              <button
+                type="button"
+                onClick={handleSaveCurrentSearch}
+                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-hamplard-primary transition-colors hover:bg-ink-50"
+              >
+                <Bookmark className="h-3.5 w-3.5" />
+                Save this search
+              </button>
+            </div>
           </div>
         )}
       </form>

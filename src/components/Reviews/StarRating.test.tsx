@@ -62,6 +62,56 @@ describe('StarRating', () => {
     });
   });
 
+  describe('Keyboard Support', () => {
+    it('increases rating with ArrowRight', () => {
+      render(<StarRatingSelector />);
+      const firstStar = screen.getByRole('radio', { name: /1 star/i });
+      fireEvent.click(firstStar);
+      fireEvent.keyDown(firstStar, { key: 'ArrowRight' });
+      expect(screen.getByRole('radio', { name: /2 stars/i })).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it('increases rating with ArrowUp', () => {
+      render(<StarRatingSelector />);
+      const firstStar = screen.getByRole('radio', { name: /1 star/i });
+      fireEvent.click(firstStar);
+      fireEvent.keyDown(firstStar, { key: 'ArrowUp' });
+      expect(screen.getByRole('radio', { name: /2 stars/i })).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it('decreases rating with ArrowLeft', () => {
+      render(<StarRatingSelector />);
+      const thirdStar = screen.getByRole('radio', { name: /3 stars/i });
+      fireEvent.click(thirdStar);
+      fireEvent.keyDown(thirdStar, { key: 'ArrowLeft' });
+      expect(screen.getByRole('radio', { name: /2 stars/i })).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it('decreases rating with ArrowDown', () => {
+      render(<StarRatingSelector />);
+      const thirdStar = screen.getByRole('radio', { name: /3 stars/i });
+      fireEvent.click(thirdStar);
+      fireEvent.keyDown(thirdStar, { key: 'ArrowDown' });
+      expect(screen.getByRole('radio', { name: /2 stars/i })).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it('does not exceed 5 stars with ArrowRight', () => {
+      render(<StarRatingSelector />);
+      const fifthStar = screen.getByRole('radio', { name: /5 stars/i });
+      fireEvent.click(fifthStar);
+      fireEvent.keyDown(fifthStar, { key: 'ArrowRight' });
+      expect(fifthStar).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it('does not go below 1 star with ArrowLeft', () => {
+      render(<StarRatingSelector />);
+      const firstStar = screen.getByRole('radio', { name: /1 star/i });
+      fireEvent.click(firstStar);
+      fireEvent.keyDown(firstStar, { key: 'ArrowLeft' });
+      expect(firstStar).toHaveAttribute('aria-checked', 'true');
+    });
+  });
+
   describe('Hover State', () => {
     it('highlights stars on hover', () => {
       render(<StarRatingSelector />);

@@ -1,8 +1,29 @@
 'use client';
 
-import { useState } from 'react';
-import { Star, CheckCircle, Loader2, Pencil } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Star, CheckCircle, Loader2, Pencil, ImagePlus, Video, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// ── Attachment config ─────────────────────────────────────────────────────────
+
+const MAX_IMAGES = 5;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024; // 50 MB
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
+
+interface Attachment {
+  id: string;
+  file: File;
+  kind: 'image' | 'video';
+  previewUrl: string;
+  progress: number;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${Math.round(bytes / (1024 * 1024))} MB`;
+  return `${Math.round(bytes / 1024)} KB`;
+}
 
 // ── Inline star selector ───────────────────────────────────────────────────────
 
@@ -81,6 +102,70 @@ function StarSelector({ value, onChange, hasError }: StarSelectorProps) {
   );
 }
 
+// ── Attachment previews ───────────────────────────────────────────────────────
+
+interface AttachmentPreviewsProps {
+  attachments: Attachment[];
+  onRemove: (id: string) => void;
+}
+
+function AttachmentPreviews({ attachments, onRemove }: AttachmentPreviewsProps) {
+  if (attachments.length === 0) return null;
+
+  return (
+    <ul className="grid grid-cols-3 sm:grid-cols-4 gap-3" aria-label="Review attachments">
+      {attachments.map((att) => (
+        <li
+          key={att.id}
+          className="relative group rounded-xl overflow-hidden border border-gray-200 bg-gray-50"
+        >
+          {att.kind === 'image' ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={att.previewUrl}
+              alt={att.file.name}
+              className="w-full h-20 object-cover"
+            />
+          ) : (
+            <video
+              src={att.previewUrl}
+              className="w-full h-20 object-cover"
+              muted
+              playsInline
+              aria-label={att.file.name}
+            />
+          )}
+
+          {/* Remove button */}
+          <button
+            type="button"
+            onClick={() => onRemove(att.id)}
+            aria-label={`Remove ${att.file.name}`}
+            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white transition-opacity"
+          >
+            <X className="w-3 h-3" aria-hidden="true" />
+          </button>
+
+          {/* Per-file upload progress */}
+          {att.progress < 100 && (
+            <div className="absolute inset-x-0 bottom-0 h-1 bg-black/20">
+              <div
+                className="h-full bg-hamplard-primary transition-all duration-150"
+                style={{ width: `${att.progress}%` }}
+                role="progressbar"
+                aria-valuenow={att.progress}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`Uploading ${att.file.name}`}
+              />
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 // ── Main form ─────────────────────────────────────────────────────────────────
 
 export interface ReviewFormProps {
@@ -128,6 +213,11 @@ export function ReviewForm({
   const [loading, setLoading] = useState(false);
   const [formState, setFormState] = useState<FormState>(isEditMode ? 'filled' : 'empty');
 
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+
   const charCount = text.length;
   const charOver = charCount > MAX_CHARS;
   const charNearLimit = charCount >= MAX_CHARS * 0.85;
@@ -150,6 +240,91 @@ export function ReviewForm({
   function updateFormState(r: number, t: string) {
     const filled = r > 0 && t.trim().length >= MIN_CHARS && t.length <= MAX_CHARS;
     setFormState(filled ? 'filled' : 'empty');
+  }
+
+  // ── Attachment handling ────────────────────────────────────────────────────
+
+  function simulateProgress(id: string) {
+    let progress = 0;
+    const timer = setInterval(() => {
+      progress = Math.min(100, progress + 20);
+      setAttachments((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, progress } : a)),
+      );
+      if (progress >= 100) clearInterval(timer);
+    }, 120);
+  }
+
+  function addFiles(files: FileList | null, kind: 'image' | 'video') {
+    if (!files || files.length === 0) return;
+    setAttachmentError(null);
+
+    const incoming = Array.from(files);
+    const accepted: Attachment[] = [];
+    const rejected: string[] = [];
+
+    const currentImages = attachments.filter((a) => a.kind === 'image').length;
+    const hasVideo = attachments.some((a) => a.kind === 'video');
+    let imageSlots = MAX_IMAGES - currentImages;
+    let videoSlot = !hasVideo;
+
+    for (const file of incoming) {
+      const isImage = ACCEPTED_IMAGE_TYPES.includes(file.type);
+      const isVideo = ACCEPTED_VIDEO_TYPES.includes(file.type);
+
+      if (kind === 'image') {
+        if (!isImage) {
+          rejected.push(`${file.name}: only JPG, PNG, WEBP or GIF images are allowed.`);
+          continue;
+        }
+        if (file.size > MAX_IMAGE_BYTES) {
+          rejected.push(`${file.name}: images must be ${formatBytes(MAX_IMAGE_BYTES)} or smaller.`);
+          continue;
+        }
+        if (imageSlots <= 0) {
+          rejected.push(`${file.name}: you can attach up to ${MAX_IMAGES} images.`);
+          continue;
+        }
+        imageSlots -= 1;
+      } else {
+        if (!isVideo) {
+          rejected.push(`${file.name}: only MP4, WEBM or MOV videos are allowed.`);
+          continue;
+        }
+        if (file.size > MAX_VIDEO_BYTES) {
+          rejected.push(`${file.name}: videos must be ${formatBytes(MAX_VIDEO_BYTES)} or smaller.`);
+          continue;
+        }
+        if (!videoSlot) {
+          rejected.push(`${file.name}: only one video can be attached.`);
+          continue;
+        }
+        videoSlot = false;
+      }
+
+      accepted.push({
+        id: `${file.name}-${file.lastModified}-${Math.random().toString(36).slice(2)}`,
+        file,
+        kind,
+        previewUrl: URL.createObjectURL(file),
+        progress: 0,
+      });
+    }
+
+    if (accepted.length > 0) {
+      setAttachments((prev) => [...prev, ...accepted]);
+      accepted.forEach((a) => simulateProgress(a.id));
+    }
+    if (rejected.length > 0) setAttachmentError(rejected.join(' '));
+  }
+
+  function removeAttachment(id: string) {
+    setAttachments((prev) => {
+      const target = prev.find((a) => a.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((a) => a.id !== id);
+    });
+    setAttachmentError(null);
   }
 
   function validate(): boolean {
@@ -230,17 +405,18 @@ export function ReviewForm({
                 ))}
               </div>
             </div>
-            <p className="text-sm text-hamplard-deep/80 leading-relaxed">{text}</p>
+            <p className="text-sm text-hamplard-deep whitespace-pre-wrap">{text}</p>
+            {attachments.length > 0 && (
+              <div className="mt-3">
+                <AttachmentPreviews attachments={attachments} onRemove={() => {}} />
+              </div>
+            )}
           </div>
 
-          {/* Edit button */}
           <button
             type="button"
             onClick={handleEdit}
-            className={cn(
-              'w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl border border-semantic-border text-sm font-medium text-hamplard-primary',
-              'hover:bg-hamplard-lilac hover:border-hamplard-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary',
-            )}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-hamplard-primary/40 px-4 py-2.5 text-sm font-semibold text-hamplard-mid hover:bg-hamplard-lilac/50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary"
           >
             <Pencil className="w-4 h-4" aria-hidden="true" />
             Edit review
@@ -250,141 +426,163 @@ export function ReviewForm({
     );
   }
 
-  // ── Empty / Filled form state ──────────────────────────────────────────────
+  // ── Form state ─────────────────────────────────────────────────────────────
   return (
     <div
       className={cn(
-        'rounded-2xl border bg-white overflow-hidden transition-shadow duration-200',
-        isFilled
-          ? 'border-hamplard-primary/40 shadow-md'
-          : 'border-semantic-border',
+        'rounded-2xl border border-gray-200 bg-white overflow-hidden',
         className,
       )}
     >
-      {/* Accent bar */}
-      <div
-        className={cn(
-          'h-1 transition-all duration-300',
-          isFilled
-            ? 'bg-gradient-to-r from-hamplard-primary via-hamplard-primary/70 to-hamplard-lilac'
-            : 'bg-gray-100',
-        )}
-      />
+      <div className="h-1 bg-gradient-to-r from-hamplard-primary via-hamplard-primary/70 to-hamplard-lilac" />
 
-      <div className="p-6">
-        {/* Header */}
-        <div className="mb-5">
-          <p className="text-[11px] font-bold tracking-widest uppercase text-hamplard-primary mb-1">
-            {isEditMode ? 'Edit your review' : 'Rate this course'}
-          </p>
-          <h2 className="text-lg font-semibold text-hamplard-deep leading-snug">
-            {courseName}
+      <div className="p-6 space-y-6">
+        <div>
+          <h2 className="text-lg font-semibold text-hamplard-deep">
+            {isEditMode ? 'Edit your review' : `Review ${courseName}`}
           </h2>
+          <p className="mt-1 text-sm text-semantic-text-muted">
+            Share your honest experience to help other students.
+          </p>
         </div>
 
-        <div className="h-px bg-semantic-border mb-5" />
-
-        {/* Star selector */}
-        <div className={cn('mb-5', errors.rating && 'mb-2')}>
+        {/* Rating */}
+        <div className="flex flex-col items-center gap-2">
           <StarSelector
             value={rating}
             onChange={handleRatingChange}
             hasError={!!errors.rating}
           />
           {errors.rating && (
-            <p role="alert" className="mt-2 text-center text-xs text-rose-500">
+            <p className="text-xs text-rose-500" role="alert">
               {errors.rating}
             </p>
           )}
         </div>
 
-        {/* Textarea */}
-        <div className="mb-5">
+        {/* Text */}
+        <div>
           <label
             htmlFor="review-text"
-            className="block text-sm font-semibold text-hamplard-deep mb-1.5"
+            className="block text-sm font-medium text-hamplard-deep mb-1.5"
           >
-            Share your experience
+            Your review
           </label>
-
-          <div className="relative">
-            <textarea
-              id="review-text"
-              value={text}
-              onChange={(e) => handleTextChange(e.target.value)}
-              placeholder="What did you learn? What would you tell a friend considering this course?"
-              rows={5}
-              aria-describedby={errors.text ? 'review-text-error' : 'review-text-hint'}
-              aria-invalid={!!errors.text}
-              className={cn(
-                'w-full resize-y rounded-xl border px-4 py-3 pb-8 text-sm text-hamplard-deep leading-relaxed bg-white placeholder:text-gray-300 transition-colors duration-150',
-                'focus:outline-none focus:ring-2 focus:ring-hamplard-primary focus:border-hamplard-primary',
-                errors.text || charOver
-                  ? 'border-rose-400'
-                  : isFilled
-                  ? 'border-hamplard-primary/50'
-                  : 'border-semantic-border',
-              )}
-            />
-            {/* Character counter */}
+          <textarea
+            id="review-text"
+            value={text}
+            onChange={(e) => handleTextChange(e.target.value)}
+            rows={5}
+            placeholder={`What stood out? What could be better? (min ${MIN_CHARS} characters)`}
+            className={cn(
+              'w-full rounded-xl border px-3.5 py-2.5 text-sm text-hamplard-deep placeholder:text-gray-400 resize-y focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary',
+              errors.text ? 'border-rose-400' : 'border-gray-200',
+            )}
+          />
+          <div className="mt-1 flex items-center justify-between">
+            {errors.text ? (
+              <p className="text-xs text-rose-500" role="alert">
+                {errors.text}
+              </p>
+            ) : (
+              <span />
+            )}
             <span
               className={cn(
-                'absolute bottom-3 right-3 text-[11px] font-semibold pointer-events-none tabular-nums',
-                charOver ? 'text-rose-500' : charNearLimit ? 'text-amber-500' : 'text-gray-300',
+                'text-xs',
+                charOver
+                  ? 'text-rose-500 font-semibold'
+                  : charNearLimit
+                    ? 'text-amber-500'
+                    : 'text-semantic-text-muted',
               )}
-              aria-live="polite"
-              aria-atomic="true"
             >
               {charCount}/{MAX_CHARS}
             </span>
           </div>
+        </div>
 
-          {/* Hint / error */}
-          {errors.text ? (
-            <p id="review-text-error" role="alert" className="mt-1.5 text-xs text-rose-500">
-              {errors.text}
+        {/* Attachments */}
+        <div>
+          <p className="block text-sm font-medium text-hamplard-deep mb-1.5">
+            Add photos or a video{' '}
+            <span className="font-normal text-semantic-text-muted">(optional)</span>
+          </p>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => imageInputRef.current?.click()}
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-hamplard-mid hover:bg-hamplard-lilac/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary"
+            >
+              <ImagePlus className="w-4 h-4" aria-hidden="true" />
+              Add images
+            </button>
+            <button
+              type="button"
+              onClick={() => videoInputRef.current?.click()}
+              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-hamplard-mid hover:bg-hamplard-lilac/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary"
+            >
+              <Video className="w-4 h-4" aria-hidden="true" />
+              Add video
+            </button>
+          </div>
+
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept={ACCEPTED_IMAGE_TYPES.join(',')}
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              addFiles(e.target.files, 'image');
+              e.target.value = '';
+            }}
+          />
+          <input
+            ref={videoInputRef}
+            type="file"
+            accept={ACCEPTED_VIDEO_TYPES.join(',')}
+            className="hidden"
+            onChange={(e) => {
+              addFiles(e.target.files, 'video');
+              e.target.value = '';
+            }}
+          />
+
+          <p className="mt-1.5 text-[11px] text-semantic-text-muted">
+            Up to {MAX_IMAGES} images ({formatBytes(MAX_IMAGE_BYTES)} each) and one video (
+            {formatBytes(MAX_VIDEO_BYTES)}).
+          </p>
+
+          {attachmentError && (
+            <p className="mt-2 text-xs text-rose-500" role="alert">
+              {attachmentError}
             </p>
-          ) : charCount > 0 && charCount < MIN_CHARS ? (
-            <p id="review-text-hint" className="mt-1.5 text-xs text-semantic-text-muted">
-              {MIN_CHARS - charCount} more character{MIN_CHARS - charCount !== 1 ? 's' : ''} needed
-            </p>
-          ) : (
-            <p id="review-text-hint" className="sr-only">
-              Minimum {MIN_CHARS} characters required
-            </p>
+          )}
+
+          {attachments.length > 0 && (
+            <div className="mt-3">
+              <AttachmentPreviews attachments={attachments} onRemove={removeAttachment} />
+            </div>
           )}
         </div>
 
-        {/* Submit button */}
+        {/* Submit */}
         <button
           type="button"
           onClick={handleSubmit}
           disabled={loading}
           className={cn(
-            'w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all duration-200',
-            'focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-hamplard-primary',
-            isFilled && !loading
-              ? 'bg-hamplard-primary text-white hover:bg-hamplard-mid active:bg-hamplard-deep shadow-md hover:shadow-lg hover:-translate-y-px'
-              : 'bg-gray-100 text-gray-400 cursor-not-allowed',
+            'w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary',
+            isFilled
+              ? 'bg-hamplard-primary hover:bg-hamplard-mid'
+              : 'bg-hamplard-primary/50 cursor-not-allowed',
           )}
-          aria-disabled={!isFilled || loading}
         >
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-              Submitting…
-            </>
-          ) : (
-            <>{isEditMode ? 'Update review' : 'Submit review'}</>
-          )}
+          {loading && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
+          {isEditMode ? 'Update review' : 'Submit review'}
         </button>
-
-        {/* Edit mode — last reviewed date */}
-        {isEditMode && existingReview?.date && (
-          <p className="mt-3 text-center text-xs text-semantic-text-muted">
-            Last reviewed {existingReview.date}
-          </p>
-        )}
       </div>
     </div>
   );
