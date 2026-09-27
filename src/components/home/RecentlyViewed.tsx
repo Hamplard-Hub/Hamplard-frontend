@@ -6,7 +6,7 @@ import { ArrowRight } from 'lucide-react';
 import { CourseCard } from '@/components/courses/CourseCard';
 import { coursesApi } from '@/lib/api/services';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
-import { getRecentlyViewed, recordRecentlyViewed } from '@/lib/recently-viewed';
+import { clearRecentlyViewed, getRecentlyViewed, recordRecentlyViewed } from '@/lib/recently-viewed';
 import type { Course } from '@/types';
 
 export function RecentlyViewedTracker({ courseId }: { courseId: string }) {
@@ -20,6 +20,7 @@ export function RecentlyViewed() {
   const isConnected = useAuthStore((state) => state.isConnected);
   const rehydrate = useAuthStore((state) => state.rehydrate);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [confirmingClear, setConfirmingClear] = useState(false);
 
   useEffect(() => {
     rehydrate();
@@ -45,13 +46,48 @@ export function RecentlyViewed() {
     };
   }, [isConnected]);
 
+  const handleClear = () => {
+    clearRecentlyViewed();
+    setCourses([]);
+    setConfirmingClear(false);
+  };
+
   if (!isConnected || courses.length === 0) return null;
 
   return (
     <section aria-labelledby="recently-viewed-heading">
-      <div className="mb-4">
-        <h2 id="recently-viewed-heading" className="section-heading">Recently viewed</h2>
-        <p className="mt-1 text-sm text-ink-400">Pick up where you left off</p>
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h2 id="recently-viewed-heading" className="section-heading">Recently viewed</h2>
+          <p className="mt-1 text-sm text-ink-400">Pick up where you left off</p>
+        </div>
+        {confirmingClear ? (
+          <div className="flex shrink-0 items-center gap-2 text-sm">
+            <span className="text-ink-400">Clear history?</span>
+            <button
+              type="button"
+              onClick={handleClear}
+              className="font-semibold text-hamplard-primary transition-colors hover:underline"
+            >
+              Yes
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmingClear(false)}
+              className="font-semibold text-ink-400 transition-colors hover:underline"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirmingClear(true)}
+            className="shrink-0 text-sm font-semibold text-ink-400 transition-colors hover:text-hamplard-primary"
+          >
+            Clear
+          </button>
+        )}
       </div>
       <div className="-mx-1 flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-2 no-scrollbar">
         {courses.map((course) => (
