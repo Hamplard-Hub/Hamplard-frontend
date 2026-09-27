@@ -19,10 +19,15 @@ interface CourseCarouselProps {
   loading?: boolean;
   skeletonCount?: number;
   emptyMessage?: string;
+  /** Enable autoplay of the carousel. Defaults to false. */
+  autoplay?: boolean;
+  /** Autoplay interval in ms. Defaults to 4000. */
+  autoplayInterval?: number;
 }
 
 const CARD_WIDTH_CLASS = 'w-[72vw] max-w-[280px] sm:w-[264px]';
 const GAP_PX = 16; // matches gap-4
+const SWIPE_THRESHOLD_PX = 40;
 
 export function CourseCarousel({
   title,
@@ -32,6 +37,8 @@ export function CourseCarousel({
   loading = false,
   skeletonCount = 4,
   emptyMessage = 'No courses to show here yet.',
+  autoplay = false,
+  autoplayInterval = 4000,
 }: CourseCarouselProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const firstItemRef = useRef<HTMLDivElement>(null);
@@ -39,6 +46,14 @@ export function CourseCarousel({
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
   const [activeDot, setActiveDot] = useState(0);
+
+  // Autoplay state: paused on hover, and permanently stopped after manual interaction.
+  const [isHovering, setIsHovering] = useState(false);
+  const [userInteracted, setUserInteracted] = useState(false);
+
+  // Touch swipe tracking
+  const touchStartXRef = useRef<number | null>(null);
+  const touchStartYRef = useRef<number | null>(null);
 
   const itemCount = loading ? skeletonCount : courses.length;
 
@@ -92,6 +107,72 @@ export function CourseCarousel({
     el.scrollTo({ left: step * index, behavior: 'smooth' });
   }
 
+  // Manual interaction (arrow click, dot click, swipe) permanently stops autoplay.
+  const markUserInteracted = useCallback(() => {
+    setUserInteracted(true);
+  }, []);
+
+  const handleArrowClick = useCallback(
+    (direction: 1 | -1) => {
+      markUserInteracted();
+      scrollByCard(direction);
+    },
+    [markUserInteracted],
+  );
+
+  const handleDotClick = useCallback(
+    (index: number) => {
+      markUserInteracted();
+      scrollToDot(index);
+    },
+    [markUserInteracted],
+  );
+
+  // Autoplay: advance one card at a time, looping back to the start.
+  useEffect(() => {
+    if (!autoplay || loading || userInteracted || isHovering) return;
+    if (courses.length <= 1) return;
+
+    const id = window.setInterval(() => {
+      const el = scrollerRef.current;
+      if (!el) return;
+      const step = (firstItemRef.current?.offsetWidth ?? el.clientWidth) + GAP_PX;
+      const maxScroll = el.scrollWidth - el.clientWidth;
+      if (el.scrollLeft >= maxScroll - 4) {
+        el.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        el.scrollBy({ left: step, behavior: 'smooth' });
+      }
+    }, autoplayInterval);
+
+    return () => window.clearInterval(id);
+  }, [autoplay, autoplayInterval, loading, userInteracted, isHovering, courses.length]);
+
+  // Touch swipe handlers — horizontal swipes navigate, vertical swipes scroll the page.
+  function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+    const touch = e.touches[0];
+    touchStartXRef.current = touch.clientX;
+    touchStartYRef.current = touch.clientY;
+  }
+
+  function handleTouchEnd(e: React.TouchEvent<HTMLDivElement>) {
+    const startX = touchStartXRef.current;
+    const startY = touchStartYRef.current;
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+    if (startX === null || startY === null) return;
+
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - startX;
+    const deltaY = touch.clientY - startY;
+
+    // Ignore mostly-vertical gestures so page scrolling still works.
+    if (Math.abs(deltaX) < SWIPE_THRESHOLD_PX || Math.abs(deltaX) < Math.abs(deltaY)) return;
+
+    markUserInteracted();
+    scrollByCard(deltaX < 0 ? 1 : -1);
+  }
+
   const showArrows = !loading && courses.length > 0 && (canScrollPrev || canScrollNext);
   const showDots = !loading && courses.length > 1;
 
@@ -113,13 +194,17 @@ export function CourseCarousel({
       </div>
 
       {/* Carousel */}
-      <div className="relative">
+      <div
+        className="relative"
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+      >
         {/* Desktop arrows */}
         {showArrows && (
           <>
             <button
               type="button"
-              onClick={() => scrollByCard(-1)}
+              onClick={() => handleArrowClick(-1)}
               disabled={!canScrollPrev}
               aria-label={`Scroll ${title} left`}
               className={cn(
@@ -133,7 +218,7 @@ export function CourseCarousel({
             </button>
             <button
               type="button"
-              onClick={() => scrollByCard(1)}
+              onClick={() => handleArrowClick(1)}
               disabled={!canScrollNext}
               aria-label={`Scroll ${title} right`}
               className={cn(
@@ -156,6 +241,8 @@ export function CourseCarousel({
         ) : (
           <div
             ref={scrollerRef}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
             className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth pb-1 -mx-1 px-1"
           >
             {loading
@@ -190,7 +277,7 @@ export function CourseCarousel({
                 role="tab"
                 aria-selected={i === activeDot}
                 aria-label={`Go to slide ${i + 1}`}
-                onClick={() => scrollToDot(i)}
+                onClick={() => handleDotClick(i)}
                 className={cn(
                   'h-1.5 rounded-full transition-all duration-200',
                   i === activeDot ? 'w-5 bg-hamplard-primary' : 'w-1.5 bg-ink-200',

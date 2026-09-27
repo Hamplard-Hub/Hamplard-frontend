@@ -59,6 +59,7 @@ export function HomepageCarousels() {
         courses={featured}
         loading={loading}
         emptyMessage="No featured courses yet — check back soon."
+        autoplay
       />
 
       <CourseCarousel
@@ -68,6 +69,7 @@ export function HomepageCarousels() {
         courses={bestsellers}
         loading={loading}
         emptyMessage="No bestsellers yet — check back soon."
+        autoplay
       />
 
       <CourseCarousel
@@ -77,6 +79,7 @@ export function HomepageCarousels() {
         courses={recentlyAdded}
         loading={loading}
         emptyMessage="No new courses yet — check back soon."
+        autoplay
       />
 
       <CourseCarousel
@@ -86,6 +89,7 @@ export function HomepageCarousels() {
         courses={free}
         loading={loading}
         emptyMessage="No free courses available right now."
+        autoplay
       />
     </div>
   );

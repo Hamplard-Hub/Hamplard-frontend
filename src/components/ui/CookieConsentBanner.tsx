@@ -93,6 +93,20 @@ export function CookieConsentBanner() {
     savePreferences(nextPreferences, 'All cookies accepted', 'You are now opted in to analytics and marketing cookies.');
   };
 
+  const handleRejectNonEssential = () => {
+    const nextPreferences: CookiePreferences = {
+      necessary: true,
+      analytics: false,
+      marketing: false,
+    };
+
+    savePreferences(nextPreferences, 'Non-essential cookies rejected', 'Only necessary cookies will be used.');
+  };
+
+  const handleSavePreferences = () => {
+    savePreferences({ ...preferences, necessary: true });
+  };
+
   if (!isVisible) return null;
 
   return (
@@ -125,6 +139,13 @@ export function CookieConsentBanner() {
               className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#26215C] transition hover:bg-[#EEEDFE]"
             >
               Accept All
+            </button>
+            <button
+              type="button"
+              onClick={handleRejectNonEssential}
+              className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
+            >
+              Reject Non-Essential
             </button>
             <button
               type="button"
@@ -212,18 +233,18 @@ export function CookieConsentBanner() {
               })}
             </div>
 
-            <div className="mt-8 flex flex-wrap justify-end gap-3">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-full border border-[#D5D2F6] px-4 py-2 text-sm font-semibold text-[#5A5578] transition hover:bg-[#F4F2FF]"
+                onClick={handleRejectNonEssential}
+                className="rounded-full border border-[#D5D2F6] px-4 py-2 text-sm font-semibold text-[#26215C] transition hover:bg-[#F4F2FF]"
               >
-                Cancel
+                Reject Non-Essential
               </button>
               <button
                 type="button"
-                onClick={() => savePreferences(preferences)}
-                className="inline-flex items-center gap-2 rounded-full bg-[#26215C] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#3C3489]"
+                onClick={handleSavePreferences}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#26215C] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#3A3480]"
               >
                 <Check className="h-4 w-4" aria-hidden="true" />
                 Save Preferences
