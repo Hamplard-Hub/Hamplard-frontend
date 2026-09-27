@@ -4,6 +4,7 @@ import { formatUsdc, courseTotalMins } from '@/lib/utils';
 import type { Course } from '@/types';
 import RecentlyViewedTracker from '@/components/courses/RecentlyViewedTracker';
 import { Breadcrumb } from '@/components/ui';
+import CurriculumAccordion from '@/components/courses/CurriculumAccordion';
 
 // Metadata and JSON-LD are handled by the server layout at
 // src/app/courses/[id]/layout.tsx — no need to duplicate them here.
@@ -91,6 +92,8 @@ export default async function CoursePage({ params }: Props) {
                   'A practical Hamplard course with verified lessons and certification.'}
               </p>
             </div>
+
+            <CurriculumAccordion modules={course.modules ?? []} />
           </div>
 
           <aside className="space-y-6 rounded-3xl border border-ink-100 bg-white p-6 shadow-sm">

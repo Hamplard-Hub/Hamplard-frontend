@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Star, ThumbsUp, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
+import { Star, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Review } from '@/types';
 
@@ -11,6 +11,8 @@ interface ReviewCardProps {
   defaultExpanded?: boolean;
   className?: string;
 }
+
+type VoteState = 'up' | 'down' | null;
 
 /** Renders a filled/empty star row for a fixed 1–5 value. */
 function StarDisplay({ rating }: { rating: number }) {
@@ -114,20 +116,28 @@ function RelativeDate({ isoDate }: { isoDate: string }) {
  */
 export function ReviewCard({ review, defaultExpanded = false, className }: ReviewCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
-  const [voted, setVoted] = useState(review.viewerVoted ?? false);
+  const [vote, setVote] = useState<VoteState>(review.viewerVoted ? 'up' : null);
   const [voteCount, setVoteCount] = useState(review.helpfulVotes);
 
   const hasLongText = review.text.length > 250;
   const hasInstructorReply = !!review.instructorReply;
 
-  function toggleVote() {
-    if (voted) {
-      setVoted(false);
-      setVoteCount((c) => c - 1);
-    } else {
-      setVoted(true);
-      setVoteCount((c) => c + 1);
-    }
+  /**
+   * Optimistically toggle the viewer's vote. Only one active vote is allowed
+   * per review: clicking the active direction removes it, clicking the other
+   * direction switches it (adjusting the count by the net difference).
+   */
+  function handleVote(next: 'up' | 'down') {
+    setVote((current) => {
+      if (current === next) {
+        setVoteCount((c) => c - 1);
+        return null;
+      }
+      if (current === null) {
+        setVoteCount((c) => c + 1);
+      }
+      return next;
+    });
   }
 
   return (
@@ -233,36 +243,44 @@ export function ReviewCard({ review, defaultExpanded = false, className }: Revie
       <div className="mt-4 flex items-center gap-3 pt-3 border-t border-semantic-border">
         <span className="text-xs text-semantic-text-muted">Was this helpful?</span>
 
-        <button
-          type="button"
-          onClick={toggleVote}
-          aria-pressed={voted}
-          aria-label={voted ? 'Remove helpful vote' : 'Mark review as helpful'}
-          className={cn(
-            'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary focus-visible:ring-offset-1',
-            voted
-              ? 'bg-hamplard-primary text-white border-hamplard-primary hover:bg-hamplard-mid hover:border-hamplard-mid'
-              : 'bg-white text-hamplard-deep border-semantic-border hover:bg-hamplard-lilac hover:border-hamplard-primary',
-          )}
-        >
-          <ThumbsUp
-            className={cn('w-3.5 h-3.5', voted && 'fill-white')}
-            aria-hidden="true"
-          />
-          <span className="tabular-nums">{voteCount}</span>
-        </button>
-
-        {/* Instructor reply indicator (shown in collapsed state when reply exists) */}
-        {hasInstructorReply && !expanded && hasLongText && (
+        <div className="flex items-center gap-1.5">
           <button
             type="button"
-            onClick={() => setExpanded(true)}
-            className="ml-auto inline-flex items-center gap-1 text-xs text-hamplard-primary hover:text-hamplard-mid font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary rounded"
+            onClick={() => handleVote('up')}
+            aria-pressed={vote === 'up'}
+            aria-label={vote === 'up' ? 'Remove helpful vote' : 'Mark review as helpful'}
+            className={cn(
+              'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary focus-visible:ring-offset-1',
+              vote === 'up'
+                ? 'bg-hamplard-primary text-white border-hamplard-primary'
+                : 'bg-white text-semantic-text-muted border-semantic-border hover:border-hamplard-primary hover:text-hamplard-primary',
+            )}
           >
-            <MessageSquare className="w-3.5 h-3.5" aria-hidden="true" />
-            Instructor replied
+            <ThumbsUp
+              className={cn('w-3.5 h-3.5', vote === 'up' && 'fill-current')}
+              aria-hidden="true"
+            />
+            <span>{voteCount}</span>
           </button>
-        )}
+
+          <button
+            type="button"
+            onClick={() => handleVote('down')}
+            aria-pressed={vote === 'down'}
+            aria-label={vote === 'down' ? 'Remove not helpful vote' : 'Mark review as not helpful'}
+            className={cn(
+              'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary focus-visible:ring-offset-1',
+              vote === 'down'
+                ? 'bg-hamplard-deep text-white border-hamplard-deep'
+                : 'bg-white text-semantic-text-muted border-semantic-border hover:border-hamplard-deep hover:text-hamplard-deep',
+            )}
+          >
+            <ThumbsDown
+              className={cn('w-3.5 h-3.5', vote === 'down' && 'fill-current')}
+              aria-hidden="true"
+            />
+          </button>
+        </div>
       </div>
     </article>
   );

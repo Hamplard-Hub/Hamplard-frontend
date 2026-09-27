@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronDown, Star } from 'lucide-react';
 import {
   useSearchStore,
@@ -38,8 +38,19 @@ const PRICE_OPTIONS: { label: string; range: PriceRange }[] = [
   { label: 'Over ₦50', range: { min: 5000, max: null } },
 ];
 
+// Slider bounds in cents. `max: null` on the store range maps to PRICE_SLIDER_MAX.
+const PRICE_SLIDER_MIN = 0;
+const PRICE_SLIDER_MAX = 10000;
+const PRICE_SLIDER_STEP = 100;
+const PRICE_DEBOUNCE_MS = 300;
+
 function priceRangesEqual(a: PriceRange, b: PriceRange) {
   return a.min === b.min && a.max === b.max;
+}
+
+function clampPrice(value: number) {
+  if (Number.isNaN(value)) return PRICE_SLIDER_MIN;
+  return Math.min(PRICE_SLIDER_MAX, Math.max(PRICE_SLIDER_MIN, value));
 }
 
 interface FilterGroupProps {
@@ -52,6 +63,132 @@ function FilterGroup({ title, children }: FilterGroupProps) {
     <div className="border-b border-ink-100 pb-6 last:border-b-0 last:pb-0">
       <h3 className="mb-3 text-sm font-semibold text-ink-900">{title}</h3>
       {children}
+    </div>
+  );
+}
+
+interface PriceRangeSliderProps {
+  value: PriceRange;
+  onChange: (range: PriceRange) => void;
+}
+
+function PriceRangeSlider({ value, onChange }: PriceRangeSliderProps) {
+  const minValue = clampPrice(value.min);
+  const maxValue = value.max === null ? PRICE_SLIDER_MAX : clampPrice(value.max);
+
+  const [localMin, setLocalMin] = useState(minValue);
+  const [localMax, setLocalMax] = useState(maxValue);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Keep local handles in sync when the store range changes externally.
+  useEffect(() => {
+    setLocalMin(minValue);
+    setLocalMax(maxValue);
+  }, [minValue, maxValue]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  const commit = useCallback(
+    (nextMin: number, nextMax: number) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        onChange({
+          min: nextMin,
+          max: nextMax >= PRICE_SLIDER_MAX ? null : nextMax,
+        });
+      }, PRICE_DEBOUNCE_MS);
+    },
+    [onChange],
+  );
+
+  const handleMinChange = (raw: number) => {
+    const next = Math.min(clampPrice(raw), localMax);
+    setLocalMin(next);
+    commit(next, localMax);
+  };
+
+  const handleMaxChange = (raw: number) => {
+    const next = Math.max(clampPrice(raw), localMin);
+    setLocalMax(next);
+    commit(localMin, next);
+  };
+
+  const minPercent = ((localMin - PRICE_SLIDER_MIN) / (PRICE_SLIDER_MAX - PRICE_SLIDER_MIN)) * 100;
+  const maxPercent = ((localMax - PRICE_SLIDER_MIN) / (PRICE_SLIDER_MAX - PRICE_SLIDER_MIN)) * 100;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <label className="flex-1">
+          <span className="sr-only">Minimum price</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={PRICE_SLIDER_MIN}
+            max={PRICE_SLIDER_MAX}
+            step={PRICE_SLIDER_STEP}
+            value={localMin}
+            onChange={(e) => handleMinChange(Number(e.target.value))}
+            aria-label="Minimum price"
+            className="w-full rounded-lg border border-ink-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-hamplard-primary"
+          />
+        </label>
+        <span className="text-xs text-ink-400">to</span>
+        <label className="flex-1">
+          <span className="sr-only">Maximum price</span>
+          <input
+            type="number"
+            inputMode="numeric"
+            min={PRICE_SLIDER_MIN}
+            max={PRICE_SLIDER_MAX}
+            step={PRICE_SLIDER_STEP}
+            value={localMax}
+            onChange={(e) => handleMaxChange(Number(e.target.value))}
+            aria-label="Maximum price"
+            className="w-full rounded-lg border border-ink-200 bg-white px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-hamplard-primary"
+          />
+        </label>
+      </div>
+
+      <div className="relative h-6">
+        <div className="absolute top-1/2 h-1 w-full -translate-y-1/2 rounded-full bg-ink-100" />
+        <div
+          className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-hamplard-primary"
+          style={{ left: `${minPercent}%`, right: `${100 - maxPercent}%` }}
+        />
+        <input
+          type="range"
+          role="slider"
+          min={PRICE_SLIDER_MIN}
+          max={PRICE_SLIDER_MAX}
+          step={PRICE_SLIDER_STEP}
+          value={localMin}
+          onChange={(e) => handleMinChange(Number(e.target.value))}
+          aria-label="Minimum price"
+          aria-valuemin={PRICE_SLIDER_MIN}
+          aria-valuemax={localMax}
+          aria-valuenow={localMin}
+          className="pointer-events-none absolute inset-0 h-6 w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-hamplard-primary [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-hamplard-primary"
+        />
+        <input
+          type="range"
+          role="slider"
+          min={PRICE_SLIDER_MIN}
+          max={PRICE_SLIDER_MAX}
+          step={PRICE_SLIDER_STEP}
+          value={localMax}
+          onChange={(e) => handleMaxChange(Number(e.target.value))}
+          aria-label="Maximum price"
+          aria-valuemin={localMin}
+          aria-valuemax={PRICE_SLIDER_MAX}
+          aria-valuenow={localMax}
+          className="pointer-events-none absolute inset-0 h-6 w-full cursor-pointer appearance-none bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-hamplard-primary [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-hamplard-primary"
+        />
+      </div>
     </div>
   );
 }
@@ -151,22 +288,25 @@ export function FilterPanel({ courses, showSort = true, className }: FilterPanel
       </FilterGroup>
 
       <FilterGroup title="Price">
-        <div className="space-y-2">
-          {PRICE_OPTIONS.map((option) => (
-            <label
-              key={option.label}
-              className="flex cursor-pointer items-center gap-2 text-sm text-ink-700 transition-colors hover:text-hamplard-primary"
-            >
-              <input
-                type="radio"
-                name="price-range"
-                checked={priceRangesEqual(priceRange, option.range)}
-                onChange={() => setPriceRange(option.range)}
-                className="h-4 w-4 cursor-pointer accent-hamplard-primary"
-              />
-              <span>{option.label}</span>
-            </label>
-          ))}
+        <div className="space-y-3">
+          <PriceRangeSlider value={priceRange} onChange={setPriceRange} />
+          <div className="space-y-2">
+            {PRICE_OPTIONS.map((option) => (
+              <label
+                key={option.label}
+                className="flex cursor-pointer items-center gap-2 text-sm text-ink-700 transition-colors hover:text-hamplard-primary"
+              >
+                <input
+                  type="radio"
+                  name="price-range"
+                  checked={priceRangesEqual(priceRange, option.range)}
+                  onChange={() => setPriceRange(option.range)}
+                  className="h-4 w-4 cursor-pointer accent-hamplard-primary"
+                />
+                <span>{option.label}</span>
+              </label>
+            ))}
+          </div>
         </div>
       </FilterGroup>
 

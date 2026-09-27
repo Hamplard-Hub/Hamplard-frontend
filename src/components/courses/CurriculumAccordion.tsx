@@ -24,6 +24,10 @@ function formatLectureDuration(secs: number): string {
 
 interface CurriculumAccordionProps {
   modules: CourseModule[];
+  /** Id of the lesson currently playing; its module auto-expands. */
+  activeLessonId?: string;
+  /** Ids of lessons the learner has completed. */
+  completedLessonIds?: string[];
 }
 
 // ─── Placeholder data (used when modules array is empty) ─────────────────────
@@ -195,13 +199,35 @@ const PLACEHOLDER_MODULES: CourseModule[] = [
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function CurriculumAccordion({ modules }: CurriculumAccordionProps) {
+export function CurriculumAccordion({
+  modules,
+  activeLessonId,
+  completedLessonIds = [],
+}: CurriculumAccordionProps) {
   const data = modules.length > 0 ? modules : PLACEHOLDER_MODULES;
 
-  // First section expanded by default
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(
-    () => new Set(data.length > 0 ? [data[0].id] : []),
+  const completedSet = useMemo(
+    () => new Set(completedLessonIds),
+    [completedLessonIds],
   );
+
+  // Module that contains the currently playing lesson (if any).
+  const activeModuleId = useMemo(() => {
+    if (!activeLessonId) return null;
+    const mod = data.find((m) =>
+      m.lessons.some((l) => l.id === activeLessonId),
+    );
+    return mod?.id ?? null;
+  }, [data, activeLessonId]);
+
+  // First section (and the active module) expanded by default. Initialized
+  // once so re-renders don't reset the user's expand/collapse choices.
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => {
+    const initial = new Set<string>();
+    if (data.length > 0) initial.add(data[0].id);
+    if (activeModuleId) initial.add(activeModuleId);
+    return initial;
+  });
 
   const stats = useMemo(() => {
     let totalLectures = 0;
@@ -269,6 +295,13 @@ export function CurriculumAccordion({ modules }: CurriculumAccordionProps) {
             (sum, l) => sum + (l.videoDuration ?? 0),
             0,
           );
+          const completedCount = mod.lessons.filter((l) =>
+            completedSet.has(l.id),
+          ).length;
+          const progressPct =
+            lectureCount > 0
+              ? Math.round((completedCount / lectureCount) * 100)
+              : 0;
 
           return (
             <div key={mod.id}>
@@ -294,11 +327,59 @@ export function CurriculumAccordion({ modules }: CurriculumAccordionProps) {
                 </span>
               </button>
 
+              {/* Per-module progress */}
+              <div className="flex items-center gap-2 bg-ink-50 px-4 pb-3">
+                <div
+                  className="h-1.5 flex-1 overflow-hidden rounded-full bg-ink-200"
+                  role="progressbar"
+                  aria-valuenow={progressPct}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label={`${mod.title} progress`}
+                >
+                  <div
+                    className="h-full rounded-full bg-hamplard-primary transition-all duration-300"
+                    style={{ width: `${progressPct}%` }}
+                  />
+                </div>
+                <span className="text-xs text-ink-500">
+                  {completedCount}/{lectureCount} lessons complete
+                </span>
+              </div>
+
               {/* Lessons list */}
               {isOpen && (
                 <ul className="animate-fade-in">
                   {mod.lessons.map((lesson) => (
-                    <LessonRow key={lesson.id} lesson={lesson} />
+                    <li
+                      key={lesson.id}
+                      className={cn(
+                        'flex items-center gap-3 border-t border-ink-100 px-4 py-3',
+                        lesson.id === activeLessonId && 'bg-hamplard-primary/5',
+                      )}
+                    >
+                      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-ink-100 text-ink-500">
+                        {lesson.type === 'VIDEO' ? (
+                          <Play className="h-3 w-3" />
+                        ) : (
+                          <Eye className="h-3 w-3" />
+                        )}
+                      </span>
+                      <span className="flex-1 text-sm text-ink-700">
+                        {lesson.title}
+                      </span>
+                      {lesson.isFree && (
+                        <span className="rounded bg-hamplard-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-hamplard-primary">
+                          Free
+                        </span>
+                      )}
+                      {lesson.videoDuration != null && (
+                        <span className="flex items-center gap-1 text-xs text-ink-400">
+                          <Clock className="h-3 w-3" />
+                          {formatLectureDuration(lesson.videoDuration)}
+                        </span>
+                      )}
+                    </li>
                   ))}
                 </ul>
               )}
@@ -308,59 +389,4 @@ export function CurriculumAccordion({ modules }: CurriculumAccordionProps) {
       </div>
     </div>
   );
-}
-
-// ─── Lesson row ──────────────────────────────────────────────────────────────
-
-function LessonRow({ lesson }: { lesson: Lesson }) {
-  const duration = lesson.videoDuration ?? 0;
-  const isPreview = lesson.isFree;
-
-  const content = (
-    <li
-      className={cn(
-        'flex items-center gap-3 px-4 py-3 text-sm transition-colors',
-        isPreview
-          ? 'hover:bg-hamplard-lilac/40 cursor-pointer'
-          : 'cursor-default',
-      )}
-    >
-      <Play className="h-4 w-4 flex-shrink-0 text-ink-400" />
-      <span
-        className={cn(
-          'flex-1',
-          isPreview ? 'text-ink-900' : 'text-ink-700',
-        )}
-      >
-        {lesson.title}
-      </span>
-      {isPreview && (
-        <span className="inline-flex items-center gap-1 rounded-md bg-hamplard-lilac px-2 py-0.5 text-xs font-medium text-hamplard-deep">
-          <Eye className="h-3 w-3" />
-          Preview
-        </span>
-      )}
-      {duration > 0 && (
-        <span className="flex items-center gap-1 text-xs text-ink-400">
-          <Clock className="h-3 w-3" />
-          {formatLectureDuration(duration)}
-        </span>
-      )}
-    </li>
-  );
-
-  if (isPreview && lesson.videoUrl) {
-    return (
-      <a
-        href={lesson.videoUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block"
-      >
-        {content}
-      </a>
-    );
-  }
-
-  return content;
 }

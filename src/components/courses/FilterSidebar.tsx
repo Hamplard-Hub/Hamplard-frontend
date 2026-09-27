@@ -47,13 +47,31 @@ export function FilterSidebar({
   activeRating = '', activeDuration = '',
   onCategory, onLevel, onPrice, onRating, onDuration, onClearAll,
 }: Props) {
-  const hasFilters = !!(activeCategory || activeLevel || activePrice || activeRating || activeDuration);
+  const activeCount = [
+    activeCategory,
+    activeLevel,
+    activePrice,
+    activeRating,
+    activeDuration,
+  ].filter(Boolean).length;
+
+  const hasFilters = activeCount > 0;
 
   const content = (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
-        <p className="text-sm font-semibold text-ink-900">Filters</p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-semibold text-ink-900">Filters</p>
+          {activeCount > 0 && (
+            <span
+              className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-saffron-500 text-white text-xs font-semibold"
+              aria-label={`${activeCount} active ${activeCount === 1 ? 'filter' : 'filters'}`}
+            >
+              {activeCount}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           {hasFilters && (
             <button
