@@ -149,6 +149,56 @@ describe('Breadcrumb', () => {
     });
   });
 
+  describe('JSON-LD deduplication and safety', () => {
+    const getJsonLd = (container: HTMLElement) =>
+      container.querySelectorAll('script[type="application/ld+json"]');
+
+    it('emits a single script even though mobile and desktop trails both render', () => {
+      const longItems = [
+        { label: 'Home', href: '/' },
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Courses', href: '/courses' },
+        { label: 'My Course', href: '/courses/1' },
+        { label: 'Learn' },
+      ];
+      const { container } = render(<Breadcrumb items={longItems} />);
+      const scripts = getJsonLd(container);
+      expect(scripts).toHaveLength(1);
+      // Structured data uses the full trail, not the truncated mobile one
+      expect(JSON.parse(scripts[0].textContent ?? '{}').itemListElement).toHaveLength(5);
+    });
+
+    it('omits JSON-LD when structuredData is false', () => {
+      const { container } = render(
+        <>
+          <Breadcrumb items={items} />
+          <Breadcrumb items={items} structuredData={false} />
+        </>,
+      );
+      expect(getJsonLd(container)).toHaveLength(1);
+      expect(screen.getAllByRole('navigation')).toHaveLength(2);
+    });
+
+    it('passes already-absolute hrefs through unchanged', () => {
+      const { container } = render(
+        <Breadcrumb items={[{ label: 'Docs', href: 'https://docs.hamplard.com/guide' }, { label: 'Page' }]} />,
+      );
+      const data = JSON.parse(getJsonLd(container)[0].textContent ?? '{}');
+      expect(data.itemListElement[0].item).toBe('https://docs.hamplard.com/guide');
+    });
+
+    it('escapes labels that would otherwise close the script tag', () => {
+      const label = '</script><img src=x onerror=alert(1)>';
+      const { container } = render(<Breadcrumb items={[{ label: 'Home', href: '/' }, { label }]} />);
+      const script = getJsonLd(container)[0];
+      expect(script.innerHTML).not.toContain('</script>');
+      expect(script.innerHTML).toContain('\\u003c/script\\u003e');
+      // Escaped JSON still parses back to the original label
+      expect(JSON.parse(script.textContent ?? '{}').itemListElement[1].name).toBe(label);
+      expect(container.querySelector('img')).toBeNull();
+    });
+  });
+
   describe('Mobile truncation', () => {
     it('shows all items on desktop when count <= 4', () => {
       render(<Breadcrumb items={items} />);
