@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback } from 'react';
 import { Check, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { FAQAccordion } from '@/components/ui/FAQAccordion';
@@ -14,7 +15,6 @@ type Plan = {
   description: string;
   monthlyPrice: number;
   annualPrice: number;
-  annualSavings: number;
   ctaLabel: string;
   featured?: boolean;
   features: Array<{ label: string; included: boolean }>;
@@ -26,7 +26,6 @@ const plans: Plan[] = [
     description: 'Great for first-time learners building confidence with practical skills.',
     monthlyPrice: 0,
     annualPrice: 0,
-    annualSavings: 0,
     ctaLabel: 'Enroll free',
     features: [
       { label: 'Access to starter lessons', included: true },
@@ -41,7 +40,6 @@ const plans: Plan[] = [
     description: 'For ambitious students and instructors who want faster growth and deeper tools.',
     monthlyPrice: 19,
     annualPrice: 15,
-    annualSavings: 20,
     ctaLabel: 'Get started',
     featured: true,
     features: [
@@ -88,7 +86,21 @@ export function PricingPlansSection({
   intro?: string;
   showFAQ?: boolean;
 }) {
-  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('annual');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const billingParam = searchParams.get('billing');
+  const billingPeriod: BillingPeriod =
+    billingParam === 'monthly' || billingParam === 'annual' ? billingParam : 'annual';
+
+  const setBillingPeriod = useCallback(
+    (period: BillingPeriod) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('billing', period);
+      router.replace(`?${params.toString()}`, { scroll: false });
+    },
+    [router, searchParams],
+  );
 
   return (
     <div className={cn('w-full', className)}>
@@ -103,19 +115,26 @@ export function PricingPlansSection({
             <p className="mt-3 text-base leading-7 text-[#5A5578] sm:text-lg">{intro}</p>
           </div>
 
-          <div className="inline-flex rounded-full border border-[#D5D2F6] bg-white p-1 shadow-sm">
+          {/* Billing toggle — state reflected in URL via ?billing= */}
+          <div
+            role="group"
+            aria-label="Billing period"
+            className="inline-flex rounded-full border border-[#D5D2F6] bg-white p-1 shadow-sm"
+          >
             {(['monthly', 'annual'] as BillingPeriod[]).map((period) => (
               <button
                 key={period}
                 type="button"
                 onClick={() => setBillingPeriod(period)}
+                aria-pressed={billingPeriod === period}
                 className={cn(
                   'rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200',
-                  billingPeriod === period ? 'bg-[#26215C] text-white shadow' : 'text-[#5A5578] hover:bg-[#F4F2FF]',
+                  billingPeriod === period
+                    ? 'bg-[#26215C] text-white shadow'
+                    : 'text-[#5A5578] hover:bg-[#F4F2FF]',
                 )}
               >
-                {period === 'monthly' ? 'Monthly' : 'Annual'}
-                {period === 'annual' ? ' · Save 20%' : ''}
+                {period === 'monthly' ? 'Monthly' : 'Annual · Save up to 20%'}
               </button>
             ))}
           </div>
@@ -126,21 +145,42 @@ export function PricingPlansSection({
             const price = billingPeriod === 'annual' ? plan.annualPrice : plan.monthlyPrice;
             const isAnnual = billingPeriod === 'annual';
             const displayPrice = price === 0 ? 'Free' : `$${price}`;
-            const priceSuffix = price === 0 ? '' : isAnnual ? '/mo' : '/mo';
             const badgeText = plan.featured ? 'Most popular' : 'Best for starters';
+
+            // Dynamically compute savings % from monthly vs annual price
+            const savingsPct =
+              plan.monthlyPrice > 0 && plan.annualPrice > 0
+                ? Math.round(((plan.monthlyPrice - plan.annualPrice) / plan.monthlyPrice) * 100)
+                : 0;
 
             return (
               <div
                 key={plan.name}
                 className={cn(
                   'flex flex-col rounded-[28px] border p-6 shadow-sm',
-                  plan.featured ? 'bg-[#26215C] text-white' : 'border-[#D5D2F6] bg-white text-[#26215C]',
+                  plan.featured
+                    ? 'bg-[#26215C] text-white'
+                    : 'border-[#D5D2F6] bg-white text-[#26215C]',
                 )}
               >
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <h3 className={cn('text-2xl font-semibold', plan.featured ? 'text-white' : 'text-[#26215C]')}>{plan.name}</h3>
-                    <p className={cn('mt-2 text-sm leading-6', plan.featured ? 'text-[#E8E5FF]' : 'text-[#5A5578]')}>{plan.description}</p>
+                    <h3
+                      className={cn(
+                        'text-2xl font-semibold',
+                        plan.featured ? 'text-white' : 'text-[#26215C]',
+                      )}
+                    >
+                      {plan.name}
+                    </h3>
+                    <p
+                      className={cn(
+                        'mt-2 text-sm leading-6',
+                        plan.featured ? 'text-[#E8E5FF]' : 'text-[#5A5578]',
+                      )}
+                    >
+                      {plan.description}
+                    </p>
                   </div>
                   <span
                     className={cn(
@@ -154,12 +194,32 @@ export function PricingPlansSection({
 
                 <div className="mt-6 flex items-baseline gap-2">
                   <span className="text-4xl font-semibold">{displayPrice}</span>
-                  {price > 0 && <span className={cn('text-sm', plan.featured ? 'text-[#E8E5FF]' : 'text-[#5A5578]')}>{priceSuffix}</span>}
+                  {price > 0 && (
+                    <span
+                      className={cn(
+                        'text-sm',
+                        plan.featured ? 'text-[#E8E5FF]' : 'text-[#5A5578]',
+                      )}
+                    >
+                      /mo
+                    </span>
+                  )}
+                  {/* Savings badge — only shown on annual view for paid plans */}
+                  {isAnnual && savingsPct > 0 && (
+                    <span className="ml-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                      Save {savingsPct}%
+                    </span>
+                  )}
                 </div>
 
-                {isAnnual && plan.annualSavings > 0 && (
-                  <p className={cn('mt-2 text-sm', plan.featured ? 'text-[#CFCBFF]' : 'text-[#7F77DD]')}>
-                    Save {plan.annualSavings}% with annual billing.
+                {isAnnual && savingsPct > 0 && (
+                  <p
+                    className={cn(
+                      'mt-1 text-sm',
+                      plan.featured ? 'text-[#CFCBFF]' : 'text-[#7F77DD]',
+                    )}
+                  >
+                    Save {savingsPct}% vs. monthly billing.
                   </p>
                 )}
 
@@ -167,15 +227,29 @@ export function PricingPlansSection({
                   {plan.features.map((feature) => (
                     <li key={feature.label} className="flex items-start gap-3 text-sm leading-6">
                       {feature.included ? (
-                        <span className={cn('mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full', plan.featured ? 'bg-white/15 text-white' : 'bg-[#E7E4FF] text-[#26215C]')}>
+                        <span
+                          className={cn(
+                            'mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full',
+                            plan.featured ? 'bg-white/15 text-white' : 'bg-[#E7E4FF] text-[#26215C]',
+                          )}
+                        >
                           <Check className="h-3.5 w-3.5" />
                         </span>
                       ) : (
-                        <span className={cn('mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full', plan.featured ? 'bg-white/10 text-[#CFCBFF]' : 'bg-[#F4F2FF] text-[#7F77DD]')}>
+                        <span
+                          className={cn(
+                            'mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full',
+                            plan.featured
+                              ? 'bg-white/10 text-[#CFCBFF]'
+                              : 'bg-[#F4F2FF] text-[#7F77DD]',
+                          )}
+                        >
                           <X className="h-3.5 w-3.5" />
                         </span>
                       )}
-                      <span className={plan.featured ? 'text-[#F4F2FF]' : 'text-[#5A5578]'}>{feature.label}</span>
+                      <span className={plan.featured ? 'text-[#F4F2FF]' : 'text-[#5A5578]'}>
+                        {feature.label}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -187,7 +261,9 @@ export function PricingPlansSection({
                       size="lg"
                       className={cn(
                         'w-full justify-center',
-                        plan.featured ? 'bg-white text-[#26215C] hover:bg-[#F4F2FF]' : 'bg-[#26215C] text-white hover:bg-[#3C3489]',
+                        plan.featured
+                          ? 'bg-white text-[#26215C] hover:bg-[#F4F2FF]'
+                          : 'bg-[#26215C] text-white hover:bg-[#3C3489]',
                       )}
                     >
                       {plan.ctaLabel}
@@ -202,8 +278,12 @@ export function PricingPlansSection({
         {showFAQ && (
           <div className="rounded-[28px] border border-[#D5D2F6] bg-[#FAF9FF] p-6 sm:p-8">
             <div className="mb-6 max-w-2xl">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#7F77DD]">Frequently asked questions</p>
-              <h3 className="mt-2 text-2xl font-semibold text-[#26215C]">Everything you need to know before you choose</h3>
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#7F77DD]">
+                Frequently asked questions
+              </p>
+              <h3 className="mt-2 text-2xl font-semibold text-[#26215C]">
+                Everything you need to know before you choose
+              </h3>
             </div>
             <FAQAccordion items={faqs} />
           </div>

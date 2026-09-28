@@ -1,7 +1,97 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { useState } from 'react';
+
+// ─── Newsletter form ──────────────────────────────────────────────────────────
+
+type NewsletterStatus = 'idle' | 'loading' | 'success' | 'error';
+
+function NewsletterForm() {
+  const [email, setEmail] = useState('');
+  const [validationError, setValidationError] = useState('');
+  const [status, setStatus] = useState<NewsletterStatus>('idle');
+  const [serverError, setServerError] = useState('');
+
+  const validate = (value: string) => {
+    if (!value.trim()) return 'Email address is required.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Please enter a valid email address.';
+    return '';
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const error = validate(email);
+    if (error) {
+      setValidationError(error);
+      return;
+    }
+    setValidationError('');
+    setStatus('loading');
+    try {
+      // Replace with real API call when available
+      await new Promise<void>((resolve, reject) =>
+        setTimeout(() => (Math.random() > 0.15 ? resolve() : reject(new Error('Server error'))), 900),
+      );
+      setStatus('success');
+    } catch {
+      setStatus('error');
+      setServerError('Something went wrong. Please try again shortly.');
+    }
+  };
+
+  if (status === 'success') {
+    return (
+      <p className="text-sm font-medium text-[#7F77DD]" role="status">
+        You&apos;re in! Thanks for subscribing — great things are heading your way.
+      </p>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-3 sm:flex-row sm:items-start">
+      <div className="flex flex-col gap-1">
+        <label htmlFor="footer-newsletter-email" className="sr-only">
+          Email address
+        </label>
+        <input
+          id="footer-newsletter-email"
+          type="email"
+          autoComplete="email"
+          placeholder="you@example.com"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (validationError) setValidationError(validate(e.target.value));
+            if (status === 'error') setStatus('idle');
+          }}
+          aria-describedby={validationError ? 'nl-email-error' : serverError ? 'nl-server-error' : undefined}
+          aria-invalid={!!(validationError || status === 'error')}
+          disabled={status === 'loading'}
+          className="w-64 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm text-white placeholder-slate-400 focus:border-[#7F77DD] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7F77DD] disabled:opacity-60"
+        />
+        {validationError && (
+          <p id="nl-email-error" role="alert" className="text-xs text-rose-400">
+            {validationError}
+          </p>
+        )}
+        {status === 'error' && !validationError && (
+          <p id="nl-server-error" role="alert" className="text-xs text-rose-400">
+            {serverError}
+          </p>
+        )}
+      </div>
+      <button
+        type="submit"
+        disabled={status === 'loading'}
+        className="inline-flex items-center justify-center rounded-lg bg-[#7F77DD] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#6B63C9] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7F77DD] disabled:opacity-60"
+      >
+        {status === 'loading' ? 'Subscribing…' : 'Subscribe'}
+      </button>
+    </form>
+  );
+}
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
@@ -189,8 +279,22 @@ export function Footer() {
           })}
         </div>
 
+        {/* ── Newsletter ── */}
+        <div className="mt-12 rounded-xl border border-white/10 bg-white/5 px-6 py-8 sm:px-8">
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+            Stay in the loop
+          </p>
+          <h2 className="mt-2 text-lg font-semibold text-white">
+            Get course drops and career tips in your inbox
+          </h2>
+          <p className="mt-1 text-sm text-slate-400">No spam, unsubscribe any time.</p>
+          <div className="mt-4">
+            <NewsletterForm />
+          </div>
+        </div>
+
         {/* ── Bottom bar ── */}
-        <div className="mt-12 border-t border-white/10 pt-8 sm:flex sm:items-center sm:justify-between">
+        <div className="mt-8 border-t border-white/10 pt-8 sm:flex sm:items-center sm:justify-between">
           <p className="text-sm text-slate-400">
             © {currentYear} Hamplard. All rights reserved.
           </p>

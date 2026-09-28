@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
@@ -37,7 +38,10 @@ export default function PricingPage() {
           </div>
         </section>
 
-        <PricingPlansSection className="pt-2" />
+        {/* Suspense required because PricingPlansSection uses useSearchParams */}
+        <Suspense fallback={<div className="h-96 animate-pulse rounded-[32px] bg-slate-100" />}>
+          <PricingPlansSection className="pt-2" />
+        </Suspense>
       </main>
     </div>
   );
