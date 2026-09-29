@@ -4,27 +4,41 @@ import { useEffect, useState } from 'react';
 import { Sun, Moon } from 'lucide-react';
 
 const STORAGE_KEY = 'theme-preference';
+const MANUAL_PREFERENCE_KEY = 'theme-preference-manual';
 
 export function ThemeToggle() {
   const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
+  const [hasManualPreference, setHasManualPreference] = useState(false);
 
-  // Initialize theme from storage or system preference
   useEffect(() => {
+    let hasManualPreference = false;
+    let savedTheme: string | null = null;
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === 'light' || stored === 'dark') {
-        setTheme(stored);
-        return;
-      }
+      hasManualPreference = localStorage.getItem(MANUAL_PREFERENCE_KEY) === 'true';
+      savedTheme = localStorage.getItem(STORAGE_KEY);
     } catch { /* noop */ }
 
-    const prefersDark =
-      typeof window !== 'undefined' &&
-      window.matchMedia?.('(prefers-color-scheme: dark)').matches;
-    setTheme(prefersDark ? 'dark' : 'light');
+    if (hasManualPreference && (savedTheme === 'light' || savedTheme === 'dark')) {
+      setHasManualPreference(true);
+      setTheme(savedTheme);
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    setTheme(mediaQuery.matches ? 'dark' : 'light');
   }, []);
 
-  // Apply theme to document
+  useEffect(() => {
+    if (hasManualPreference) return;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (event: MediaQueryListEvent) => {
+      setTheme(event.matches ? 'dark' : 'light');
+    };
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [hasManualPreference]);
+
   useEffect(() => {
     if (theme === null) return;
 
@@ -34,13 +48,16 @@ export function ThemeToggle() {
       document.documentElement.removeAttribute('data-theme');
     }
 
-    try {
-      localStorage.setItem(STORAGE_KEY, theme);
-    } catch { /* noop */ }
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prevTheme) => (prevTheme === 'dark' ? 'light' : 'dark'));
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    try {
+      localStorage.setItem(STORAGE_KEY, nextTheme);
+      localStorage.setItem(MANUAL_PREFERENCE_KEY, 'true');
+    } catch { /* noop */ }
+    setHasManualPreference(true);
+    setTheme(nextTheme);
   };
 
   if (theme === null) {

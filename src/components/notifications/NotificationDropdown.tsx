@@ -49,16 +49,16 @@ function initials(title: string): string {
 
 /** Avatar background colour cycled by notification type. */
 const TYPE_AVATAR_BG: Record<string, string> = {
-  COURSE_APPROVED:      'bg-leaf-500',
-  COURSE_REJECTED:      'bg-red-500',
+  COURSE_APPROVED: 'bg-leaf-500',
+  COURSE_REJECTED: 'bg-red-500',
   ENROLLMENT_CONFIRMED: 'bg-saffron-500',
-  COURSE_COMPLETED:     'bg-leaf-500',
-  CERTIFICATE_ISSUED:   'bg-saffron-500',
-  ASSIGNMENT_APPROVED:  'bg-leaf-500',
-  ASSIGNMENT_REJECTED:  'bg-red-500',
+  COURSE_COMPLETED: 'bg-leaf-500',
+  CERTIFICATE_ISSUED: 'bg-saffron-500',
+  ASSIGNMENT_APPROVED: 'bg-leaf-500',
+  ASSIGNMENT_REJECTED: 'bg-red-500',
   ASSIGNMENT_SUBMITTED: 'bg-blue-500',
-  PAYMENT_RECEIVED:     'bg-leaf-500',
-  NEW_ENROLLMENT:       'bg-saffron-500',
+  PAYMENT_RECEIVED: 'bg-leaf-500',
+  NEW_ENROLLMENT: 'bg-saffron-500',
 };
 
 // ─── Sub-component: single notification row ───────────────────────────────────
@@ -140,7 +140,9 @@ export function NotificationDropdown() {
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = useNotificationStore((state) =>
+    state.notifications.filter((notification) => !notification.read).length,
+  );
 
   // ── Fetch on first open ────────────────────────────────────────────────────
   useEffect(() => {
@@ -175,8 +177,8 @@ export function NotificationDropdown() {
   }, [open]);
 
   // ── Group by date ──────────────────────────────────────────────────────────
-  const todayItems    = notifications.filter((n) => isToday(new Date(n.createdAt)));
-  const earlierItems  = notifications.filter((n) => !isToday(new Date(n.createdAt)));
+  const todayItems = notifications.filter((n) => isToday(new Date(n.createdAt)));
+  const earlierItems = notifications.filter((n) => !isToday(new Date(n.createdAt)));
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (

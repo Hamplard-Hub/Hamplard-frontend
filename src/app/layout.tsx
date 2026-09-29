@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import '@/styles/globals.css';
 import { Providers } from './providers';
 import { Footer } from '@/components/layout/Footer';
@@ -50,6 +51,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+        <Script id="theme-initializer" strategy="beforeInteractive">
+          {`(function(){try{var root=document.documentElement;var theme=localStorage.getItem('theme-preference');var manual=localStorage.getItem('theme-preference-manual')==='true';if(manual&&(theme==='light'||theme==='dark')){if(theme==='dark')root.setAttribute('data-theme','dark');else root.removeAttribute('data-theme');return;}if(window.matchMedia('(prefers-color-scheme: dark)').matches)root.setAttribute('data-theme','dark');else root.removeAttribute('data-theme');}catch(e){if(window.matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.setAttribute('data-theme','dark');}})();`}
+        </Script>
       </head>
       <body>
         {/* Skip navigation — first focusable element for keyboard users */}
