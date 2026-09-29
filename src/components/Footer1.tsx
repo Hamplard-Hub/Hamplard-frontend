@@ -1,7 +1,88 @@
 "use client";
 
 import Link from "next/link";
-import React from "react";
+import React, { useState } from "react";
+
+// ── Newsletter form ──────────────────────────────────────────────────────────
+
+type NewsletterStatus = "idle" | "loading" | "success" | "error";
+
+function NewsletterSignup() {
+  const [email, setEmail] = useState("");
+  const [validationError, setValidationError] = useState("");
+  const [status, setStatus] = useState<NewsletterStatus>("idle");
+  const [serverError, setServerError] = useState("");
+
+  const validate = (value: string) => {
+    if (!value.trim()) return "Email address is required.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Please enter a valid email address.";
+    return "";
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const error = validate(email);
+    if (error) { setValidationError(error); return; }
+    setValidationError("");
+    setStatus("loading");
+    try {
+      await new Promise<void>((resolve, reject) =>
+        setTimeout(() => (Math.random() > 0.15 ? resolve() : reject(new Error("Server error"))), 900),
+      );
+      setStatus("success");
+    } catch {
+      setStatus("error");
+      setServerError("Something went wrong. Please try again shortly.");
+    }
+  };
+
+  if (status === "success") {
+    return (
+      <p className="footer-nl-success" role="status">
+        You&apos;re in! Thanks for subscribing.
+      </p>
+    );
+  }
+
+  return (
+    <form className="footer-nl-form" onSubmit={handleSubmit} noValidate>
+      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+        <label htmlFor="footer1-newsletter-email" className="sr-only">
+          Email address
+        </label>
+        <input
+          id="footer1-newsletter-email"
+          className="footer-nl-input"
+          type="email"
+          autoComplete="email"
+          placeholder="you@example.com"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (validationError) setValidationError(validate(e.target.value));
+            if (status === "error") setStatus("idle");
+          }}
+          aria-describedby={validationError ? "f1-nl-error" : serverError ? "f1-nl-server-error" : undefined}
+          aria-invalid={!!(validationError || status === "error")}
+          disabled={status === "loading"}
+        />
+        {validationError && (
+          <p id="f1-nl-error" role="alert" style={{ fontSize: "12px", color: "#f87171", margin: 0 }}>
+            {validationError}
+          </p>
+        )}
+        {status === "error" && !validationError && (
+          <p id="f1-nl-server-error" role="alert" style={{ fontSize: "12px", color: "#f87171", margin: 0 }}>
+            {serverError}
+          </p>
+        )}
+      </div>
+      <button className="footer-nl-btn" type="submit" disabled={status === "loading"}>
+        {status === "loading" ? "Subscribing…" : "Subscribe"}
+      </button>
+    </form>
+  );
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Column {
@@ -200,6 +281,15 @@ export default function Footer() {
         }
         .footer-nl-btn:hover {
           background: #e8e4ff;
+        }
+        .footer-nl-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+        .footer-nl-success {
+          font-size: 14px;
+          font-weight: 600;
+          color: #9b8ff5;
         }
 
         /* ── Trust strip ── */
@@ -409,15 +499,7 @@ export default function Footer() {
           Course drops, career tips, and learner stories — no noise, no spam.
         </p>
         <div className="footer-nl-form">
-          <input
-            className="footer-nl-input"
-            type="email"
-            placeholder="you@example.com"
-            aria-label="Email address"
-          />
-          <button className="footer-nl-btn" type="button">
-            Subscribe
-          </button>
+          <NewsletterSignup />
         </div>
       </div>
 
