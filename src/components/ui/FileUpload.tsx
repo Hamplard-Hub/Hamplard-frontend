@@ -221,7 +221,7 @@ export function FileUpload({
       const newItems: UploadItem[] = [];
 
       // Enforce maxFiles against already-tracked items plus this batch.
-      const existingCount = items.length;
+      const existingCount = itemsRef.current.length;
       const remaining = maxFiles != null ? Math.max(0, maxFiles - existingCount) : Infinity;
 
       for (let index = 0; index < files.length; index++) {
@@ -299,7 +299,7 @@ export function FileUpload({
 
       newItems.filter((it) => it.status === 'uploading').forEach((it) => startUpload(it));
     },
-    [multiple, maxFiles, items.length, accept, maxSizeBytes, onUploadError, startUpload, getVideoDuration],
+    [multiple, maxFiles, accept, maxSizeBytes, onUploadError, startUpload, getVideoDuration],
   );
 
   const removeItem = useCallback((id: string) => {
@@ -312,40 +312,13 @@ export function FileUpload({
     });
   }, []);
 
-  const retryItem = useCallback(
-    (id: string) => {
-      setItems((prev) => {
-        const target = prev.find((it) => it.id === id);
-        if (target) {
-          updateItem(id, { status: 'uploading', progress: 0, errorMessage: undefined });
-          startUpload({ ...target, status: 'uploading', progress: 0, errorMessage: undefined });
-        }
-        return prev;
-      });
-    },
-    [startUpload],
-  );
-
-  useEffect(() => {
-    return () => {
-      Object.values(xhrRefs.current).forEach((xhr) => xhr.abort());
-      xhrRefs.current = {};
-    };
-  }, []);
-  function handleDragLeave(e: React.DragEvent<HTMLDivElement>) {
-    // Ignore dragleave fired when the pointer moves onto a child element
-    if (e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget)) return;
-    setDragActive(false);
-  }
-
   function handleRetry(item: UploadItem) {
     updateItem(item.id, { status: 'uploading', progress: 0, errorMessage: undefined });
-    startUpload({ ...item, status: 'uploading', progress: 0 });
+    startUpload({ ...item, status: 'uploading', progress: 0, errorMessage: undefined });
   }
 
   function handleCancel(item: UploadItem) {
     const xhr = xhrRefs.current[item.id];
-    // User-initiated cancel removes the item, so don't surface it as an upload error
     if (xhr && item.status === 'uploading') detachAndAbort(xhr);
     delete xhrRefs.current[item.id];
     if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
@@ -357,10 +330,16 @@ export function FileUpload({
     e.target.value = '';
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragActive(false);
     if (e.dataTransfer.files?.length) void addFiles(e.dataTransfer.files);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    // Ignore dragleave fired when the pointer moves onto a child element
+    if (e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget)) return;
+    setDragActive(false);
   };
 
   const uploadedCount = items.filter((it) => it.status === 'success').length;
@@ -369,8 +348,6 @@ export function FileUpload({
 
   return (
     <div className={cn('w-full', className)}>
-      <label
-        htmlFor={inputId}
       {/* ── Drop zone ── */}
       <div
         role="button"
@@ -411,118 +388,113 @@ export function FileUpload({
           onChange={handleInputChange}
           className="sr-only"
         />
-      </label>
+      </div>
 
       {items.length > 0 && (
-        <ul className="mt-4 space-y-3">
-        <div
-          className="mt-4 flex items-center justify-between gap-2 text-xs text-ink-500"
-          aria-live="polite"
-          data-testid="upload-summary"
-        >
-          <span className="font-medium text-ink-700">
-            {uploadedCount} of {items.length} uploaded
-          </span>
-          <span className="flex items-center gap-2">
-            {inProgressCount > 0 && <span>{inProgressCount} in progress</span>}
-            {failedCount > 0 && <span className="text-rose-600">{failedCount} failed</span>}
-          </span>
-        </div>
-      )}
+        <>
+          <div
+            className="mt-4 flex items-center justify-between gap-2 text-xs text-ink-500"
+            aria-live="polite"
+            data-testid="upload-summary"
+          >
+            <span className="font-medium text-ink-700">
+              {uploadedCount} of {items.length} uploaded
+            </span>
+            <span className="flex items-center gap-2">
+              {inProgressCount > 0 && <span>{inProgressCount} in progress</span>}
+              {failedCount > 0 && <span className="text-rose-600">{failedCount} failed</span>}
+            </span>
+          </div>
 
-      {items.length > 0 && (
-        <ul className="mt-2 space-y-3" aria-label="Uploads">
-          {items.map((item) => (
-            <li
-              key={item.id}
-              className="flex items-center gap-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700"
-            >
-              <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-slate-100 dark:bg-slate-800">
-                {item.previewUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={item.previewUrl} alt={item.file.name} className="h-full w-full object-cover" />
-                ) : item.file.type.startsWith('video/') ? (
-                  <span className="flex h-full w-full items-center justify-center">
-                    <Play className="h-5 w-5 text-indigo-500" aria-hidden="true" />
-                  </span>
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center">
-                    <FileText className="h-5 w-5 text-slate-400" aria-hidden="true" />
-                  </span>
-                )}
-              </div>
+          <ul className="mt-2 space-y-3" aria-label="Uploads">
+            {items.map((item) => (
+              <li
+                key={item.id}
+                className="flex items-center gap-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700"
+              >
+                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-slate-100 dark:bg-slate-800">
+                  {item.previewUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={item.previewUrl} alt={item.file.name} className="h-full w-full object-cover" />
+                  ) : item.file.type.startsWith('video/') ? (
+                    <span className="flex h-full w-full items-center justify-center">
+                      <Play className="h-5 w-5 text-indigo-500" aria-hidden="true" />
+                    </span>
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center">
+                      <FileText className="h-5 w-5 text-slate-400" aria-hidden="true" />
+                    </span>
+                  )}
+                </div>
 
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-200">
-                  {item.file.name}
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {formatBytes(item.file.size)}
-                  {item.videoDuration != null && ` · ${item.videoDuration}s`}
-                </p>
-
-                {item.status === 'uploading' && (
-                  <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-                    <div
-                      className="h-full rounded-full bg-indigo-500 transition-all"
-                      style={{ width: `${item.progress}%` }}
-                      role="progressbar"
-                      aria-valuenow={item.progress}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                    />
-                  </div>
-                )}
-
-                {item.status === 'error' && item.errorMessage && (
-                  <p className="mt-1 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
-                    <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
-                    {item.errorMessage}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-200">
+                    {item.file.name}
                   </p>
-                )}
-              </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {formatBytes(item.file.size)}
+                    {item.videoDuration != null && ` · ${item.videoDuration}s`}
+                  </p>
 
-              <div className="flex shrink-0 items-center gap-1">
-                {item.status === 'success' && (
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500" aria-hidden="true" />
-                )}
-                {item.status === 'error' && (
-                  <button
-                    type="button"
-                    onClick={() => retryItem(item.id)}
-                    className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                    aria-label={`Retry ${item.file.name}`}
-                  >
-                    <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                  <div className="mt-1.5 flex items-center gap-1.5 text-xs text-rose-600">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                    <span className="flex-1">{item.errorMessage}</span>
-                    {item.retryable && (
-                      <button
-                        type="button"
-                        onClick={() => handleRetry(item)}
-                        aria-label={`Retry ${item.file.name}`}
-                        className="inline-flex items-center gap-1 font-semibold text-rose-700 hover:text-rose-900 transition-colors"
-                      >
-                        <RotateCcw className="w-3 h-3" aria-hidden="true" />
-                        Retry
-                      </button>
-                    )}
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => removeItem(item.id)}
-                  className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  aria-label={`Remove ${item.file.name}`}
-                >
-                  <X className="h-4 w-4" aria-hidden="true" />
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
+                  {item.status === 'uploading' && (
+                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                      <div
+                        className="h-full rounded-full bg-indigo-500 transition-all"
+                        style={{ width: `${item.progress}%` }}
+                        role="progressbar"
+                        aria-valuenow={item.progress}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                      />
+                    </div>
+                  )}
+
+                  {item.status === 'error' && item.errorMessage && (
+                    <p className="mt-1 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                      <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                      {item.errorMessage}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex shrink-0 items-center gap-1">
+                  {item.status === 'success' && (
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500" aria-hidden="true" />
+                  )}
+                  {item.status === 'error' && item.retryable && (
+                    <button
+                      type="button"
+                      onClick={() => handleRetry(item)}
+                      className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      aria-label={`Retry ${item.file.name}`}
+                    >
+                      <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  )}
+                  {item.status === 'uploading' ? (
+                    <button
+                      type="button"
+                      onClick={() => handleCancel(item)}
+                      className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      aria-label={`Cancel ${item.file.name}`}
+                    >
+                      <X className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => removeItem(item.id)}
+                      className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      aria-label={`Remove ${item.file.name}`}
+                    >
+                      <X className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );

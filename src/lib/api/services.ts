@@ -807,3 +807,22 @@ export const twoFactorApi = {
 };
 
 
+
+// ----------------------------------------------------------
+// Instructor Applications
+// ----------------------------------------------------------
+export const instructorApplicationApi = {
+  apply: async (payload: {
+    name: string;
+    email: string;
+    expertiseArea: string;
+    portfolioUrl: string;
+    bio: string;
+  }): Promise<{ message: string }> => {
+    const { data } = await apiClient.post<ApiResponse<{ message: string }>>(
+      '/instructor-applications',
+      payload,
+    );
+    return data.data;
+  },
+};

@@ -1,10 +1,6 @@
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
-import { ShoppingBag, X, ArrowRight } from 'lucide-react';
-import Link from 'next/link';
-import React, { useState} from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShoppingBag, X, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
@@ -14,32 +10,43 @@ import { Button } from '@/components/ui/Button';
 import { formatUsdc } from '@/lib/utils';
 import { CheckoutErrorBoundary } from './CheckoutErrorBoundary';
 
+// ── Types ──────────────────────────────────────────────────────────────────
+
 interface ShoppingCartProps {
   isOpen?: boolean;
   onClose?: () => void;
 }
 
-export function ShoppingCart({ isOpen = true, onClose }: ShoppingCartProps) {
-  const router = useRouter();
-  const { items, removeItem, clearCart, getTotalPrice } = useCartStore();
+interface AppliedPromo {
+  code: string;
+  discountType: 'PERCENTAGE' | 'FIXED';
+  discountValue: number;
+}
+
+// ── Inner content (wrapped by error boundary) ─────────────────────────────
+
 function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
+  const router = useRouter();
   const { items, removeItem, clearCart, getTotalPrice } = useCartStore();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [promoCode, setPromoCode] = useState('');
-  const [appliedPromo, setAppliedPromo] = useState<any>(null);
+  const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
   const [promoError, setPromoError] = useState<string | null>(null);
   const [isValidatingPromo, setIsValidatingPromo] = useState(false);
 
-  const totalPrice = getTotalPrice();
+  const subtotal = getTotalPrice();
   const itemCount = items.length;
+
   const discountAmount = appliedPromo
     ? appliedPromo.discountType === 'PERCENTAGE'
-      ? (totalPrice * appliedPromo.discountValue) / 100
-      : appliedPromo.discountValue
+      ? (subtotal * appliedPromo.discountValue) / 100
+      // Cap fixed discounts at the subtotal so finalPrice never goes negative
+      : Math.min(appliedPromo.discountValue, subtotal)
     : 0;
-  const finalPrice = Math.max(0, totalPrice - discountAmount);
+  const finalPrice = Math.max(0, subtotal - discountAmount);
 
   const handleCheckout = () => {
+    setIsCheckingOut(true);
     router.push('/checkout');
   };
 
@@ -48,16 +55,14 @@ function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
       setPromoError('Enter a promo code');
       return;
     }
+    if (items.length === 0) return;
 
     setIsValidatingPromo(true);
     setPromoError(null);
 
     try {
-      // Validate promo code - using first course ID for validation
-      if (items.length === 0) return;
-      
       const result = await promoCodesApi.validate(promoCode.toUpperCase(), items[0].courseId);
-      setAppliedPromo(result);
+      setAppliedPromo(result as AppliedPromo);
       setPromoCode('');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Invalid promo code';
@@ -229,7 +234,7 @@ function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-ink-600">Subtotal ({itemCount} course{itemCount !== 1 ? 's' : ''})</span>
-              <span className="font-semibold text-ink-900">{formatUsdc(totalPrice)}</span>
+              <span className="font-semibold text-ink-900">{formatUsdc(subtotal)}</span>
             </div>
             {appliedPromo && (
               <div className="flex items-center justify-between text-sm">
@@ -250,27 +255,17 @@ function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
               <span className="text-xl font-bold text-hamplard-primary">{formatUsdc(finalPrice)}</span>
             </div>
 
-            {/* Action Buttons */}
-            <Link href="/checkout">
-              <Button
-                fullWidth
-                variant="primary"
-                size="lg"
-                icon={<ArrowRight className="w-4 h-4" />}
-                iconPosition="right"
-              >
-                Proceed to Checkout
-              </Button>
-            </Link>
+            {/* Single checkout button */}
             <Button
               fullWidth
               variant="primary"
               size="lg"
               onClick={handleCheckout}
+              disabled={isCheckingOut}
               icon={<ArrowRight className="w-4 h-4" />}
               iconPosition="right"
             >
-              Proceed to Checkout
+              {isCheckingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Proceed to Checkout'}
             </Button>
 
             <button
@@ -286,6 +281,8 @@ function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
   );
 }
 
+// ── Exported component (error boundary wrapper) ───────────────────────────
+
 export function ShoppingCart(props: ShoppingCartProps) {
   return (
     <CheckoutErrorBoundary>
@@ -293,3 +290,5 @@ export function ShoppingCart(props: ShoppingCartProps) {
     </CheckoutErrorBoundary>
   );
 }
+
+export default ShoppingCart;
