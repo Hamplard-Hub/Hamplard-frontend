@@ -7,8 +7,6 @@ import { SocialShare } from '@/components/ui/SocialShare';
 
 const DEFAULT_OG_IMAGE = '/hamplard-og.svg';
 
-const DEFAULT_OG_IMAGE = '/hamplard-og.svg';
-
 interface Props { params: { id: string } }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
