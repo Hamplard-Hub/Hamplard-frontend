@@ -1,18 +1,22 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   CheckCircle2, Circle, ChevronDown, ChevronRight,
-  Download, Loader2, ArrowLeft,
+  Download, Loader2, ArrowLeft, Menu, X,
 } from 'lucide-react';
 import Link from 'next/link';
 import { coursesApi, enrollmentsApi, lessonsApi } from '@/lib/api/services';
+import { MaterialsList } from '@/components/learn/MaterialsList';
 import { formatDuration, cn } from '@/lib/utils';
 import type { Course, Enrollment, Lesson, LessonProgress } from '@/types';
 
 export default function LearnPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const lessonParam = searchParams.get('lesson');
 
   const [course,      setCourse]      = useState<Course | null>(null);
   const [enrollment,  setEnrollment]  = useState<Enrollment | null>(null);
@@ -20,6 +24,7 @@ export default function LearnPage() {
   const [expanded,    setExpanded]    = useState<Record<string, boolean>>({});
   const [loading,     setLoading]     = useState(true);
   const [marking,     setMarking]     = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const progressRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -29,21 +34,48 @@ export default function LearnPage() {
     ]).then(([c, e]) => {
       setCourse(c);
       setEnrollment(e);
-      // Open first module by default
-      if (c.modules?.[0]) setExpanded({ [c.modules[0].id]: true });
-      // Start from first incomplete lesson
+      
+      // Find lesson from URL param or fall back to first incomplete
       const allLessons = c.modules?.flatMap((m) => m.lessons) ?? [];
       const completedIds = new Set(
         e.lessonProgress?.filter((p) => p.completed).map((p) => p.lessonId),
       );
-      const first = allLessons.find((l) => !completedIds.has(l.id)) ?? allLessons[0];
-      if (first) setActiveLesson(first);
+      
+      let lessonToOpen: Lesson | null = null;
+      
+      if (lessonParam) {
+        // Try to find lesson by ID from URL param
+        lessonToOpen = allLessons.find((l) => l.id === lessonParam) ?? null;
+      }
+      
+      if (!lessonToOpen) {
+        // Fall back to first incomplete lesson, then first lesson
+        lessonToOpen = allLessons.find((l) => !completedIds.has(l.id)) ?? allLessons[0] ?? null;
+      }
+      
+      if (lessonToOpen) {
+        setActiveLesson(lessonToOpen);
+        // Expand the module containing this lesson
+        const moduleId = lessonToOpen.moduleId;
+        setExpanded({ [moduleId]: true });
+      } else if (c.modules?.[0]) {
+        // Open first module by default
+        setExpanded({ [c.modules[0].id]: true });
+      }
     })
     .catch(console.error)
     .finally(() => setLoading(false));
 
     return () => { if (progressRef.current) clearInterval(progressRef.current); };
-  }, [id]);
+  }, [id, lessonParam]);
+
+  // Update URL when active lesson changes
+  useEffect(() => {
+    if (activeLesson) {
+      const newUrl = `/dashboard/courses/${id}/learn?lesson=${activeLesson.id}`;
+      router.replace(newUrl);
+    }
+  }, [activeLesson?.id, id, router]);
 
   const isLessonCompleted = (lessonId: string) =>
     enrollment?.lessonProgress?.some((p) => p.lessonId === lessonId && p.completed) ?? false;
@@ -61,6 +93,14 @@ export default function LearnPage() {
     }
   };
 
+  const handleSelectLesson = (lesson: Lesson) => {
+    setActiveLesson(lesson);
+    // Close sidebar on mobile after selecting
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setSidebarOpen(false);
+    }
+  };
+
   const totalLessons   = course?.modules?.flatMap((m) => m.lessons).length ?? 0;
   const completedCount = enrollment?.lessonProgress?.filter((p) => p.completed).length ?? 0;
   const progress       = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
@@ -74,9 +114,29 @@ export default function LearnPage() {
   if (!course) return <div className="text-center py-16 text-ink-500">Course not found.</div>;
 
   return (
-    <div className="-m-6 flex h-[calc(100vh-3.5rem)] overflow-hidden">
+    <div className="-m-6 flex flex-col h-[calc(100vh-3.5rem)] overflow-hidden md:flex-row">
+      {/* Mobile toggle button */}
+      <div className="md:hidden border-b border-ink-100 bg-white">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="flex items-center justify-between w-full px-4 py-3"
+        >
+          <span className="text-sm font-semibold text-ink-900">Curriculum</span>
+          {sidebarOpen ? (
+            <X className="w-4 h-4 text-ink-500" />
+          ) : (
+            <Menu className="w-4 h-4 text-ink-500" />
+          )}
+        </button>
+      </div>
+
       {/* Lesson sidebar */}
-      <aside className="w-72 bg-white border-r border-ink-100 flex flex-col flex-shrink-0 overflow-y-auto">
+      <aside
+        className={cn(
+          'absolute md:relative md:flex w-full md:w-72 bg-white border-r border-ink-100 flex-col overflow-y-auto transition-all duration-200 z-40 md:z-0',
+          sidebarOpen ? 'flex h-[40vh]' : 'hidden md:flex',
+        )}
+      >
         {/* Header */}
         <div className="p-4 border-b border-ink-100">
           <Link href={`/dashboard/courses/${id}`}
@@ -127,7 +187,7 @@ export default function LearnPage() {
                     return (
                       <button
                         key={lesson.id}
-                        onClick={() => setActiveLesson(lesson)}
+                        onClick={() => handleSelectLesson(lesson)}
                         className={cn(
                           'w-full flex items-start gap-2.5 px-4 py-2.5 text-left transition-colors',
                           active ? 'bg-saffron-50' : 'hover:bg-ink-50',
@@ -164,6 +224,11 @@ export default function LearnPage() {
       <div className="flex-1 overflow-y-auto p-6">
         {activeLesson ? (
           <div className="max-w-3xl mx-auto">
+            {/* Materials */}
+            {activeLesson.materials && activeLesson.materials.length > 0 && (
+              <MaterialsList materials={activeLesson.materials} />
+            )}
+
             {/* Video */}
             {activeLesson.videoUrl && (
               <div className="aspect-video rounded-2xl overflow-hidden bg-black mb-5">
@@ -184,7 +249,7 @@ export default function LearnPage() {
               </div>
             )}
 
-            <div className="flex items-start justify-between mb-5">
+            <div className="flex items-start justify-between mb-5 flex-col sm:flex-row gap-4">
               <div>
                 <h1 className="font-display text-xl font-semibold text-ink-900 mb-1">
                   {activeLesson.title}
@@ -198,7 +263,7 @@ export default function LearnPage() {
                 <button
                   onClick={handleMarkComplete}
                   disabled={marking}
-                  className="btn-leaf flex-shrink-0 ml-4"
+                  className="btn-leaf flex-shrink-0"
                 >
                   {marking
                     ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -237,7 +302,7 @@ export default function LearnPage() {
                   You've finished all lessons. Your certificate will be issued shortly.
                 </p>
                 <Link href="/dashboard/certificates" className="btn-primary inline-flex">
-                  <Award className="w-4 h-4" />
+                  <CheckCircle2 className="w-4 h-4" />
                   View my certificates
                 </Link>
               </div>
@@ -253,5 +318,5 @@ export default function LearnPage() {
   );
 }
 
-// Need to import Award inside LearnPage
+// Import Award for completion celebration
 import { Award } from 'lucide-react';

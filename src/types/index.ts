@@ -31,6 +31,15 @@ export interface User {
   createdAt: string;
 }
 
+export interface Material {
+  id: string;
+  lessonId: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  purchaseUrl: string | null;
+}
+
 export interface Lesson {
   id: string;
   moduleId: string;
@@ -43,6 +52,7 @@ export interface Lesson {
   resourceUrl: string | null;
   position: number;
   isFree: boolean;
+  materials?: Material[];
 }
 
 export interface CourseModule {

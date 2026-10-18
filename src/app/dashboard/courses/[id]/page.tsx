@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft, Clock, Users, BookOpen, Award,
-  Loader2, CheckCircle2, Lock,
+  Loader2, CheckCircle2, Lock, Copy,
 } from 'lucide-react';
 import { coursesApi, enrollmentsApi } from '@/lib/api/services';
 import { enrollInCourse } from '@/lib/stellar/contract';
@@ -163,6 +163,67 @@ export default function CourseDetailPage() {
               ))}
             </div>
           </div>
+
+          {/* Course-level materials aggregation */}
+          {(() => {
+            const allMaterials = course.modules
+              ?.flatMap((m) => m.lessons)
+              .flatMap((l) => l.materials || [])
+              .reduce<Record<string, { name: string; quantity: number; unit: string; purchaseUrl: string | null }>>((acc, mat) => {
+                const key = mat.name.toLowerCase();
+                if (acc[key]) {
+                  acc[key].quantity += mat.quantity;
+                } else {
+                  acc[key] = { name: mat.name, quantity: mat.quantity, unit: mat.unit, purchaseUrl: mat.purchaseUrl };
+                }
+                return acc;
+              }, {}) ?? {};
+
+            const materialsArray = Object.values(allMaterials);
+            
+            return materialsArray.length > 0 ? (
+              <div className="mt-6">
+                <h2 className="font-display text-lg font-semibold text-ink-900 mb-4">
+                  Complete materials list
+                </h2>
+                <div className="card p-5 border-l-4 border-saffron-500 bg-saffron-50">
+                  <p className="text-sm font-semibold text-ink-900 mb-3">
+                    All materials needed for the course:
+                  </p>
+                  <div className="space-y-2 mb-4">
+                    {materialsArray.map((material) => (
+                      <div key={material.name} className="flex items-center justify-between text-sm text-ink-700">
+                        <span>{material.quantity} {material.unit} {material.name}</span>
+                        {material.purchaseUrl && (
+                          <a
+                            href={material.purchaseUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-saffron-600 hover:text-saffron-700 transition-colors"
+                          >
+                            Buy
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => {
+                      const plainText = [
+                        'Complete materials list for ' + course.title,
+                        ...materialsArray.map((m) => `• ${m.quantity} ${m.unit} ${m.name}`),
+                      ].join('\n');
+                      navigator.clipboard.writeText(plainText);
+                    }}
+                    className="text-xs font-medium text-saffron-600 hover:text-saffron-700 transition-colors inline-flex items-center gap-1.5"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    Copy list
+                  </button>
+                </div>
+              </div>
+            ) : null;
+          })()}
         </div>
 
         {/* Sticky enrollment card */}
