@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams, usePathname } from 'next/navigat
 import {
   CheckCircle2, Circle, ChevronDown, ChevronRight,
   Download, Loader2, ArrowLeft, Award, SkipForward, MessageSquare, Lock,
-  Clock, Maximize2, Minimize2,
+  Clock, Maximize2, Minimize2, Printer,
 } from 'lucide-react';
 import Link from 'next/link';
 import { coursesApi, enrollmentsApi, lessonsApi } from '@/lib/api/services';
@@ -19,6 +19,7 @@ import { AutoplayCountdown } from '@/components/learn/AutoplayCountdown';
 import NotesPanel from '@/components/learn/NotesPanel';
 import { QuizComponent } from '@/components/learn/QuizComponent';
 import { StepChecklist } from '@/components/learn/StepChecklist';
+import PrintableLessonGuide from '@/components/learn/PrintableLessonGuide';
 import { getModuleLockInfo } from '@/components/learn/LearnSidebar';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import type { Course, Enrollment, Lesson, QuizQuestion } from '@/types';
@@ -283,6 +284,12 @@ export default function LearnPage() {
     }
   }, [activeLesson, enrollment, marking, id]);
 
+  // ── Print the lesson guide (Issue #410) ─────────────────────────────────
+  const handlePrintGuide = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    window.print();
+  }, []);
+
   // ── Focus mode state & keyboard shortcuts (Issue #404) ────────────────────
   const [focusMode, setFocusMode] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -409,7 +416,7 @@ export default function LearnPage() {
     );
 
   return (
-    <div className="-m-3 flex h-[calc(100vh-4rem)] flex-col overflow-hidden sm:-m-6 md:flex-row">
+    <div className="-m-3 flex h-[calc(100vh-4rem)] flex-col overflow-hidden sm:-m-6 md:flex-row print-root">
       {course && (
         <CourseCompletionModal
           open={showCompletionModal}
@@ -417,6 +424,12 @@ export default function LearnPage() {
           courseId={course.id}
           onClose={() => setShowCompletionModal(false)}
         />
+      )}
+
+      {/* Print-only lesson guide (Issue #410) — hidden on screen, revealed by
+          the print stylesheet in src/styles/globals.css. */}
+      {activeLesson && (
+        <PrintableLessonGuide course={course} lesson={activeLesson} />
       )}
 
       {/* ── Lesson sidebar ──────────────────────────────────────────────── */}
@@ -656,7 +669,7 @@ export default function LearnPage() {
 
             {/* Video */}
             {activeLesson.videoUrl && (
-              <div className="relative aspect-video rounded-2xl overflow-hidden bg-black mb-5">
+              <div className="relative aspect-video rounded-2xl overflow-hidden bg-black mb-5 print-hide">
                 <VideoPlayer
                   key={activeLesson.videoUrl}
                   ref={videoRef}
@@ -753,6 +766,18 @@ export default function LearnPage() {
               </div>
 
               <div className="flex items-center gap-2.5 flex-shrink-0">
+                {/* Print the lesson guide (Issue #410) */}
+                <button
+                  type="button"
+                  onClick={handlePrintGuide}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-ink-200 bg-white px-3 py-2 text-xs font-medium text-ink-700 hover:bg-ink-50 hover:text-ink-900 transition-colors shadow-sm"
+                  title="Print this lesson guide"
+                  aria-label="Print lesson guide"
+                >
+                  <Printer className="w-4 h-4 text-ink-500" />
+                  <span className="hidden sm:inline">Print guide</span>
+                </button>
+
                 {/* Focus mode toggle button (Issue #404) */}
                 <button
                   type="button"
