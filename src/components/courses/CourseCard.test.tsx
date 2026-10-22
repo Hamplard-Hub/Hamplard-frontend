@@ -82,7 +82,6 @@ const mockCourse: Course = {
   modules: [],
   _count: { enrollments: 120 },
 };
-} as unknown as Course;
 
 // jsdom does not implement window.matchMedia — stub it so the hover-prefetch
 // hook can detect pointer devices. Defaults to a fine-pointer (desktop) device.
@@ -224,13 +223,13 @@ describe('CourseCard', () => {
   describe('Link Navigation', () => {
     it('renders as a link', () => {
       render(<CourseCard course={mockCourse} />);
-      const link = screen.getByRole('link');
+      const link = screen.getByRole('link', { name: `View course: ${mockCourse.title}` });
       expect(link).toHaveAttribute('href', `/dashboard/courses/${mockCourse.id}`);
     });
 
     it('uses custom href when provided', () => {
       render(<CourseCard course={mockCourse} href="/courses/test-slug" />);
-      const link = screen.getByRole('link');
+      const link = screen.getByRole('link', { name: `View course: ${mockCourse.title}` });
       expect(link).toHaveAttribute('href', '/courses/test-slug');
     });
   });
@@ -246,6 +245,36 @@ describe('CourseCard', () => {
     it('displays instructor name', () => {
       render(<CourseCard course={mockCourse} />);
       expect(screen.getByText(/john doe/i)).toBeInTheDocument();
+    });
+
+    it('links the instructor name to their public profile', () => {
+      render(<CourseCard course={mockCourse} />);
+      const link = screen.getByRole('link', { name: /john doe/i });
+      expect(link).toHaveAttribute(
+        'href',
+        `/instructors/${encodeURIComponent(mockCourse.instructorAddress)}`,
+      );
+    });
+
+    it('prefers the instructor id over the wallet address when both are present', () => {
+      const courseWithInstructorId = {
+        ...mockCourse,
+        instructor: { ...mockCourse.instructor, id: 'user-42' },
+      };
+      render(<CourseCard course={courseWithInstructorId} />);
+      const link = screen.getByRole('link', { name: /john doe/i });
+      expect(link).toHaveAttribute('href', '/instructors/user-42');
+    });
+
+    it('renders the instructor name as plain text when there is no identifier', () => {
+      const courseWithoutInstructorId = {
+        ...mockCourse,
+        instructorAddress: '',
+        instructor: { ...mockCourse.instructor, stellarAddress: '' },
+      };
+      render(<CourseCard course={courseWithoutInstructorId} />);
+      expect(screen.getByText(/john doe/i)).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /john doe/i })).not.toBeInTheDocument();
     });
   });
 
@@ -282,8 +311,8 @@ describe('CourseCard', () => {
 
   describe('Hover Prefetching', () => {
     function getCardArticle() {
-      const link = screen.getByRole('link');
-      return link.querySelector('article') as HTMLElement;
+      const link = screen.getByRole('link', { name: `View course: ${mockCourse.title}` });
+      return link.closest('article') as HTMLElement;
     }
 
     beforeEach(() => {

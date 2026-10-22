@@ -33,6 +33,7 @@ export const PUBLIC_ROUTES: Array<{
 }> = [
     { path: '/', changeFrequency: 'daily', priority: 1 },
     { path: '/courses', changeFrequency: 'daily', priority: 0.9 },
+    { path: '/instructors', changeFrequency: 'daily', priority: 0.8 },
     { path: '/pricing', changeFrequency: 'monthly', priority: 0.7 },
     { path: '/signup', changeFrequency: 'monthly', priority: 0.5 },
     { path: '/help', changeFrequency: 'monthly', priority: 0.5 },
@@ -52,7 +53,7 @@ type PageSeo = {
   /** Path this page is canonically served from, e.g. `/courses`. */
   path: string;
   images?: string[];
-  type?: 'website' | 'article';
+  type?: 'website' | 'article' | 'profile';
   /** Emits `noindex, follow`: keep the page out of results but still crawl its links. */
   noIndex?: boolean;
 };

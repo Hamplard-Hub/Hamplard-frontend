@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams, usePathname } from 'next/navigat
 import {
   CheckCircle2, Circle, ChevronDown, ChevronRight,
   Download, Loader2, ArrowLeft, Award, SkipForward, MessageSquare, Lock,
-  Clock, Maximize2, Minimize2,
+  Clock, Maximize2, Minimize2, Printer, Check, HardDriveDownload,
 } from 'lucide-react';
 import Link from 'next/link';
 import { coursesApi, enrollmentsApi, lessonsApi } from '@/lib/api/services';
@@ -19,8 +19,11 @@ import { AutoplayCountdown } from '@/components/learn/AutoplayCountdown';
 import NotesPanel from '@/components/learn/NotesPanel';
 import { QuizComponent } from '@/components/learn/QuizComponent';
 import { StepChecklist } from '@/components/learn/StepChecklist';
+import PrintableLessonGuide from '@/components/learn/PrintableLessonGuide';
 import { getModuleLockInfo } from '@/components/learn/LearnSidebar';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
+import { useOfflineDownloads } from '@/lib/hooks/use-offline-downloads';
+import { queueProgressUpdate } from '@/lib/offline';
 import type { Course, Enrollment, Lesson, QuizQuestion } from '@/types';
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -150,8 +153,6 @@ export default function LearnPage() {
     setShowCountdown(false);
     selectLesson(nextLesson);
   }, [nextLesson, selectLesson]);
-    setActiveLesson(nextLesson);
-  }, [nextLesson, course, completedIds, toast]);
 
   const cancelCountdown = useCallback(() => {
     setShowCountdown(false);
@@ -177,14 +178,7 @@ export default function LearnPage() {
       const requested = initialLessonRef.current
         ? allLessons.find((l) => l.id === initialLessonRef.current)
         : undefined;
-      const first = requested ?? allLessons.find((l) => !completedIds.has(l.id)) ?? allLessons[0];
-      if (first) {
-        setActiveLesson(first);
-        const owner = c.modules?.find((m) => m.lessons.some((l) => l.id === first.id));
-        const open = owner ?? c.modules?.[0];
-        if (open) setExpanded({ [open.id]: true });
-      }    })
-      const first = allLessons.find((l) => {
+      const first = requested ?? allLessons.find((l) => {
         if (completedSet.has(l.id)) return false;
         const modIdx = c.modules?.findIndex((m) => m.lessons.some((ml) => ml.id === l.id)) ?? -1;
         if (modIdx !== -1 && c.modules) {
@@ -193,7 +187,12 @@ export default function LearnPage() {
         }
         return true;
       }) ?? allLessons[0];
-      if (first) setActiveLesson(first);
+      if (first) {
+        setActiveLesson(first);
+        const owner = c.modules?.find((m) => m.lessons.some((l) => l.id === first.id));
+        const open = owner ?? c.modules?.[0];
+        if (open) setExpanded({ [open.id]: true });
+      }
     })
     .catch((err) => {
       console.error(err);
@@ -281,11 +280,39 @@ export default function LearnPage() {
       setEnrollment(updated);
     } catch (err) {
       console.error(err);
-      setMarkError('Failed to mark lesson as complete. Please try again.');
+      // Offline (or the API is unreachable): queue the completion so it is
+      // delivered as soon as the connection returns.
+      queueProgressUpdate({
+        lessonId: activeLesson.id,
+        enrollmentId: enrollment.id,
+        completed: true,
+      });
+      setMarkError(
+        'Could not reach the server. Your progress was saved and will sync when you reconnect.',
+      );
     } finally {
       setMarking(false);
     }
   }, [activeLesson, enrollment, marking, id]);
+
+  // ── Print the lesson guide (Issue #410) ─────────────────────────────────
+  const handlePrintGuide = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    window.print();
+  }, []);
+
+  // ── Offline download (Issue #411) ───────────────────────────────────────
+  const {
+    supported: offlineSupported,
+    isDownloaded,
+    downloadingId,
+    download: downloadForOffline,
+  } = useOfflineDownloads();
+
+  const handleDownloadForOffline = useCallback(async () => {
+    if (!activeLesson || !course) return;
+    await downloadForOffline(activeLesson, { id: course.id, title: course.title });
+  }, [activeLesson, course, downloadForOffline]);
 
   // ── Focus mode state & keyboard shortcuts (Issue #404) ────────────────────
   const [focusMode, setFocusMode] = useState<boolean>(() => {
@@ -413,7 +440,7 @@ export default function LearnPage() {
     );
 
   return (
-    <div className="-m-3 flex h-[calc(100vh-4rem)] flex-col overflow-hidden sm:-m-6 md:flex-row">
+    <div className="-m-3 flex h-[calc(100vh-4rem)] flex-col overflow-hidden sm:-m-6 md:flex-row print-root">
       {course && (
         <CourseCompletionModal
           open={showCompletionModal}
@@ -421,6 +448,12 @@ export default function LearnPage() {
           courseId={course.id}
           onClose={() => setShowCompletionModal(false)}
         />
+      )}
+
+      {/* Print-only lesson guide (Issue #410) — hidden on screen, revealed by
+          the print stylesheet in src/styles/globals.css. */}
+      {activeLesson && (
+        <PrintableLessonGuide course={course} lesson={activeLesson} />
       )}
 
       {/* ── Lesson sidebar ──────────────────────────────────────────────── */}
@@ -439,7 +472,7 @@ export default function LearnPage() {
         {sidebarOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
       </button>
 
-      <aside
+      <div
         id="learn-curriculum"
         className={cn(
           sidebarOpen ? 'flex' : 'hidden',
@@ -527,7 +560,6 @@ export default function LearnPage() {
                       return (
                         <button
                           key={lesson.id}
-                          onClick={() => selectLesson(lesson)}
                           onClick={() => {
                             if (isLocked) {
                               toast.warning({
@@ -536,7 +568,7 @@ export default function LearnPage() {
                               });
                               return;
                             }
-                            setActiveLesson(lesson);
+                            selectLesson(lesson);
                           }}
                           className={cn(
                             'w-full flex items-start gap-2.5 px-4 py-2.5 text-left transition-colors',
@@ -612,6 +644,7 @@ export default function LearnPage() {
             </div>
           </div>
         )}
+      </div>
       </aside>
 
       {/* ── Main lesson content ──────────────────────────────────────────── */}
@@ -660,7 +693,7 @@ export default function LearnPage() {
 
             {/* Video */}
             {activeLesson.videoUrl && (
-              <div className="relative aspect-video rounded-2xl overflow-hidden bg-black mb-5">
+              <div className="relative aspect-video rounded-2xl overflow-hidden bg-black mb-5 print-hide">
                 <VideoPlayer
                   key={activeLesson.videoUrl}
                   ref={videoRef}
@@ -757,6 +790,49 @@ export default function LearnPage() {
               </div>
 
               <div className="flex items-center gap-2.5 flex-shrink-0">
+                {/* Download the lesson for offline viewing (Issue #411) */}
+                {offlineSupported && (
+                  <button
+                    type="button"
+                    onClick={handleDownloadForOffline}
+                    disabled={downloadingId === activeLesson.id || isDownloaded(activeLesson.id)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-ink-200 bg-white px-3 py-2 text-xs font-medium text-ink-700 hover:bg-ink-50 hover:text-ink-900 transition-colors shadow-sm disabled:cursor-default disabled:opacity-70"
+                    title={
+                      isDownloaded(activeLesson.id)
+                        ? 'This lesson is available offline'
+                        : 'Download this lesson for offline viewing'
+                    }
+                    aria-label="Download lesson for offline viewing"
+                  >
+                    {downloadingId === activeLesson.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-ink-500" />
+                    ) : isDownloaded(activeLesson.id) ? (
+                      <Check className="w-4 h-4 text-leaf-600" />
+                    ) : (
+                      <HardDriveDownload className="w-4 h-4 text-ink-500" />
+                    )}
+                    <span className="hidden sm:inline">
+                      {downloadingId === activeLesson.id
+                        ? 'Downloading…'
+                        : isDownloaded(activeLesson.id)
+                          ? 'Saved offline'
+                          : 'Download'}
+                    </span>
+                  </button>
+                )}
+
+                {/* Print the lesson guide (Issue #410) */}
+                <button
+                  type="button"
+                  onClick={handlePrintGuide}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-ink-200 bg-white px-3 py-2 text-xs font-medium text-ink-700 hover:bg-ink-50 hover:text-ink-900 transition-colors shadow-sm"
+                  title="Print this lesson guide"
+                  aria-label="Print lesson guide"
+                >
+                  <Printer className="w-4 h-4 text-ink-500" />
+                  <span className="hidden sm:inline">Print guide</span>
+                </button>
+
                 {/* Focus mode toggle button (Issue #404) */}
                 <button
                   type="button"

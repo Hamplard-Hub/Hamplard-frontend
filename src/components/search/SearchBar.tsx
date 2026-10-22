@@ -306,7 +306,7 @@ export function SearchBar({
                   <button
                     key={`${recent.query}-${recent.timestamp}`}
                     type="button"
-                    onClick={() => handleRecentSelect(recent.query)}
+                    onClick={() => handleRecentSelect(recent)}
                     className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm text-ink-700 transition-colors hover:bg-ink-50"
                   >
                     <Clock className="h-3.5 w-3.5 text-ink-400" />

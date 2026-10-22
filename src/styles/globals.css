@@ -276,3 +276,169 @@
     animation: none;
   }
 }
+
+/* ── Print styles ──────────────────────────────────────────────────────────
+ * The lesson view renders a print-only guide (see PrintableLessonGuide).
+ * Everything else — navigation, sidebars, buttons and the video player — is
+ * removed so the printed page contains only the lesson guide.
+ * ------------------------------------------------------------------------ */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* App chrome: navigation, headers, sidebars, footers, interactive controls
+     and the video player. */
+  nav,
+  header,
+  aside,
+  footer,
+  button,
+  video,
+  iframe,
+  [role='navigation'],
+  .print-hide {
+    display: none !important;
+  }
+
+  /* Reveal the print-only lesson guide. */
+  .print-only {
+    display: block !important;
+  }
+
+  /* The app shell is a fixed-height, scroll-contained layout. Printing must
+     not clip the guide, so heights and overflow are released for print. */
+  html,
+  body,
+  #main-content,
+  .print-shell,
+  .print-shell main,
+  .print-root,
+  .print-root * {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .print-root {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Keep a step (and its image) from being split across two pages. */
+  .print-avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-guide-header {
+    border-bottom: 2px solid #000;
+    margin-bottom: 8mm;
+    padding-bottom: 4mm;
+  }
+
+  .print-guide-eyebrow {
+    font-size: 10pt;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0 0 2mm;
+  }
+
+  .print-guide-title {
+    font-size: 20pt;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  .print-guide-description {
+    font-size: 11pt;
+    margin: 3mm 0 0;
+  }
+
+  .print-guide-section {
+    margin-bottom: 8mm;
+  }
+
+  .print-guide-heading {
+    font-size: 13pt;
+    font-weight: 700;
+    margin: 0 0 3mm;
+    border-bottom: 1px solid #999;
+    padding-bottom: 1.5mm;
+  }
+
+  .print-guide-table {
+    border-collapse: collapse;
+    font-size: 10.5pt;
+    width: 100%;
+  }
+
+  .print-guide-table th,
+  .print-guide-table td {
+    border: 1px solid #bbb;
+    padding: 2mm 2.5mm;
+    text-align: left;
+  }
+
+  .print-guide-table th {
+    background: #eee;
+  }
+
+  .print-guide-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .print-guide-step {
+    margin-bottom: 6mm;
+  }
+
+  .print-guide-step-title {
+    font-size: 12pt;
+    font-weight: 700;
+    margin: 0 0 2mm;
+  }
+
+  .print-guide-step-number {
+    display: inline-block;
+    min-width: 6mm;
+    height: 6mm;
+    line-height: 6mm;
+    text-align: center;
+    border: 1px solid #000;
+    border-radius: 50%;
+    font-size: 10pt;
+    margin-right: 3mm;
+  }
+
+  .print-guide-step-description {
+    font-size: 10.5pt;
+    margin: 0 0 2mm;
+  }
+
+  .print-guide-step-image {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ccc;
+  }
+
+  .print-guide-footer {
+    border-top: 1px solid #999;
+    font-size: 9pt;
+    padding-top: 2mm;
+  }
+}
