@@ -21,6 +21,7 @@ import {
   MessageCircle,
   MessageSquare,
   Medal,
+  HardDriveDownload,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
@@ -47,6 +48,7 @@ const STUDENT_NAV: NavItem[] = [
   { href: '/dashboard/achievements', label: 'Achievements', icon: Medal },
   { href: '/dashboard/wishlist', label: 'Wishlist', icon: Heart, showWishlistCount: true },
   { href: '/dashboard/certificates', label: 'Certificates', icon: Award },
+  { href: '/dashboard/downloads', label: 'Downloads', icon: HardDriveDownload },
   { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
   { href: '/dashboard/profile', label: 'Profile', icon: User },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
