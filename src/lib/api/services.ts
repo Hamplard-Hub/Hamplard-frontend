@@ -1,42 +1,31 @@
-import { apiClient } from "./client";
+import { apiClient } from './client';
 import type {
-  ApiResponse, PaginatedResponse, Course, Enrollment,
-  Certificate, Notification, User, Category, Announcement,
-  Bundle, StudentEnrollmentRow, StudentDetail, SavedPaymentMethod,
-  CourseModule, Lesson, LessonType,
-  Gift, LeaderboardPeriod, LeaderboardResponse,
-} from '@/types';
-
-  Gift, LeaderboardResponse, LeaderboardPeriod, Achievement,
-  DirectMessage, Conversation, MessageAttachment,
-  Gift, LeaderboardResponse, LeaderboardPeriod,
-} from '@/types';
-
-const isBrowser = typeof window !== "undefined";
-const ANNOUNCEMENTS_STORAGE_KEY = "hamplard_announcements";
-const NOTIFICATIONS_STORAGE_KEY = "hamplard_notifications";
-const PAYMENT_METHODS_STORAGE_KEY = "hamplard_payment_methods";
-  ApiResponse,
-  PaginatedResponse,
-  Course,
-  Enrollment,
-  Certificate,
-  Notification,
-  User,
-  Category,
+  Achievement,
   Announcement,
-  Gift,
-  LeaderboardResponse,
-  LeaderboardPeriod,
+  ApiResponse,
   Bundle,
-  StudentEnrollmentRow,
-  StudentDetail,
-  SavedPaymentMethod,
-  ShowcaseProject,
-  ShowcaseComment,
-  SubmitShowcasePayload,
+  Category,
+  Certificate,
+  Conversation,
+  Course,
+  DirectMessage,
+  Enrollment,
+  Gift,
+  LeaderboardPeriod,
+  LeaderboardResponse,
+  Lesson,
   LiveSession,
   LiveSessionRecording,
+  MessageAttachment,
+  Notification,
+  PaginatedResponse,
+  SavedPaymentMethod,
+  ShowcaseComment,
+  ShowcaseProject,
+  StudentDetail,
+  StudentEnrollmentRow,
+  SubmitShowcasePayload,
+  User,
 } from '@/types';
 
 const isBrowser = typeof window !== 'undefined';
@@ -591,6 +580,54 @@ export const notificationsApi = {
       writeStorage(NOTIFICATIONS_STORAGE_KEY, updated);
       emitNotificationsUpdated();
     }
+  },
+};
+
+// ----------------------------------------------------------
+// Settings / preferences
+// ----------------------------------------------------------
+export const settingsApi = {
+  getNotificationPreferences: async (): Promise<{
+    preferences: Record<string, Record<string, boolean>>;
+    quietHours: { start: string; end: string } | null;
+  }> => {
+    const fallback = {
+      preferences: {},
+      quietHours: null,
+    };
+
+    if (!isBrowser) return fallback;
+
+    try {
+      const raw = localStorage.getItem('hamplard_notification_preferences');
+      return raw ? JSON.parse(raw) : fallback;
+    } catch {
+      return fallback;
+    }
+  },
+
+  saveNotificationPreferences: async (payload: {
+    preferences: Record<string, Record<string, boolean>>;
+    quietHours: { start: string; end: string };
+  }): Promise<{ preferences: Record<string, Record<string, boolean>>; quietHours: { start: string; end: string } }> => {
+    if (!isBrowser) {
+      return payload;
+    }
+
+    const stored = {
+      preferences: payload.preferences,
+      quietHours: payload.quietHours,
+    };
+
+    localStorage.setItem('hamplard_notification_preferences', JSON.stringify(stored));
+
+    try {
+      await apiClient.patch('/settings/notifications', payload);
+    } catch {
+      // Local persistence remains the source of truth when the backend is unavailable.
+    }
+
+    return stored;
   },
 };
 
