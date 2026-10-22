@@ -477,6 +477,8 @@ export interface Conversation {
   lastMessage?: DirectMessage;
   unreadCount: number;
   updatedAt: string;
+}
+
 // ── Student Project Showcase Gallery (Issue #400) ──────────────────────────
 
 export interface ShowcaseComment {

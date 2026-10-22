@@ -51,7 +51,7 @@ export default function CategoriesIndexPage() {
           cats.map(async (cat) => {
             try {
               const res = await coursesApi.list({ category: cat.name, limit: 1 });
-              countMap[cat.name] = res.total || 0;
+              countMap[cat.name] = res.meta?.total || 0;
             } catch {
               countMap[cat.name] = 0;
             }
@@ -113,7 +113,7 @@ export default function CategoriesIndexPage() {
 
                       return (
                         <Link
-                          key={category.id}
+                          key={category.name}
                           href={`/categories/${slug}`}
                           className="group flex items-center gap-4 p-6 bg-white border border-[#E0DEFA] rounded-2xl hover:border-[#7F77DD] hover:shadow-lg hover:shadow-[#7F77DD]/5 transition-all duration-200"
                         >

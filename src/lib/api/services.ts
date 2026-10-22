@@ -1,21 +1,5 @@
 import { apiClient } from "./client";
 import type {
-  ApiResponse, PaginatedResponse, Course, Enrollment,
-  Certificate, Notification, User, Category, Announcement,
-  Bundle, StudentEnrollmentRow, StudentDetail, SavedPaymentMethod,
-  CourseModule, Lesson, LessonType,
-  Gift, LeaderboardPeriod, LeaderboardResponse,
-} from '@/types';
-
-  Gift, LeaderboardResponse, LeaderboardPeriod, Achievement,
-  DirectMessage, Conversation, MessageAttachment,
-  Gift, LeaderboardResponse, LeaderboardPeriod,
-} from '@/types';
-
-const isBrowser = typeof window !== "undefined";
-const ANNOUNCEMENTS_STORAGE_KEY = "hamplard_announcements";
-const NOTIFICATIONS_STORAGE_KEY = "hamplard_notifications";
-const PAYMENT_METHODS_STORAGE_KEY = "hamplard_payment_methods";
   ApiResponse,
   PaginatedResponse,
   Course,
@@ -32,6 +16,13 @@ const PAYMENT_METHODS_STORAGE_KEY = "hamplard_payment_methods";
   StudentEnrollmentRow,
   StudentDetail,
   SavedPaymentMethod,
+  CourseModule,
+  Lesson,
+  LessonType,
+  Achievement,
+  DirectMessage,
+  Conversation,
+  MessageAttachment,
   ShowcaseProject,
   ShowcaseComment,
   SubmitShowcasePayload,
@@ -1581,6 +1572,9 @@ export const messagesApi = {
     const conversations = await messagesApi.getConversations();
     return conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
   },
+};
+
+// ----------------------------------------------------------
 // Student Project Showcase Gallery (Issue #400)
 // ----------------------------------------------------------
 

@@ -150,8 +150,6 @@ export default function LearnPage() {
     setShowCountdown(false);
     selectLesson(nextLesson);
   }, [nextLesson, selectLesson]);
-    setActiveLesson(nextLesson);
-  }, [nextLesson, course, completedIds, toast]);
 
   const cancelCountdown = useCallback(() => {
     setShowCountdown(false);
@@ -177,14 +175,7 @@ export default function LearnPage() {
       const requested = initialLessonRef.current
         ? allLessons.find((l) => l.id === initialLessonRef.current)
         : undefined;
-      const first = requested ?? allLessons.find((l) => !completedIds.has(l.id)) ?? allLessons[0];
-      if (first) {
-        setActiveLesson(first);
-        const owner = c.modules?.find((m) => m.lessons.some((l) => l.id === first.id));
-        const open = owner ?? c.modules?.[0];
-        if (open) setExpanded({ [open.id]: true });
-      }    })
-      const first = allLessons.find((l) => {
+      const first = requested ?? allLessons.find((l) => {
         if (completedSet.has(l.id)) return false;
         const modIdx = c.modules?.findIndex((m) => m.lessons.some((ml) => ml.id === l.id)) ?? -1;
         if (modIdx !== -1 && c.modules) {
@@ -193,7 +184,12 @@ export default function LearnPage() {
         }
         return true;
       }) ?? allLessons[0];
-      if (first) setActiveLesson(first);
+      if (first) {
+        setActiveLesson(first);
+        const owner = c.modules?.find((m) => m.lessons.some((l) => l.id === first.id));
+        const open = owner ?? c.modules?.[0];
+        if (open) setExpanded({ [open.id]: true });
+      }
     })
     .catch((err) => {
       console.error(err);
@@ -439,7 +435,7 @@ export default function LearnPage() {
         {sidebarOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
       </button>
 
-      <aside
+      <div
         id="learn-curriculum"
         className={cn(
           sidebarOpen ? 'flex' : 'hidden',
@@ -527,7 +523,6 @@ export default function LearnPage() {
                       return (
                         <button
                           key={lesson.id}
-                          onClick={() => selectLesson(lesson)}
                           onClick={() => {
                             if (isLocked) {
                               toast.warning({
@@ -536,7 +531,7 @@ export default function LearnPage() {
                               });
                               return;
                             }
-                            setActiveLesson(lesson);
+                            selectLesson(lesson);
                           }}
                           className={cn(
                             'w-full flex items-start gap-2.5 px-4 py-2.5 text-left transition-colors',
@@ -612,6 +607,7 @@ export default function LearnPage() {
             </div>
           </div>
         )}
+      </div>
       </aside>
 
       {/* ── Main lesson content ──────────────────────────────────────────── */}

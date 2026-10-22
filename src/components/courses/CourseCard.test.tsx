@@ -82,7 +82,6 @@ const mockCourse: Course = {
   modules: [],
   _count: { enrollments: 120 },
 };
-} as unknown as Course;
 
 // jsdom does not implement window.matchMedia — stub it so the hover-prefetch
 // hook can detect pointer devices. Defaults to a fine-pointer (desktop) device.

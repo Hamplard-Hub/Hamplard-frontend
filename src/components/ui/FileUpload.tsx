@@ -313,7 +313,6 @@ export function FileUpload({
         startUpload(it);
       });
     },
-    [multiple, maxFiles, accept, maxSizeBytes, onUploadError, onUploadStart, startUpload, getVideoDuration],
     [multiple, maxFiles, items.length, accept, maxSizeBytes, onUploadError, onUploadStart, startUpload, getVideoDuration]
   );
 
@@ -367,6 +366,12 @@ export function FileUpload({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) void addFiles(e.target.files);
     e.target.value = '';
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    // Ignore drag events bubbling up from child elements inside the drop zone
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    setDragActive(false);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {

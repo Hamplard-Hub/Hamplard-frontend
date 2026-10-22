@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CourseCard } from '@/components/courses/CourseCard';
-import { CourseCardSkeleton } from '@/components/skeletons/CourseCardSkeleton';
 import { CourseCardSkeleton } from '@/components/skeletons';
 import type { Course } from '@/types';
 
