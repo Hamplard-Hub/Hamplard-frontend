@@ -6,6 +6,7 @@ import { Award, Trophy, Sparkles, Filter, ChevronRight, CheckCircle2, Lock } fro
 import { achievementsApi } from '@/lib/api/services';
 import type { Achievement } from '@/types';
 import { BadgeCard } from '@/components/dashboard/BadgeCard';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useToast } from '@/lib/hooks/use-toast';
 
 type FilterTab = 'all' | 'earned' | 'locked';
@@ -183,12 +184,12 @@ export default function AchievementsPage() {
           ))}
         </div>
       ) : filteredBadges.length === 0 ? (
-        <div className="card p-12 text-center my-6">
-          <Award className="w-12 h-12 text-ink-300 mx-auto mb-3" />
-          <h3 className="text-base font-semibold text-ink-900">No badges found</h3>
-          <p className="text-xs text-ink-500 mt-1">
-            Try adjusting your status or category filters above.
-          </p>
+        <div className="my-6">
+          <EmptyState
+            icon={<Award className="w-6 h-6" />}
+            title="No badges found"
+            description="Try adjusting your status or category filters above."
+          />
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">

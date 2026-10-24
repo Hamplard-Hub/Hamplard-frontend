@@ -1,21 +1,27 @@
 import { apiClient } from "./client";
 import { getApiUrl } from "./config";
 import type {
-  ApiResponse,
-  PaginatedResponse,
-  Course,
-  Enrollment,
-  Certificate,
-  Notification,
-  User,
-  Category,
+import { apiClient } from './client';
+import type {
+  Achievement,
   Announcement,
-  Gift,
-  LeaderboardResponse,
-  LeaderboardPeriod,
+  ApiResponse,
   Bundle,
-  StudentEnrollmentRow,
-  StudentDetail,
+  Category,
+  Certificate,
+  Conversation,
+  Course,
+  DirectMessage,
+  Enrollment,
+  Gift,
+  LeaderboardPeriod,
+  LeaderboardResponse,
+  Lesson,
+  LiveSession,
+  LiveSessionRecording,
+  MessageAttachment,
+  Notification,
+  PaginatedResponse,
   SavedPaymentMethod,
   CourseModule,
   Lesson,
@@ -26,6 +32,9 @@ import type {
   MessageAttachment,
   ShowcaseProject,
   ShowcaseComment,
+  ShowcaseProject,
+  StudentDetail,
+  StudentEnrollmentRow,
   SubmitShowcasePayload,
   LiveSession,
   LiveSessionRecording,
@@ -33,6 +42,7 @@ import type {
   InstructorProfile,
   InstructorSort,
   Review,
+  User,
 } from '@/types';
 import {
   aggregateInstructor,
@@ -770,6 +780,54 @@ export const notificationsApi = {
       writeStorage(NOTIFICATIONS_STORAGE_KEY, updated);
       emitNotificationsUpdated();
     }
+  },
+};
+
+// ----------------------------------------------------------
+// Settings / preferences
+// ----------------------------------------------------------
+export const settingsApi = {
+  getNotificationPreferences: async (): Promise<{
+    preferences: Record<string, Record<string, boolean>>;
+    quietHours: { start: string; end: string } | null;
+  }> => {
+    const fallback = {
+      preferences: {},
+      quietHours: null,
+    };
+
+    if (!isBrowser) return fallback;
+
+    try {
+      const raw = localStorage.getItem('hamplard_notification_preferences');
+      return raw ? JSON.parse(raw) : fallback;
+    } catch {
+      return fallback;
+    }
+  },
+
+  saveNotificationPreferences: async (payload: {
+    preferences: Record<string, Record<string, boolean>>;
+    quietHours: { start: string; end: string };
+  }): Promise<{ preferences: Record<string, Record<string, boolean>>; quietHours: { start: string; end: string } }> => {
+    if (!isBrowser) {
+      return payload;
+    }
+
+    const stored = {
+      preferences: payload.preferences,
+      quietHours: payload.quietHours,
+    };
+
+    localStorage.setItem('hamplard_notification_preferences', JSON.stringify(stored));
+
+    try {
+      await apiClient.patch('/settings/notifications', payload);
+    } catch {
+      // Local persistence remains the source of truth when the backend is unavailable.
+    }
+
+    return stored;
   },
 };
 

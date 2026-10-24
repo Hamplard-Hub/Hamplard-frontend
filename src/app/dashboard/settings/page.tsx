@@ -185,6 +185,11 @@ export default function SettingsPage() {
                 <p className="text-xs text-ink-500">New lessons and reminders.</p>
               </span>
             </label>
+
+            <Link href="/dashboard/settings/notifications" className="inline-flex items-center gap-2 text-sm font-medium text-saffron-700 hover:text-saffron-800">
+              Manage notification channels
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
           </div>
         </section>
 

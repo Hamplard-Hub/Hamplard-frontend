@@ -7,6 +7,7 @@ import { coursesApi } from '@/lib/api/services';
 import { CourseCard } from '@/components/courses/CourseCard';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useCartStore } from '@/lib/hooks/use-cart-store';
 import { useToast } from '@/lib/hooks/use-toast';
 import { useWishlistHydrated, useWishlistStore } from '@/lib/hooks/use-wishlist-store';
@@ -178,16 +179,13 @@ export default function WishlistPage() {
           ))}
         </div>
       ) : courseIds.length === 0 ? (
-        <div className="card p-12 text-center">
-          <Heart className="w-10 h-10 text-saffron-200 mx-auto mb-3" />
-          <p className="text-sm font-medium text-ink-700">Your wishlist is empty</p>
-          <p className="text-xs text-ink-400 mt-1">
-            Tap the heart on any course to save it for later.
-          </p>
-          <Link href="/" className="btn-primary mt-4 inline-flex">
-            Browse courses
-          </Link>
-        </div>
+        <EmptyState
+          icon={<Heart className="w-6 h-6" />}
+          title="Your wishlist is empty"
+          description="Tap the heart on any course to save it for later."
+          actionLabel="Browse courses"
+          actionHref="/"
+        />
       ) : (
         <>
           <div className="course-grid">

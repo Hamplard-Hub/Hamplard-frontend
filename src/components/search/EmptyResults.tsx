@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { SearchX } from 'lucide-react';
 import { DidYouMean } from './DidYouMean';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 interface EmptyResultsProps {
   query: string;
@@ -26,20 +27,16 @@ export function EmptyResults({
   onClearFilters,
 }: EmptyResultsProps) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-ink-200 bg-white px-6 py-16 text-center">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-hamplard-lilac">
-        <SearchX className="h-7 w-7 text-hamplard-primary" />
-      </div>
-
-      <h3 className="mb-1 text-lg font-semibold text-ink-900">
-        No courses found
-      </h3>
-      <p className="mb-3 max-w-sm text-sm text-ink-500">
-        {query
+    <EmptyState
+      icon={<SearchX className="h-6 w-6" />}
+      title="No courses found"
+      description={
+        query
           ? `We couldn't find anything matching “${query}”.`
-          : 'No courses match your current filters.'}
-      </p>
-
+          : 'No courses match your current filters.'
+      }
+      className="bg-white"
+    >
       {query && (
         <div className="mb-6">
           <DidYouMean
@@ -74,6 +71,6 @@ export function EmptyResults({
           Clear all filters
         </Button>
       )}
-    </div>
+    </EmptyState>
   );
 }
