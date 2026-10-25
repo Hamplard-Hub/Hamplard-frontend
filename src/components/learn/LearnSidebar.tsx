@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronLeft, ChevronRight, Check, Play, Clock, Search, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Check, Play, Clock, Search, X, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/lib/hooks/use-toast';
 import type { CourseModule, Lesson } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -22,6 +23,72 @@ function formatLectureDuration(secs: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+function formatReleaseDate(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  } catch {
+    return dateStr;
+  }
+}
+
+export function getModuleLockInfo(
+  module: CourseModule,
+  moduleIndex: number,
+  allModules: CourseModule[],
+  completedLessonIds: Set<string> | string[],
+): { isLocked: boolean; reason?: string } {
+  const completedSet =
+    completedLessonIds instanceof Set
+      ? completedLessonIds
+      : new Set(completedLessonIds);
+
+  // 1. Release date lock (drip content)
+  if (module.releaseDate) {
+    const releaseTime = new Date(module.releaseDate).getTime();
+    if (!isNaN(releaseTime) && releaseTime > Date.now()) {
+      return {
+        isLocked: true,
+        reason: `Available on ${formatReleaseDate(module.releaseDate)}`,
+      };
+    }
+  }
+
+  // 2. Prerequisite module lock
+  const requiresPrereq =
+    module.unlockRule === 'prerequisite' ||
+    Boolean(module.prerequisiteModuleId);
+
+  if (requiresPrereq) {
+    let prereqModule: CourseModule | undefined;
+    if (module.prerequisiteModuleId) {
+      prereqModule = allModules.find((m) => m.id === module.prerequisiteModuleId);
+    } else if (moduleIndex > 0) {
+      prereqModule = allModules[moduleIndex - 1];
+    }
+
+    if (prereqModule) {
+      const isPrereqComplete =
+        prereqModule.lessons.length > 0 &&
+        prereqModule.lessons.every((l) => completedSet.has(l.id));
+
+      if (!isPrereqComplete) {
+        const prereqName = prereqModule.title?.match(/^module\s*\d+/i)
+          ? prereqModule.title
+          : `Module ${prereqModule.position ?? moduleIndex}`;
+
+        return {
+          isLocked: true,
+          reason: `Unlocks after ${prereqName}`,
+        };
+      }
+    }
+  }
+
+  return { isLocked: false };
+}
+
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
@@ -31,6 +98,7 @@ interface LearnSidebarProps {
   currentLessonId?: string;
   completedLessonIds?: string[];
   onSelectLesson?: (lessonId: string) => void;
+  onLockedLessonClick?: (lessonId: string, reason?: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -42,7 +110,15 @@ export function LearnSidebar({
   currentLessonId,
   completedLessonIds = [],
   onSelectLesson,
+  onLockedLessonClick,
 }: LearnSidebarProps) {
+  let toast: ReturnType<typeof useToast> | null = null;
+  try {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    toast = useToast();
+  } catch {
+    toast = null;
+  }
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => {
     // Auto-expand the section containing the current lesson
     if (modules.length > 0 && currentLessonId) {
@@ -122,11 +198,21 @@ export function LearnSidebar({
   }, [allExpanded, modules]);
 
   const handleSelectLesson = useCallback(
-    (lessonId: string) => {
+    (lessonId: string, isLocked = false, lockReason = '') => {
+      if (isLocked) {
+        if (toast) {
+          toast.warning({
+            title: 'Lesson Locked',
+            description: lockReason || 'This lesson is currently locked.',
+          });
+        }
+        onLockedLessonClick?.(lessonId, lockReason);
+        return;
+      }
       onSelectLesson?.(lessonId);
       if (isMobile) setDrawerOpen(false);
     },
-    [onSelectLesson, isMobile],
+    [onSelectLesson, onLockedLessonClick, isMobile, toast],
   );
 
   const handleLessonKeyDown = useCallback((event: React.KeyboardEvent<HTMLButtonElement>, lessonId: string) => {
@@ -214,13 +300,15 @@ export function LearnSidebar({
             {visibleLessonIds.length} {visibleLessonIds.length === 1 ? 'lesson' : 'lessons'} found
           </p>
         )}
-        {filteredModules.map((mod) => {
+        {filteredModules.map((mod, modIdx) => {
           const isOpen = normalizedSearch ? true : expandedIds.has(mod.id);
           const sectionSecs = mod.lessons.reduce(
             (sum, l) => sum + (l.videoDuration ?? 0),
             0,
           );
           const sectionCompleted = mod.lessons.every((l) => completedSet.has(l.id));
+          const lockInfo = getModuleLockInfo(mod, modIdx, modules, completedSet);
+          const isModuleLocked = lockInfo.isLocked;
 
           return (
             <div key={mod.id}>
@@ -245,9 +333,14 @@ export function LearnSidebar({
                     {mod.lessons.length} lectures · {formatSectionDuration(sectionSecs)}
                   </span>
                 </div>
-                {sectionCompleted && (
+                {isModuleLocked ? (
+                  <div className="flex items-center gap-1.5 flex-shrink-0 text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md text-xs font-medium border border-amber-200">
+                    <Lock className="h-3.5 w-3.5" />
+                    <span>{lockInfo.reason}</span>
+                  </div>
+                ) : sectionCompleted ? (
                   <Check className="h-4 w-4 flex-shrink-0 text-emerald-500" />
-                )}
+                ) : null}
               </button>
 
               {/* Lessons list */}
@@ -265,7 +358,7 @@ export function LearnSidebar({
                             if (node) lessonButtonRefs.current.set(lesson.id, node);
                             else lessonButtonRefs.current.delete(lesson.id);
                           }}
-                          onClick={() => handleSelectLesson(lesson.id)}
+                          onClick={() => handleSelectLesson(lesson.id, isModuleLocked, lockInfo.reason)}
                           onKeyDown={(event) => handleLessonKeyDown(event, lesson.id)}
                           role="option"
                           aria-selected={isCurrent}
@@ -275,9 +368,12 @@ export function LearnSidebar({
                             isCurrent
                               ? 'bg-hamplard-lilac/60 border-l-2 border-hamplard-primary'
                               : 'border-l-2 border-transparent hover:bg-ink-50',
+                            isModuleLocked && 'opacity-80 cursor-not-allowed',
                           )}
                         >
-                          {isCompleted ? (
+                          {isModuleLocked ? (
+                            <Lock className="h-4 w-4 flex-shrink-0 text-amber-500" />
+                          ) : isCompleted ? (
                             <Check className="h-4 w-4 flex-shrink-0 text-emerald-500" />
                           ) : (
                             <Play
@@ -292,19 +388,25 @@ export function LearnSidebar({
                               'flex-1 truncate',
                               isCurrent
                                 ? 'font-semibold text-hamplard-deep'
-                                : isCompleted
-                                  ? 'text-ink-600'
-                                  : 'text-ink-700',
+                                : isModuleLocked
+                                  ? 'text-ink-400'
+                                  : isCompleted
+                                    ? 'text-ink-600'
+                                    : 'text-ink-700',
                             )}
                           >
                             {highlightMatch(lesson.title)}
                           </span>
-                          {lesson.videoDuration && lesson.videoDuration > 0 && (
+                          {isModuleLocked && lockInfo.reason ? (
+                            <span className="text-[10px] text-amber-600 flex-shrink-0">
+                              {lockInfo.reason}
+                            </span>
+                          ) : lesson.videoDuration && lesson.videoDuration > 0 ? (
                             <span className="flex items-center gap-1 flex-shrink-0 text-xs text-ink-400">
                               <Clock className="h-3 w-3" />
                               {formatLectureDuration(lesson.videoDuration)}
                             </span>
-                          )}
+                          ) : null}
                         </button>
                       </li>
                     );

@@ -9,7 +9,8 @@ export const contactFormSchema = z.object({
     .email('Enter a valid email address.')
     .nonempty('Email is required.'),
   subject: z.enum(['General', 'Billing', 'Technical', 'Instructor', 'Report'], {
-    errorMap: () => ({ message: 'Please select a subject.' }),
+    error: 'Please select a subject.',
+    message: 'Please select a subject.',
   }),
   message: z.string()
     .min(10, 'Message must be at least 10 characters.')

@@ -8,7 +8,8 @@ export const promoCodeSchema = z.object({
     .max(20, 'Code must be at most 20 characters.')
     .toUpperCase(),
   discountType: z.enum(['PERCENTAGE', 'FIXED'], {
-    errorMap: () => ({ message: 'Select either percentage or fixed discount.' }),
+    error: 'Select either percentage or fixed discount.',
+    message: 'Select either percentage or fixed discount.',
   }),
   discountValue: z
     .number()

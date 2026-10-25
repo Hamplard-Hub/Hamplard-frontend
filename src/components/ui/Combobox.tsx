@@ -213,12 +213,14 @@ export function Combobox({
   disabled = false,
   label,
   error,
+  name,
   className,
   maxHeight = "16rem",
   searchable = true,
   searchPlaceholder = "Search...",
   clearable = true,
   onOpenChange,
+  name,
   "aria-describedby": ariaDescribedBy,
 }: ComboboxProps) {
   const [open, setOpen] = useState(false);

@@ -4,23 +4,38 @@ import type { Course } from '@/types';
 
 const mockCourse: Course = {
   id: 'course-1',
+  instructorAddress: 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF',
   title: 'Advanced React Patterns',
   description: 'Master advanced React concepts including custom hooks, performance optimization, and architectural patterns.',
-  instructor: { id: 'inst-1', name: 'Sarah Chen' },
+  instructor: {
+    name: 'Sarah Chen',
+    stellarAddress: 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF',
+    avatarUrl: null,
+  },
   category: 'Photography',
   level: 'Intermediate',
+  language: 'English',
   price: 49.99,
+  platformFeePercent: 10,
   originalPrice: 99.99,
   rating: 4.8,
   reviewCount: 1250,
   totalDuration: 1800,
   totalLessons: 24,
+  totalEnrollments: 3500,
+  totalRevenue: 174965,
+  txHash: null,
+  approvedAt: '2024-01-01T00:00:00.000Z',
+  publishedAt: '2024-01-02T00:00:00.000Z',
+  createdAt: '2024-01-01T00:00:00.000Z',
+  updatedAt: '2024-01-02T00:00:00.000Z',
   status: 'ACTIVE',
-  badge: 'bestseller' as const,
+  badge: 'bestseller',
   thumbnailUrl: 'https://images.unsplash.com/photo-1633356122544-f134324ef6db?w=500&h=300&fit=crop',
   previewVideoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+  modules: [],
   _count: { enrollments: 3500 },
-};
+} as unknown as Course;
 
 const meta = {
   title: 'Components/CourseCard',
@@ -51,7 +66,7 @@ export const NoRating: Story = {
   args: {
     course: {
       ...mockCourse,
-      rating: null,
+      rating: undefined,
       reviewCount: 0,
     },
   },
@@ -70,7 +85,7 @@ export const NoPreview: Story = {
   args: {
     course: {
       ...mockCourse,
-      previewVideoUrl: undefined,
+      previewVideoUrl: null,
     },
   },
 };

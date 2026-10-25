@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { coursesApi } from "@/lib/api/services";
 import { CourseCard } from "@/components/courses/CourseCard";
-import { CourseCardSkeleton } from "@/components/skeletons";
 import { CourseCardSkeleton } from "@/components/skeletons/CourseCardSkeleton";
+import { CourseCardSkeleton } from "@/components/skeletons";
 import { Pagination } from "@/components/ui/Pagination";
 import { cn } from "@/lib/utils";
 import type { Course } from "@/types";

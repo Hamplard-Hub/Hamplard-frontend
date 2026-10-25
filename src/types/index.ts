@@ -64,6 +64,25 @@ export interface VideoQualities {
   "360p"?: string;
 }
 
+export interface Material {
+  id: string;
+  lessonId: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  purchaseUrl: string | null;
+}
+
+export interface LessonStep {
+  id: string;
+  lessonId?: string;
+  stepNumber?: number;
+  title: string;
+  description?: string | null;
+  imageUrl?: string | null;
+  timestamp?: number | null; // seconds
+}
+
 export interface Lesson {
   id: string;
   moduleId: string;
@@ -77,9 +96,13 @@ export interface Lesson {
   quiz?: QuizQuestion[] | null;
   position: number;
   isFree: boolean;
+  materials?: Material[];
   /** Optional per-resolution URLs. When absent only 'auto' is available. */
   videoQualities?: VideoQualities;
+  steps?: LessonStep[] | null;
 }
+
+export type ModuleUnlockRule = 'immediate' | 'prerequisite' | 'date';
 
 export interface CourseModule {
   id: string;
@@ -87,6 +110,9 @@ export interface CourseModule {
   title: string;
   position: number;
   lessons: Lesson[];
+  unlockRule?: ModuleUnlockRule;
+  prerequisiteModuleId?: string | null;
+  releaseDate?: string | null;
 }
 
 export interface Course {
@@ -112,9 +138,10 @@ export interface Course {
   createdAt: string;
   updatedAt: string;
   instructor: {
+    id?: string;
     name: string | null;
-    stellarAddress: string;
-    avatarUrl: string | null;
+    stellarAddress?: string;
+    avatarUrl?: string | null;
     bio?: string | null;
   };
   modules: CourseModule[];
@@ -402,3 +429,124 @@ export interface StudentDetail {
     lessonProgress: LessonProgressDetail[];
   }>;
 }
+
+// ── Achievements & Badges ─────────────────────────────────────────
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  criteria: string;
+  icon: string;
+  category: 'learning' | 'streak' | 'certificates' | 'community';
+  earned: boolean;
+  earnedAt?: string | null;
+  progress?: number;
+  rarity?: 'common' | 'rare' | 'epic' | 'legendary';
+}
+
+// ── Student Messages ──────────────────────────────────────────────
+export interface MessageAttachment {
+  id: string;
+  name: string;
+  url: string;
+  type: string;
+  size?: number;
+}
+
+export interface DirectMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar?: string | null;
+  senderRole: 'STUDENT' | 'INSTRUCTOR';
+  content: string;
+  attachments?: MessageAttachment[];
+  createdAt: string;
+  read: boolean;
+}
+
+export interface Conversation {
+  id: string;
+  participantId: string;
+  participantName: string;
+  participantAvatar?: string | null;
+  participantRole: 'STUDENT' | 'INSTRUCTOR';
+  courseId?: string;
+  courseTitle?: string;
+  lastMessage?: DirectMessage;
+  unreadCount: number;
+  updatedAt: string;
+// ── Student Project Showcase Gallery (Issue #400) ──────────────────────────
+
+export interface ShowcaseComment {
+  id: string;
+  projectId: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string | null;
+  content: string;
+  createdAt: string;
+}
+
+export interface ShowcaseProject {
+  id: string;
+  courseId: string;
+  courseTitle?: string;
+  studentId: string;
+  studentName: string;
+  studentAvatar?: string | null;
+  title: string;
+  description: string;
+  imageUrl: string;
+  additionalImages?: string[];
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  likesCount: number;
+  hasLiked?: boolean;
+  commentsCount: number;
+  comments?: ShowcaseComment[];
+  assignmentId?: string;
+  createdAt: string;
+}
+
+export interface SubmitShowcasePayload {
+  courseId: string;
+  assignmentId?: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  studentName?: string;
+}
+
+// ── Live Sessions (Issue #402) ─────────────────────────────────────────────
+
+export interface LiveSession {
+  id: string;
+  courseId?: string;
+  courseTitle?: string;
+  title: string;
+  description: string;
+  instructorName: string;
+  instructorAvatar?: string | null;
+  scheduledAt: string; // ISO 8601 string
+  durationMinutes: number;
+  joinUrl?: string;
+  status: 'UPCOMING' | 'LIVE' | 'COMPLETED' | 'CANCELLED';
+  registeredCount?: number;
+  isRegistered?: boolean;
+}
+
+export interface LiveSessionRecording {
+  id: string;
+  sessionId: string;
+  title: string;
+  description: string;
+  instructorName: string;
+  instructorAvatar?: string | null;
+  recordedAt: string;
+  durationMinutes: number;
+  videoUrl: string;
+  thumbnailUrl?: string | null;
+  viewsCount?: number;
+}
+

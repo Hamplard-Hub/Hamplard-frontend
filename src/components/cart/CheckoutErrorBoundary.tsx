@@ -6,7 +6,6 @@ import { AlertTriangle, LifeBuoy, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 const MAX_RETRIES = 4;
-const BASE_DELAY_MS = 1000;
 
 interface CheckoutErrorBoundaryProps {
   children: React.ReactNode;
@@ -17,8 +16,6 @@ interface CheckoutErrorBoundaryState {
   hasError: boolean;
   resetKey: number;
   retryCount: number;
-  isRetrying: boolean;
-  retryCountdown: number;
   isWaiting: boolean;
   waitSecondsLeft: number;
 }
@@ -27,22 +24,26 @@ export class CheckoutErrorBoundary extends React.Component<
   CheckoutErrorBoundaryProps,
   CheckoutErrorBoundaryState
 > {
-  private _countdownTimer: ReturnType<typeof setInterval> | null = null;
+  private countdownTimer: ReturnType<typeof setInterval> | null = null;
 
   state: CheckoutErrorBoundaryState = {
     hasError: false,
     resetKey: 0,
     retryCount: 0,
-    isRetrying: false,
-    retryCountdown: 0,
     isWaiting: false,
     waitSecondsLeft: 0,
   };
 
-  private countdownInterval: NodeJS.Timeout | null = null;
-
   static getDerivedStateFromError(): CheckoutErrorBoundaryState {
-    return { hasError: true, resetKey: 0, retryCount: 0, isRetrying: false, retryCountdown: 0 };
+    return {
+      hasError: true,
+      resetKey: 0,
+      retryCount: 0,
+      isRetrying: false,
+      retryCountdown: 0,
+      isWaiting: false,
+      waitSecondsLeft: 0,
+    };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
@@ -50,56 +51,13 @@ export class CheckoutErrorBoundary extends React.Component<
   }
 
   componentWillUnmount() {
-    if (this.countdownInterval) {
-      clearInterval(this.countdownInterval);
-    }
-  }
-
-  private handleRetry = () => {
-    const { retryCount } = this.state;
-    
-    if (retryCount === 0) {
-      // First retry: immediate reset
-      this.props.onReset?.();
-      this.setState((state) => ({
-        hasError: false,
-        resetKey: state.resetKey + 1,
-        retryCount: state.retryCount + 1,
-      }));
-    } else {
-      // Subsequent retries: show countdown then retry
-      const backoffSeconds = Math.pow(2, retryCount - 1);
-      let countdown = backoffSeconds;
-      
-      this.setState({
-        isRetrying: true,
-        retryCountdown: countdown,
-      });
-
-      this.countdownInterval = setInterval(() => {
-        countdown -= 1;
-        this.setState({ retryCountdown: countdown });
-
-        if (countdown === 0) {
-          clearInterval(this.countdownInterval!);
-          this.props.onReset?.();
-          this.setState((state) => ({
-            hasError: false,
-            resetKey: state.resetKey + 1,
-            retryCount: state.retryCount + 1,
-            isRetrying: false,
-            retryCountdown: 0,
-          }));
-        }
-      }, 1000);
-    }
     this._clearCountdown();
   }
 
   private _clearCountdown() {
-    if (this._countdownTimer !== null) {
-      clearInterval(this._countdownTimer);
-      this._countdownTimer = null;
+    if (this.countdownTimer !== null) {
+      clearInterval(this.countdownTimer);
+      this.countdownTimer = null;
     }
   }
 
@@ -119,21 +77,30 @@ export class CheckoutErrorBoundary extends React.Component<
     this.setState({ isWaiting: true, waitSecondsLeft: delaySec });
 
     this._clearCountdown();
-    this._countdownTimer = setInterval(() => {
+    this.countdownTimer = setInterval(() => {
       this.setState((prev) => {
+    this._countdownTimer = setInterval(() => {
+      this.setState((prev): CheckoutErrorBoundaryState => {
         if (prev.waitSecondsLeft <= 1) {
           this._clearCountdown();
           // Actually perform the retry
           this.props.onReset?.();
           return {
+            ...prev,
             hasError: false,
             isWaiting: false,
             waitSecondsLeft: 0,
+            isRetrying: false,
+            retryCountdown: 0,
             retryCount: prev.retryCount + 1,
             resetKey: prev.resetKey + 1,
           };
         }
-        return { waitSecondsLeft: prev.waitSecondsLeft - 1 };
+        return { ...prev, waitSecondsLeft: prev.waitSecondsLeft - 1 };
+        return {
+          ...prev,
+          waitSecondsLeft: prev.waitSecondsLeft - 1,
+        };
       });
     }, 1000);
   };
@@ -159,20 +126,24 @@ export class CheckoutErrorBoundary extends React.Component<
             Your cart is safe. Try the checkout again, or contact support if the problem
             continues.
           </p>
-          {this.state.isRetrying && this.state.retryCountdown > 0 && (
-            <p className="mt-2 text-sm text-ink-600">
-              Retrying in {this.state.retryCountdown}s...
+
+          {isWaiting && (
+            <p aria-live="polite" className="mt-3 text-sm font-medium text-amber-600">
+              Retrying in {waitSecondsLeft}s…
             </p>
           )}
+
           <div className="mt-6 flex w-full max-w-xs flex-col gap-3 sm:flex-row">
             <Button
               type="button"
               fullWidth
+              disabled={isWaiting}
               onClick={this.handleRetry}
-              disabled={this.state.isRetrying}
-              icon={<RefreshCw className="h-4 w-4" />}
+              icon={
+                <RefreshCw className={`h-4 w-4 ${isWaiting ? 'animate-spin' : ''}`} />
+              }
             >
-              Try again
+              {isWaiting ? `Retrying in ${waitSecondsLeft}s` : 'Try again'}
             </Button>
             <Link
               href="/help"
@@ -184,21 +155,10 @@ export class CheckoutErrorBoundary extends React.Component<
           </div>
 
           {exhausted ? (
-            <>
-              <p className="mt-2 max-w-sm text-sm leading-6 text-ink-500">
-                We weren&apos;t able to complete checkout after several attempts. Your cart is
-                safe — please contact our support team and we&apos;ll sort it out right away.
-              </p>
-              <div className="mt-6">
-                <Link
-                  href="/help"
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-rose-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
-                >
-                  <LifeBuoy className="h-4 w-4" aria-hidden="true" />
-                  Contact support
-                </Link>
-              </div>
-            </>
+            <p className="mt-2 max-w-sm text-sm leading-6 text-ink-500">
+              We weren&apos;t able to complete checkout after several attempts. Your cart is
+              safe — please contact our support team and we&apos;ll sort it out right away.
+            </p>
           ) : (
             <>
               <p className="mt-2 max-w-sm text-sm leading-6 text-ink-500">
@@ -234,9 +194,7 @@ export class CheckoutErrorBoundary extends React.Component<
                 >
                   {isWaiting
                     ? `Retrying in ${waitSecondsLeft}s`
-                    : retryCount === 0
-                      ? 'Try again'
-                      : 'Try again'}
+                    : 'Try again'}
                 </Button>
                 <Link
                   href="/help"

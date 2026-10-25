@@ -90,9 +90,11 @@ interface SearchStore {
   /** Most recent searches, newest first (capped at MAX_RECENT_SEARCHES). */
   recentSearches: RecentSearch[];
   /** Records the current query/filters into recent history. */
-  addRecentSearch: () => void;
+  addRecentSearch: (query?: string) => void;
   /** Removes all recent search entries. */
   clearHistory: () => void;
+  /** Alias for clearHistory */
+  clearRecentSearches: () => void;
 
   /** User-saved searches for later reuse. */
   savedSearches: SavedSearch[];
@@ -195,8 +197,11 @@ export const useSearchStore = create<SearchStore>()(
         }),
 
       recentSearches: [],
-      addRecentSearch: () => {
+      addRecentSearch: (queryOverride?: string) => {
         const current = snapshot(get());
+        if (queryOverride) {
+          current.query = queryOverride;
+        }
         if (isEmptySnapshot(current)) return;
         set((state) => {
           const deduped = state.recentSearches.filter(
@@ -218,6 +223,7 @@ export const useSearchStore = create<SearchStore>()(
         });
       },
       clearHistory: () => set({ recentSearches: [] }),
+      clearRecentSearches: () => set({ recentSearches: [] }),
 
       savedSearches: [],
       saveSearch: (name?: string) => {

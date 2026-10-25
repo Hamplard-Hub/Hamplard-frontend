@@ -121,6 +121,7 @@ const FOOTER_COLUMNS = [
     title: 'Support',
     links: [
       { label: 'Help center', href: '/help' },
+      { label: 'Verify certificate', href: '/verify' },
       { label: 'Contact us', href: '/contact' },
       { label: 'Community', href: '/#community' },
       { label: 'FAQs', href: '/#faqs' },

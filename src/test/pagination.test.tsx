@@ -10,7 +10,7 @@ const mockGet = vi.fn((_key: string) => null);
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
   usePathname: () => '/courses',
-  useSearchParams: () => ({ get: mockGet }),
+  useSearchParams: () => ({ get: mockGet, toString: () => '' }),
 }));
 
 describe('Pagination Component', () => {

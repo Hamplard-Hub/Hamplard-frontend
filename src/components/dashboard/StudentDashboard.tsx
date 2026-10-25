@@ -4,6 +4,7 @@ import React from 'react';
 import { ContinueLearning } from '@/components/dashboard/ContinueLearning';
 import { QuickStats } from '@/components/dashboard/QuickStats';
 import { StreakTracker } from '@/components/dashboard/StreakTracker';
+import { DailyGoal } from '@/components/dashboard/DailyGoal';
 import Link from 'next/link';
 
 interface InProgressItem {
@@ -82,15 +83,22 @@ export function StudentDashboard({
       {/* Aside — stats + achievements */}
       <aside className="col-span-12 lg:col-span-4 space-y-4">
         <QuickStats stats={resolvedStats} />
+        <DailyGoal />
         <StreakTracker />
 
         <div className="card p-4">
-          <h3 className="text-sm font-semibold">Achievements</h3>
-          <p className="text-xs text-ink-500 mt-2">
-            You have {resolvedStats.find((s) => s.label === 'Certificates')?.value ?? 0} certificate
-            {(resolvedStats.find((s) => s.label === 'Certificates')?.value ?? 0) !== 1 ? 's' : ''}.
-            View them on your profile.
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold">Achievements & Badges</h3>
+            <Link href="/dashboard/achievements" className="text-xs font-medium text-saffron-600 hover:text-saffron-700">
+              View all
+            </Link>
+          </div>
+          <p className="text-xs text-ink-500">
+            Earn badges for learning streaks, completing lessons, and minting certificates.
           </p>
+          <Link href="/dashboard/achievements" className="btn-secondary mt-3 inline-flex text-xs">
+            View Achievements
+          </Link>
         </div>
 
         <div className="card p-4">

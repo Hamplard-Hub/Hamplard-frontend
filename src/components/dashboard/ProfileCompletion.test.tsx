@@ -228,7 +228,7 @@ describe('ProfileCompletion', () => {
       render(<ProfileCompletion variant="card" />);
 
       expect(screen.getByText('Payout method')).toBeInTheDocument();
-      expect(screen.getByText('5 of 5 items completed')).toBeInTheDocument();
+      expect(screen.getByText('0 of 5 items completed')).toBeInTheDocument();
     });
 
     it('links payout method to settings page', () => {

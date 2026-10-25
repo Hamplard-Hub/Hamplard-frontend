@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Bell, CheckCheck, Loader2 } from 'lucide-react';
 import { notificationsApi } from '@/lib/api/services';
 import { timeAgo } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/EmptyState';
 import type { Notification } from '@/types';
 
 const TYPE_COLORS: Record<string, string> = {
@@ -70,10 +71,11 @@ export default function NotificationsPage() {
           <Loader2 className="w-5 h-5 text-saffron-400 animate-spin" />
         </div>
       ) : notifications.length === 0 ? (
-        <div className="card p-12 text-center">
-          <Bell className="w-8 h-8 text-saffron-200 mx-auto mb-3" />
-          <p className="text-sm text-ink-500">No notifications yet</p>
-        </div>
+        <EmptyState
+          icon={<Bell className="w-6 h-6" />}
+          title="No notifications yet"
+          description="You’re all caught up for now. New course and platform updates will appear here."
+        />
       ) : (
         <div className="card divide-y divide-ink-50">
           {notifications.map((n) => (

@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, type Mock } from 'vitest';
 import SignupPage from './page';
 import * as nextNavigation from 'next/navigation';
 
@@ -93,7 +93,7 @@ describe('SignupPage', () => {
     it('submits form and redirects to dashboard when valid', async () => {
       const user = userEvent.setup();
       const mockPush = vi.fn();
-      (nextNavigation.useRouter as unknown as vi.Mock).mockReturnValue({ push: mockPush });
+      (nextNavigation.useRouter as unknown as Mock).mockReturnValue({ push: mockPush });
 
       render(<SignupPage />);
 
@@ -142,7 +142,7 @@ describe('SignupPage', () => {
     it('displays email already registered error', async () => {
       const user = userEvent.setup();
       const mockPush = vi.fn();
-      (nextNavigation.useRouter as unknown as vi.Mock).mockReturnValue({ push: mockPush });
+      (nextNavigation.useRouter as unknown as Mock).mockReturnValue({ push: mockPush });
 
       render(<SignupPage />);
 

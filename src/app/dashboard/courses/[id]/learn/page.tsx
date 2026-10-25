@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
   CheckCircle2, Circle, ChevronDown, ChevronRight,
-  Download, Loader2, ArrowLeft, Award, SkipForward, MessageSquare,
+  Download, Loader2, ArrowLeft, Award, SkipForward, MessageSquare, Lock,
+  Clock, Maximize2, Minimize2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { coursesApi, enrollmentsApi, lessonsApi } from '@/lib/api/services';
 import { formatDuration, cn } from '@/lib/utils';
+import { useToast } from '@/lib/hooks/use-toast';
 import { sanitizeHtml } from '@/lib/utils/sanitize';
 import CourseCompletionModal from '@/components/learn/CourseCompletionModal';
 import { AssignmentSubmission } from '@/components/learn/AssignmentSubmission';
@@ -16,11 +18,15 @@ import { VideoPlayer } from '@/components/learn/VideoPlayer';
 import { AutoplayCountdown } from '@/components/learn/AutoplayCountdown';
 import NotesPanel from '@/components/learn/NotesPanel';
 import { QuizComponent } from '@/components/learn/QuizComponent';
+import { StepChecklist } from '@/components/learn/StepChecklist';
+import { getModuleLockInfo } from '@/components/learn/LearnSidebar';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import type { Course, Enrollment, Lesson, QuizQuestion } from '@/types';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const AUTOPLAY_STORAGE_KEY = 'hamplard:autoplay';
+const FOCUS_MODE_STORAGE_KEY = 'hamplard_learn_focus_mode';
+const WORDS_PER_MINUTE = 200;
 
 // SidebarTab type
 type SidebarTab = 'lessons' | 'notes' | 'qa';
@@ -41,6 +47,11 @@ export default function LearnPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const lessonParam = searchParams.get('lesson');
+  // Captured once so the initial load does not re-run on every lesson change
+  const initialLessonRef = useRef<string | null>(lessonParam);
+  const toast = useToast();
   // requestedLessonId reserved for future deep-link support
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _requestedLessonId = searchParams.get("lesson");
@@ -55,6 +66,7 @@ export default function LearnPage() {
   const [markError, setMarkError] = useState<string | null>(null);
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>("lessons");
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // ── Autoplay state ───────────────────────────────────────────────────────
   const [autoplay, setAutoplay] = useState<boolean>(() => {
@@ -71,6 +83,21 @@ export default function LearnPage() {
   // videoRef forwarded into VideoPlayer so NotesPanel can read current time
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
+  const completedIds = useMemo(() => {
+    return new Set(
+      enrollment?.lessonProgress
+        ?.filter((p: { completed: boolean }) => p.completed)
+        .map((p: { lessonId: string }) => p.lessonId) ?? [],
+    );
+  }, [enrollment]);
+
+  const handleSeek = useCallback((timestamp: number) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = timestamp;
+      videoRef.current.play?.().catch(() => {});
+    }
+  }, []);
+
   // ── Derived: next lesson ─────────────────────────────────────────────────
   const nextLesson = useMemo<Lesson | null>(() => {
     if (!course || !activeLesson) return null;
@@ -82,7 +109,10 @@ export default function LearnPage() {
   // selectLesson: named alias for setActiveLesson used in QuizComponent onContinue
   const selectLesson = useCallback((lesson: Lesson) => {
     setActiveLesson(lesson);
-  }, []);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('lesson', lesson.id);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [router, pathname, searchParams]);
 
   // ── Persist autoplay preference ──────────────────────────────────────────
   const handleAutoplayChange = useCallback((enabled: boolean) => {
@@ -102,10 +132,26 @@ export default function LearnPage() {
 
   // ── Navigate to next lecture ─────────────────────────────────────────────
   const goToNext = useCallback(() => {
-    if (!nextLesson) return;
+    if (!nextLesson || !course) return;
+    const nextModIdx = course.modules?.findIndex((m) =>
+      m.lessons.some((l) => l.id === nextLesson.id),
+    ) ?? -1;
+    if (nextModIdx !== -1 && course.modules) {
+      const lock = getModuleLockInfo(course.modules[nextModIdx], nextModIdx, course.modules, completedIds);
+      if (lock.isLocked) {
+        toast.warning({
+          title: 'Lesson Locked',
+          description: lock.reason || 'This lesson is currently locked.',
+        });
+        setShowCountdown(false);
+        return;
+      }
+    }
     setShowCountdown(false);
+    selectLesson(nextLesson);
+  }, [nextLesson, selectLesson]);
     setActiveLesson(nextLesson);
-  }, [nextLesson]);
+  }, [nextLesson, course, completedIds, toast]);
 
   const cancelCountdown = useCallback(() => {
     setShowCountdown(false);
@@ -123,12 +169,30 @@ export default function LearnPage() {
       setEnrollment(e);
       // Open first module by default
       if (c.modules?.[0]) setExpanded({ [c.modules[0].id]: true });
-      // Start from first incomplete lesson
+      // Start from first incomplete, non-locked lesson
       const allLessons = flatLessons(c);
-      const completedIds = new Set(
+      const completedSet = new Set(
         e.lessonProgress?.filter((p: { completed: boolean }) => p.completed).map((p: { lessonId: string }) => p.lessonId),
       );
-      const first = allLessons.find((l) => !completedIds.has(l.id)) ?? allLessons[0];
+      const requested = initialLessonRef.current
+        ? allLessons.find((l) => l.id === initialLessonRef.current)
+        : undefined;
+      const first = requested ?? allLessons.find((l) => !completedIds.has(l.id)) ?? allLessons[0];
+      if (first) {
+        setActiveLesson(first);
+        const owner = c.modules?.find((m) => m.lessons.some((l) => l.id === first.id));
+        const open = owner ?? c.modules?.[0];
+        if (open) setExpanded({ [open.id]: true });
+      }    })
+      const first = allLessons.find((l) => {
+        if (completedSet.has(l.id)) return false;
+        const modIdx = c.modules?.findIndex((m) => m.lessons.some((ml) => ml.id === l.id)) ?? -1;
+        if (modIdx !== -1 && c.modules) {
+          const lock = getModuleLockInfo(c.modules[modIdx], modIdx, c.modules, completedSet);
+          if (lock.isLocked) return false;
+        }
+        return true;
+      }) ?? allLessons[0];
       if (first) setActiveLesson(first);
     })
     .catch((err) => {
@@ -190,13 +254,24 @@ export default function LearnPage() {
     setMarkError(null);
   }, [activeLesson]);
 
+  // Follow ?lesson= changes (back/forward, manual URL edits)
+  useEffect(() => {
+    if (!course || !lessonParam || activeLesson?.id === lessonParam) return;
+    const match = flatLessons(course).find((l) => l.id === lessonParam);
+    if (!match) return;
+    setActiveLesson(match);
+    const owner = course.modules?.find((m) => m.lessons.some((l) => l.id === match.id));
+    if (owner) setExpanded((p) => ({ ...p, [owner.id]: true }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonParam, course]);
+
   // ── Helpers ──────────────────────────────────────────────────────────────
   const isLessonCompleted = (lessonId: string) =>
     enrollment?.lessonProgress?.some(
       (p: { lessonId: string; completed: boolean }) => p.lessonId === lessonId && p.completed,
     ) ?? false;
 
-  const handleMarkComplete = async () => {
+  const handleMarkComplete = useCallback(async () => {
     if (!activeLesson || !enrollment || marking) return;
     setMarking(true);
     setMarkError(null);
@@ -210,7 +285,102 @@ export default function LearnPage() {
     } finally {
       setMarking(false);
     }
-  };
+  }, [activeLesson, enrollment, marking, id]);
+
+  // ── Focus mode state & keyboard shortcuts (Issue #404) ────────────────────
+  const [focusMode, setFocusMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(FOCUS_MODE_STORAGE_KEY) === 'true';
+  });
+
+  const toggleFocusMode = useCallback(() => {
+    setFocusMode((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(FOCUS_MODE_STORAGE_KEY, String(next));
+      }
+      return next;
+    });
+  }, []);
+
+  const exitFocusMode = useCallback(() => {
+    setFocusMode(false);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(FOCUS_MODE_STORAGE_KEY, 'false');
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleFocusMode();
+      } else if (e.key === 'Escape' && focusMode) {
+        e.preventDefault();
+        exitFocusMode();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [toggleFocusMode, exitFocusMode, focusMode]);
+
+  // ── Reading progress & estimated read time (Issue #405) ───────────────────
+  const contentScrollRef = useRef<HTMLDivElement | null>(null);
+  const [readingProgress, setReadingProgress] = useState(0);
+  const hasAutoCompletedRef = useRef(false);
+
+  const { wordCount, readTimeMinutes } = useMemo(() => {
+    if (!activeLesson?.content) return { wordCount: 0, readTimeMinutes: 1 };
+    const plainText = activeLesson.content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const words = plainText ? plainText.split(' ').filter(Boolean).length : 0;
+    const mins = Math.max(1, Math.ceil(words / WORDS_PER_MINUTE));
+    return { wordCount: words, readTimeMinutes: mins };
+  }, [activeLesson?.content]);
+
+  useEffect(() => {
+    hasAutoCompletedRef.current = false;
+    setReadingProgress(0);
+    if (contentScrollRef.current) {
+      contentScrollRef.current.scrollTop = 0;
+    }
+  }, [activeLesson?.id]);
+
+  const handleScroll = useCallback(() => {
+    const el = contentScrollRef.current;
+    if (!el || activeLesson?.type !== 'TEXT') return;
+
+    const scrollTop = el.scrollTop;
+    const scrollHeight = el.scrollHeight - el.clientHeight;
+    if (scrollHeight <= 0) {
+      setReadingProgress(100);
+      return;
+    }
+
+    const currentPercent = Math.min(100, Math.max(0, Math.round((scrollTop / scrollHeight) * 100)));
+    setReadingProgress(currentPercent);
+
+    if (currentPercent >= 95 && !hasAutoCompletedRef.current) {
+      hasAutoCompletedRef.current = true;
+      if (activeLesson && !isLessonCompleted(activeLesson.id)) {
+        handleMarkComplete();
+        toast.success({
+          title: 'Lesson Completed',
+          description: 'You finished reading this lesson!',
+        });
+      }
+    }
+  }, [activeLesson, isLessonCompleted, handleMarkComplete, toast]);
 
   const totalLessons   = course ? flatLessons(course).length : 0;
   const completedCount = enrollment?.lessonProgress?.filter((p: { completed: boolean }) => p.completed).length ?? 0;
@@ -254,7 +424,29 @@ export default function LearnPage() {
       )}
 
       {/* ── Lesson sidebar ──────────────────────────────────────────────── */}
-      <aside className="w-72 bg-white border-r border-ink-100 flex flex-col flex-shrink-0 overflow-y-auto">
+      <aside className={cn(
+        "w-72 bg-white border-r border-ink-100 flex flex-col flex-shrink-0 overflow-y-auto transition-all duration-200",
+        focusMode && "hidden md:hidden"
+      )}>
+      <button
+        type="button"
+        onClick={() => setSidebarOpen((o) => !o)}
+        aria-expanded={sidebarOpen}
+        aria-controls="learn-curriculum"
+        className="md:hidden flex flex-shrink-0 items-center justify-between border-b border-ink-100 bg-white px-4 py-3 text-sm font-medium text-ink-700"
+      >
+        <span>Course content</span>
+        {sidebarOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+      </button>
+
+      <aside
+        id="learn-curriculum"
+        className={cn(
+          sidebarOpen ? 'flex' : 'hidden',
+          'md:flex w-full max-h-[40vh] md:max-h-none md:w-72 flex-col flex-shrink-0 overflow-y-auto',
+          'bg-white border-b border-ink-100 md:border-b-0 md:border-r',
+        )}
+      >
         {/* Header */}
         <div className="p-4 border-b border-ink-100">
           <Link
@@ -297,7 +489,11 @@ export default function LearnPage() {
         {/* Modules + lessons */}
         {sidebarTab === "lessons" && (
           <div className="flex-1">
-            {course.modules?.map((module) => (
+            {course.modules?.map((module, mIdx) => {
+              const lockInfo = getModuleLockInfo(module, mIdx, course.modules ?? [], completedIds);
+              const isLocked = lockInfo.isLocked;
+
+              return (
               <div key={module.id} className="border-b border-ink-50">
                 <button
                   onClick={() =>
@@ -311,7 +507,12 @@ export default function LearnPage() {
                       {module.lessons.length} lesson{module.lessons.length !== 1 ? 's' : ''}
                     </p>
                   </div>
-                  {expanded[module.id] ? (
+                  {isLocked ? (
+                    <div className="flex items-center gap-1 text-amber-700 bg-amber-50 px-2 py-0.5 rounded text-[10px] font-medium border border-amber-200 flex-shrink-0">
+                      <Lock className="w-3 h-3" />
+                      <span>{lockInfo.reason}</span>
+                    </div>
+                  ) : expanded[module.id] ? (
                     <ChevronDown className="w-3.5 h-3.5 text-ink-400 flex-shrink-0" />
                   ) : (
                     <ChevronRight className="w-3.5 h-3.5 text-ink-400 flex-shrink-0" />
@@ -326,13 +527,26 @@ export default function LearnPage() {
                       return (
                         <button
                           key={lesson.id}
-                          onClick={() => setActiveLesson(lesson)}
+                          onClick={() => selectLesson(lesson)}
+                          onClick={() => {
+                            if (isLocked) {
+                              toast.warning({
+                                title: 'Lesson Locked',
+                                description: lockInfo.reason || 'Complete previous module to unlock this lesson.',
+                              });
+                              return;
+                            }
+                            setActiveLesson(lesson);
+                          }}
                           className={cn(
                             'w-full flex items-start gap-2.5 px-4 py-2.5 text-left transition-colors',
                             active ? 'bg-saffron-50' : 'hover:bg-ink-50',
+                            isLocked && 'opacity-80 cursor-not-allowed',
                           )}
                         >
-                          {done ? (
+                          {isLocked ? (
+                            <Lock className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                          ) : done ? (
                             <CheckCircle2 className="w-4 h-4 text-leaf-500 flex-shrink-0 mt-0.5" />
                           ) : (
                             <Circle
@@ -342,24 +556,30 @@ export default function LearnPage() {
                               )}
                             />
                           )}
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <p
                               className={cn(
                                 'text-xs leading-snug',
                                 active
                                   ? 'font-semibold text-saffron-700'
-                                  : done
-                                    ? 'text-ink-500'
-                                    : 'text-ink-700',
+                                  : isLocked
+                                    ? 'text-ink-400'
+                                    : done
+                                      ? 'text-ink-500'
+                                      : 'text-ink-700',
                               )}
                             >
                               {lesson.title}
                             </p>
-                            {lesson.videoDuration && (
+                            {isLocked && lockInfo.reason ? (
+                              <p className="text-[10px] text-amber-600 mt-0.5">
+                                {lockInfo.reason}
+                              </p>
+                            ) : lesson.videoDuration ? (
                               <p className="text-[10px] text-ink-400 mt-0.5">
                                 {formatDuration(lesson.videoDuration)}
                               </p>
-                            )}
+                            ) : null}
                           </div>
                         </button>
                       );
@@ -367,7 +587,8 @@ export default function LearnPage() {
                   </div>
                 )}
               </div>
-            ))}
+            );
+          })}
           </div>
         )}
 
@@ -394,19 +615,48 @@ export default function LearnPage() {
       </aside>
 
       {/* ── Main lesson content ──────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div
+        ref={contentScrollRef}
+        onScroll={handleScroll}
+        className={cn(
+          "flex-1 overflow-y-auto p-6 transition-all duration-200",
+          focusMode && "p-4 sm:p-8"
+        )}
+      >
         {activeLesson ? (
-          <div className="max-w-3xl mx-auto">
+          <div className={cn("max-w-3xl mx-auto", focusMode && "max-w-4xl")}>
+            {/* Focus Mode Banner (active) */}
+            {focusMode && (
+              <div className="sticky top-0 z-30 mb-4 flex items-center justify-between rounded-xl bg-ink-900/90 px-4 py-2.5 text-white shadow-lg backdrop-blur-sm animate-fade-in">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-2 w-2 rounded-full bg-saffron-400 animate-pulse" />
+                  <span className="text-xs font-medium text-ink-100">Focus Mode</span>
+                  <span className="hidden sm:inline text-[10px] text-ink-400 font-mono">(Press Esc to exit)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={exitFocusMode}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1 text-xs font-medium text-white hover:bg-white/20 transition-colors"
+                  aria-label="Exit Focus Mode"
+                >
+                  <Minimize2 className="w-3.5 h-3.5" />
+                  Exit Focus
+                </button>
+              </div>
+            )}
+
             {/* Breadcrumb — sits above the lesson content */}
-            <Breadcrumb
-              items={[
-                { label: "Dashboard", href: "/dashboard" },
-                { label: "My Courses", href: "/dashboard/courses" },
-                { label: course.title, href: `/dashboard/courses/${id}` },
-                { label: activeLesson.title },
-              ]}
-              className="mb-5"
-            />
+            {!focusMode && (
+              <Breadcrumb
+                items={[
+                  { label: "Dashboard", href: "/dashboard" },
+                  { label: "My Courses", href: "/dashboard/courses" },
+                  { label: course.title, href: `/dashboard/courses/${id}` },
+                  { label: activeLesson.title },
+                ]}
+                className="mb-5"
+              />
+            )}
 
             {/* Video */}
             {activeLesson.videoUrl && (
@@ -436,12 +686,48 @@ export default function LearnPage() {
               </div>
             )}
 
-            {/* Text content */}
+            {/* Step-by-step practical checklist */}
+            {activeLesson.steps && activeLesson.steps.length > 0 && (
+              <StepChecklist
+                key={activeLesson.id}
+                lessonId={activeLesson.id}
+                steps={activeLesson.steps}
+                onSeek={handleSeek}
+                className="mb-5"
+              />
+            )}
+
+            {/* Text content with Reading Progress Bar & Read Time Estimate (Issue #405) */}
             {activeLesson.type === "TEXT" && activeLesson.content && (
-              <div className="card p-6 mb-5 prose prose-sm max-w-none">
-                <div
-                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(activeLesson.content) }}
-                />
+              <div className="relative mb-5">
+                {/* Sticky Reading Progress Indicator */}
+                <div className="sticky top-0 z-20 mb-3 rounded-xl border border-ink-100 bg-white/95 p-3 backdrop-blur-sm shadow-sm">
+                  <div className="flex items-center justify-between text-xs text-ink-500 mb-2">
+                    <span className="inline-flex items-center gap-1.5 font-medium text-saffron-800">
+                      <Clock className="w-3.5 h-3.5 text-saffron-600" />
+                      {readTimeMinutes} min read ({wordCount} words)
+                    </span>
+                    <span className="font-mono text-[11px] text-ink-500 font-medium">
+                      {readingProgress}% read
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink-100">
+                    <div
+                      className="h-full rounded-full bg-saffron-500 transition-all duration-150"
+                      style={{ width: `${readingProgress}%` }}
+                      role="progressbar"
+                      aria-valuenow={readingProgress}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                    />
+                  </div>
+                </div>
+
+                <div className="card p-6 prose prose-sm max-w-none">
+                  <div
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(activeLesson.content) }}
+                  />
+                </div>
               </div>
             )}
 
@@ -457,9 +743,9 @@ export default function LearnPage() {
               </div>
             )}
 
-            {/* Title + mark complete row */}
-            <div className="flex items-start justify-between mb-5">
-              <div>
+            {/* Title + controls row (Focus Mode + Mark complete) */}
+            <div className="flex items-start justify-between mb-5 gap-4">
+              <div className="min-w-0 flex-1">
                 <h1 className="font-display text-xl font-semibold text-ink-900 mb-1">
                   {activeLesson.title}
                 </h1>
@@ -470,20 +756,45 @@ export default function LearnPage() {
                 )}
               </div>
 
-              <div className="flex flex-col items-end flex-shrink-0 ml-4">
-                {!isLessonCompleted(activeLesson.id) ? (
-                  <button
-                    onClick={handleMarkComplete}
-                    disabled={marking}
-                    className="btn-leaf flex-shrink-0"
-                  >
-                    {marking ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4" />
-                    )}
-                    Mark complete
-                  </button>
+              <div className="flex items-center gap-2.5 flex-shrink-0">
+                {/* Focus mode toggle button (Issue #404) */}
+                <button
+                  type="button"
+                  onClick={toggleFocusMode}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-ink-200 bg-white px-3 py-2 text-xs font-medium text-ink-700 hover:bg-ink-50 hover:text-ink-900 transition-colors shadow-sm"
+                  title={focusMode ? "Exit Focus Mode (Esc)" : "Enter Focus Mode (F)"}
+                  aria-label="Toggle Focus Mode"
+                >
+                  {focusMode ? (
+                    <>
+                      <Minimize2 className="w-3.5 h-3.5 text-ink-500" />
+                      <span className="hidden sm:inline">Exit Focus</span>
+                    </>
+                  ) : (
+                    <>
+                      <Maximize2 className="w-3.5 h-3.5 text-ink-500" />
+                      <span className="hidden sm:inline">Focus Mode</span>
+                      <kbd className="hidden sm:inline-block rounded bg-ink-100 px-1.5 py-0.5 text-[10px] font-mono text-ink-500">
+                        F
+                      </kbd>
+                    </>
+                  )}
+                </button>
+
+                <div className="flex flex-col items-end">
+                  {!isLessonCompleted(activeLesson.id) ? (
+                    <button
+                      onClick={handleMarkComplete}
+                      disabled={marking}
+                      className="btn-leaf flex-shrink-0"
+                    >
+                      {marking ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <CheckCircle2 className="w-4 h-4" />
+                      )}
+                      Mark complete
+                    </button>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 text-xs font-medium text-leaf-600 bg-leaf-50 px-3 py-1.5 rounded-xl">
                     <CheckCircle2 className="w-3.5 h-3.5" />
@@ -497,6 +808,7 @@ export default function LearnPage() {
                 )}
               </div>
             </div>
+          </div>
 
             {activeLesson.type === 'ASSIGNMENT' && (
               <AssignmentSubmission key={activeLesson.id} lesson={activeLesson} />

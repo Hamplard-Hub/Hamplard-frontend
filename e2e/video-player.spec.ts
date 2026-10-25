@@ -267,15 +267,19 @@ test.describe("Video player", () => {
       player.getByRole("button", { name: "Pause", exact: true }),
     ).toBeVisible();
     await expect
-      .poll(() => video.evaluate((element) => element.currentTime))
+      .poll(() => video.evaluate((element) => (element as HTMLVideoElement).currentTime))
       .toBeGreaterThan(0);
-    expect(await video.evaluate((element) => element.paused)).toBe(false);
+    expect(await video.evaluate((element) => (element as HTMLVideoElement).paused)).toBe(false);
+      .poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime))
+      .toBeGreaterThan(0);
+    expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(false);
 
     await player.getByRole("button", { name: "Pause", exact: true }).click();
     await expect(
       player.getByRole("button", { name: "Play", exact: true }),
     ).toBeVisible();
-    expect(await video.evaluate((element) => element.paused)).toBe(true);
+    expect(await video.evaluate((element) => (element as HTMLVideoElement).paused)).toBe(true);
+    expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true);
   });
 
   test("seeking updates the video current time", async ({ page }) => {
@@ -286,7 +290,8 @@ test.describe("Video player", () => {
 
     await expect
       .poll(() =>
-        player.locator("video").evaluate((video) => video.currentTime),
+        player.locator("video").evaluate((video) => (video as HTMLVideoElement).currentTime),
+        player.locator("video").evaluate((video: HTMLVideoElement) => video.currentTime),
       )
       .toBe(42);
     await expect(player.getByText("0:42 / 2:00")).toBeVisible();
@@ -300,12 +305,18 @@ test.describe("Video player", () => {
     const speed = player.getByRole("combobox", { name: "Playback speed" });
 
     await speed.selectOption("1.5");
-    expect(await video.evaluate((element) => element.playbackRate)).toBe(1.5);
+    expect(await video.evaluate((element) => (element as HTMLVideoElement).playbackRate)).toBe(1.5);
 
-    const before = await video.evaluate((element) => element.currentTime);
+    const before = await video.evaluate((element) => (element as HTMLVideoElement).currentTime);
     await player.getByRole("button", { name: "Play", exact: true }).click();
     await page.waitForTimeout(500);
-    const after = await video.evaluate((element) => element.currentTime);
+    const after = await video.evaluate((element) => (element as HTMLVideoElement).currentTime);
+    expect(await video.evaluate((element: HTMLVideoElement) => element.playbackRate)).toBe(1.5);
+
+    const before = await video.evaluate((element: HTMLVideoElement) => element.currentTime);
+    await player.getByRole("button", { name: "Play", exact: true }).click();
+    await page.waitForTimeout(500);
+    const after = await video.evaluate((element: HTMLVideoElement) => element.currentTime);
 
     expect(after - before).toBeGreaterThan(0.3);
   });
@@ -315,6 +326,8 @@ test.describe("Video player", () => {
     const video = player.locator("video");
 
     await video.evaluate((element) => {
+      (element as HTMLVideoElement).currentTime = 27;
+    await video.evaluate((element: HTMLVideoElement) => {
       element.currentTime = 27;
     });
     await player.getByRole("button", { name: "Play", exact: true }).click();

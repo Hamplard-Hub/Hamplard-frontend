@@ -17,7 +17,7 @@ function exportCsv(rows: StudentEnrollmentRow[]) {
     'Last Active',
   ];
 
-  const escape = (v: string | null | undefined) => {
+  const escape = (v: string | number | null | undefined) => {
     if (v == null) return '';
     const s = String(v).replace(/"/g, '""');
     return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;

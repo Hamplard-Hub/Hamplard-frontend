@@ -356,6 +356,7 @@ export function MenuTrigger({
             onClick?: () => void;
             "aria-haspopup"?: string;
             "aria-expanded"?: boolean;
+            "aria-controls"?: string;
             ref?: React.RefObject<HTMLButtonElement>;
             className?: string;
           }>, {

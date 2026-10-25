@@ -51,23 +51,38 @@ vi.mock('@/lib/utils', () => ({
 
 const mockCourse: Course = {
   id: 'course-123',
+  instructorAddress: 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF',
   title: 'Advanced React Patterns and Best Practices for Professional Development',
   description: 'Learn advanced React patterns and best practices for building scalable applications.',
   category: 'Web Development',
   level: 'INTERMEDIATE',
+  language: 'English',
   price: 49.99,
+  platformFeePercent: 10,
   originalPrice: 99.99,
   thumbnailUrl: 'https://example.com/thumbnail.jpg',
+  previewVideoUrl: null,
   totalDuration: 3600,
   totalLessons: 24,
+  totalEnrollments: 120,
+  totalRevenue: 5998.8,
+  txHash: null,
+  approvedAt: new Date().toISOString(),
   rating: 4.5,
   reviewCount: 1250,
-  instructor: { id: 'instructor-1', name: 'John Doe', avatarUrl: null },
+  instructor: {
+    name: 'John Doe',
+    stellarAddress: 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF',
+    avatarUrl: null,
+  },
   status: 'ACTIVE',
   badge: 'bestseller',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
+  modules: [],
+  _count: { enrollments: 120 },
 };
+} as unknown as Course;
 
 // jsdom does not implement window.matchMedia — stub it so the hover-prefetch
 // hook can detect pointer devices. Defaults to a fine-pointer (desktop) device.

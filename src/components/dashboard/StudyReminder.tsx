@@ -6,9 +6,14 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Bell, BellOff, Save, Loader2, CheckCircle2 } from 'lucide-react';
+import { Bell, BellOff, Save, Loader2, CheckCircle2, Calendar, Download, ExternalLink } from 'lucide-react';
 import { useToast } from '@/lib/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import {
+  generateRecurringIcs,
+  generateGoogleCalendarUrl,
+  downloadIcsFile,
+} from '@/lib/utils/ics';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -178,6 +183,44 @@ export function StudyReminder() {
 
   const notifBlocked = 'Notification' in window && notifPermission === 'denied';
 
+  const handleDownloadIcs = () => {
+    if (schedule.days.length === 0) {
+      toast.warning({
+        title: 'No days selected',
+        description: 'Please select at least one day before exporting.',
+      });
+      return;
+    }
+    try {
+      const icsData = generateRecurringIcs({
+        title: 'Hamplard Study Time 🎓',
+        description: schedule.message || DEFAULT_MESSAGE,
+        days: schedule.days,
+        time: schedule.time,
+      });
+      downloadIcsFile('hamplard-study-reminder.ics', icsData);
+      toast.success({
+        title: 'Calendar event downloaded',
+        description: 'Import hamplard-study-reminder.ics into Google, Apple, or Outlook Calendar.',
+      });
+    } catch {
+      toast.error({
+        title: 'Export failed',
+        description: 'Could not generate calendar file. Please verify your schedule.',
+      });
+    }
+  };
+
+  const googleCalendarUrl =
+    schedule.days.length > 0
+      ? generateGoogleCalendarUrl({
+          title: 'Hamplard Study Time 🎓',
+          description: schedule.message || DEFAULT_MESSAGE,
+          days: schedule.days,
+          time: schedule.time,
+        })
+      : undefined;
+
   return (
     <section className="card p-6 space-y-5">
       {/* Header */}
@@ -309,24 +352,52 @@ export function StudyReminder() {
         </div>
       </div>
 
-      {/* Save button */}
-      <button
-        type="button"
-        onClick={handleSave}
-        className="btn-primary inline-flex items-center gap-2 text-sm"
-      >
-        {saved ? (
-          <>
-            <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-            Saved!
-          </>
-        ) : (
-          <>
-            <Save className="h-4 w-4" aria-hidden="true" />
-            Save reminder
-          </>
+      {/* Action buttons */}
+      <div className="flex flex-wrap items-center gap-3 pt-2">
+        <button
+          type="button"
+          onClick={handleSave}
+          className="btn-primary inline-flex items-center gap-2 text-sm"
+        >
+          {saved ? (
+            <>
+              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+              Saved!
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4" aria-hidden="true" />
+              Save reminder
+            </>
+          )}
+        </button>
+
+        {/* Calendar Export Options (Issue #403) */}
+        <button
+          type="button"
+          onClick={handleDownloadIcs}
+          disabled={schedule.days.length === 0}
+          className="btn-secondary inline-flex items-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Download .ics recurring event for Apple, Google, or Outlook Calendar"
+        >
+          <Download className="h-4 w-4 text-ink-600" aria-hidden="true" />
+          Download .ics
+        </button>
+
+        {googleCalendarUrl && (
+          <a
+            href={googleCalendarUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary inline-flex items-center gap-2 text-sm"
+            title="Add recurring reminder to Google Calendar"
+          >
+            <Calendar className="h-4 w-4 text-saffron-600" aria-hidden="true" />
+            Google Calendar
+            <ExternalLink className="h-3.5 w-3.5 opacity-60" aria-hidden="true" />
+          </a>
         )}
-      </button>
+      </div>
     </section>
   );
 }

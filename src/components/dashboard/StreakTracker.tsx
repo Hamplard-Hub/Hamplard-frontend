@@ -1,6 +1,7 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState } from 'react';
+import { addLearningMinutes } from './DailyGoal';
 
 interface StreakData {
   currentStreak: number;
@@ -63,8 +64,12 @@ function computeStreak(data: StreakData, today: string): StreakData {
   return { ...data, currentStreak: 0, lastActiveDate: today };
 }
 
+
 export function recordLearningSession(minutes: number) {
   if (minutes < MIN_SESSION_MINUTES) return;
+
+  // Track daily goal learning minutes
+  addLearningMinutes(minutes);
 
   const today = getTodayKey();
   const data = loadStreakData();

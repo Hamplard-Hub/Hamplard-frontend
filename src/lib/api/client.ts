@@ -1,8 +1,11 @@
 // lib/api/client.ts
 import axios, { AxiosError } from 'axios';
+import { getApiUrl } from './config';
+
+const baseURL = getApiUrl();
 
 export const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1',
+  baseURL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 20_000,
 });

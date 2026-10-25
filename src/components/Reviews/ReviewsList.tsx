@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import RatingSummary from "./RatingSummary";
+import { RatingSummary } from "./RatingSummary";
 
 interface Review {
   id: string;

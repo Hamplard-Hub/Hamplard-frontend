@@ -4,7 +4,7 @@ import { formatUsdc, courseTotalMins } from '@/lib/utils';
 import type { Course } from '@/types';
 import RecentlyViewedTracker from '@/components/courses/RecentlyViewedTracker';
 import { Breadcrumb } from '@/components/ui';
-import CurriculumAccordion from '@/components/courses/CurriculumAccordion';
+import { CurriculumAccordion } from '@/components/courses/CurriculumAccordion';
 
 // Metadata and JSON-LD are handled by the server layout at
 // src/app/courses/[id]/layout.tsx — no need to duplicate them here.
@@ -93,6 +93,21 @@ export default async function CoursePage({ params }: Props) {
               </p>
             </div>
 
+            <div className="flex items-center gap-2 border-b border-ink-200 pt-2">
+              <span className="border-b-2 border-saffron-500 pb-2 px-3 text-sm font-semibold text-ink-900">
+                Curriculum
+              </span>
+              <Link
+                href={`/courses/${course.id}/showcase`}
+                className="pb-2 px-3 text-sm font-medium text-ink-500 hover:text-ink-900 transition-colors flex items-center gap-1.5"
+              >
+                <span>Student Showcase</span>
+                <span className="rounded-full bg-saffron-100 px-2 py-0.5 text-[11px] font-semibold text-saffron-700">
+                  New
+                </span>
+              </Link>
+            </div>
+
             <CurriculumAccordion modules={course.modules ?? []} />
           </div>
 
@@ -126,6 +141,12 @@ export default async function CoursePage({ params }: Props) {
               className="btn-secondary w-full text-center px-5 py-3 flex items-center justify-center gap-2"
             >
               🎁 Gift this course
+            </Link>
+            <Link
+              href={`/courses/${course.id}/showcase`}
+              className="w-full text-center px-5 py-2.5 rounded-xl border border-saffron-200 bg-saffron-50 text-saffron-800 text-sm font-medium hover:bg-saffron-100 transition-colors flex items-center justify-center gap-2"
+            >
+              ✨ View Student Showcase
             </Link>
           </aside>
         </div>

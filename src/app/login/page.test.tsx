@@ -56,7 +56,7 @@ describe('LoginPage integration', () => {
     render(<LoginPage />);
 
     await user.type(screen.getByLabelText(/email/i), 'not-an-email');
-    await user.type(screen.getByLabelText(/password/i), 'password123');
+    await user.type(screen.getByLabelText(/^password$/i), 'password123');
     await user.click(screen.getByRole('button', { name: /login/i }));
 
     expect(await screen.findByText('Enter a valid email address.')).toBeInTheDocument();
@@ -67,7 +67,7 @@ describe('LoginPage integration', () => {
     render(<LoginPage />);
 
     await user.type(screen.getByLabelText(/email/i), 'student@example.com');
-    await user.type(screen.getByLabelText(/password/i), 'short');
+    await user.type(screen.getByLabelText(/^password$/i), 'short');
     await user.click(screen.getByRole('button', { name: /login/i }));
 
     expect(await screen.findByText('Password must be at least 8 characters.')).toBeInTheDocument();
@@ -82,7 +82,7 @@ describe('LoginPage integration', () => {
     render(<LoginPage />);
 
     await user.type(screen.getByLabelText(/email/i), 'student@example.com');
-    await user.type(screen.getByLabelText(/password/i), 'password123');
+    await user.type(screen.getByLabelText(/^password$/i), 'password123');
     await user.click(screen.getByRole('button', { name: /login/i }));
 
     await waitFor(() => {
@@ -117,7 +117,7 @@ describe('LoginPage integration', () => {
     render(<LoginPage />);
 
     await user.type(screen.getByLabelText(/email/i), 'student@example.com');
-    await user.type(screen.getByLabelText(/password/i), 'password123');
+    await user.type(screen.getByLabelText(/^password$/i), 'password123');
     await user.click(screen.getByRole('button', { name: /login/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Invalid credentials');

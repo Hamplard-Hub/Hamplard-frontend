@@ -14,11 +14,12 @@ import {
   ShoppingCart,
   User,
   X,
+  MessageSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMobileDrawerFocusTrap } from '@/lib/hooks/use-focus-trap';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
-import { coursesApi } from '@/lib/api/services';
+import { coursesApi, messagesApi } from '@/lib/api/services';
 import { CATEGORY_META, getCategoryMeta } from '@/components/category/CategoryHero';
 import type { Category, Course } from '@/types';
 
@@ -97,6 +98,16 @@ export function Header() {
   const [activeCategorySlug, setActiveCategorySlug] = useState(STATIC_CATEGORIES[0]?.slug ?? '');
   const [avatarOpen, setAvatarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  useEffect(() => {
+    const syncUnread = () => {
+      messagesApi.getUnreadCount().then(setUnreadMessages).catch(() => {});
+    };
+    syncUnread();
+    window.addEventListener('hamplard:messages-updated', syncUnread);
+    return () => window.removeEventListener('hamplard:messages-updated', syncUnread);
+  }, []);
 
   // ── API-backed categories ─────────────────────────────────────────────
   const [megaCategories, setMegaCategories] = useState(STATIC_CATEGORIES);
@@ -504,9 +515,27 @@ export function Header() {
               {/* Notifications */}
               <NotificationDropdown />
 
+              {/* Messages with unread badge */}
+              <Link
+                href="/dashboard/messages"
+                className="relative rounded-lg p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+                aria-label={
+                  unreadMessages === 1
+                    ? 'Messages with 1 unread message'
+                    : `Messages with ${unreadMessages} unread messages`
+                }
+              >
+                <MessageSquare className="h-5 w-5" aria-hidden="true" />
+                {unreadMessages > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-saffron-500 px-1 text-[10px] font-bold text-white shadow-xs">
+                    {unreadMessages}
+                  </span>
+                )}
+              </Link>
+
               {/* Cart */}
               <Link
-                href="/dashboard/courses"
+                href="/cart"
                 className="relative rounded-lg p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
                 aria-label={
                   cartCount === 1
@@ -822,6 +851,21 @@ export function Header() {
                 Notifications
               </Link>
               <Link
+                href="/dashboard/messages"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm text-white/90 transition-colors hover:bg-white/10"
+              >
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Messages
+                </div>
+                {unreadMessages > 0 && (
+                  <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-saffron-500 px-1 text-[10px] font-bold text-white">
+                    {unreadMessages}
+                  </span>
+                )}
+              </Link>
+              <Link
                 href="/dashboard"
                 onClick={() => setMobileOpen(false)}
                 className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-white/90 transition-colors hover:bg-white/10"
@@ -830,7 +874,7 @@ export function Header() {
                 Dashboard
               </Link>
               <Link
-                href="/dashboard/courses"
+                href="/cart"
                 onClick={() => setMobileOpen(false)}
                 className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-white/90 transition-colors hover:bg-white/10"
               >
