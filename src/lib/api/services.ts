@@ -127,6 +127,20 @@ export const authApi = {
     );
     return data.data;
   },
+  verifyEmail: async (payload: { token: string }) => {
+    const { data } = await apiClient.post<ApiResponse<any>>(
+      "/auth/verify-email",
+      payload,
+    );
+    return data.data;
+  },
+  resendVerificationEmail: async (payload: { email: string }) => {
+    const { data } = await apiClient.post<ApiResponse<any>>(
+      "/auth/resend-verification",
+      payload,
+    );
+    return data.data;
+  },
 };
 
 // ----------------------------------------------------------

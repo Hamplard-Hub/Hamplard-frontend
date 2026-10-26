@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar }  from '@/components/layout/TopBar';
+import { UnverifiedEmailBanner } from '@/components/dashboard/UnverifiedEmailBanner';
 
 // Authenticated area. robots.txt disallows /dashboard, and this noindexes any
 // dashboard URL a crawler reaches by other means (a shared or linked one).
@@ -15,6 +16,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <TopBar />
+        <UnverifiedEmailBanner />
         <main className="flex-1 overflow-y-auto p-3 sm:p-6">
           <div className="max-w-5xl mx-auto animate-fade-in">
             {children}
