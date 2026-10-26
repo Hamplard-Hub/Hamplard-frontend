@@ -19,6 +19,8 @@ import { TwoFactorSetup } from '@/components/auth/TwoFactorSetup';
 import { twoFactorApi, usersApi } from '@/lib/api/services';
 import { useToast } from '@/lib/hooks/use-toast';
 import { useReducedMotion } from '@/lib/hooks/use-reduced-motion';
+import { useLowBandwidth } from '@/lib/hooks/use-low-bandwidth';
+import { LanguageSwitcher } from '@/components/layout/LanguageSwitcher';
 
 export default function SettingsPage() {
   const toast = useToast();
@@ -39,6 +41,7 @@ export default function SettingsPage() {
 
   const { prefersReducedMotion, setManualOverride, clearManualOverride, mounted } = useReducedMotion();
   const [localReducedMotion, setLocalReducedMotion] = useState(false);
+  const { enabled: lowBandwidth, toggle: toggleLowBandwidth, autoSuggested: lowBandwidthSuggested } = useLowBandwidth();
 
   useEffect(() => {
     const loadTwoFactorStatus = async () => {
@@ -222,6 +225,16 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* Language Section */}
+        <section className="card p-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Zap className="w-4 h-4 text-saffron-600" aria-hidden="true" />
+            <h2 className="font-semibold text-ink-900">Language</h2>
+          </div>
+          <p className="mb-3 text-xs text-ink-500">Choose your preferred display language.</p>
+          <LanguageSwitcher />
+        </section>
+
         {/* Accessibility Section */}
         <section className="card p-6">
           <div className="flex items-center gap-2 mb-3">
@@ -239,6 +252,35 @@ export default function SettingsPage() {
             <span>
               <p className="text-sm font-medium text-ink-900">Reduce motion</p>
               <p className="text-xs text-ink-500">Minimise animations and transitions.</p>
+            </span>
+          </label>
+        </section>
+
+        {/* Low-Bandwidth Mode Section */}
+        <section className="card p-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Download className="w-4 h-4 text-saffron-600" aria-hidden="true" />
+            <h2 className="font-semibold text-ink-900">Data Saver</h2>
+          </div>
+
+          {lowBandwidthSuggested && (
+            <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              A slow connection was detected. Enable Data Saver to reduce data usage.
+            </div>
+          )}
+
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={lowBandwidth}
+              onChange={(e) => toggleLowBandwidth(e.target.checked)}
+              className="mt-1"
+            />
+            <span>
+              <p className="text-sm font-medium text-ink-900">Low-bandwidth mode</p>
+              <p className="text-xs text-ink-500">
+                Defaults video to 360p, enables audio-only option, and defers non-essential images.
+              </p>
             </span>
           </label>
         </section>

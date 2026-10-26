@@ -41,6 +41,7 @@
     "recharts": "^2.12.7",
     "tailwind-merge": "^2.2.0",
     "zod": "^4.4.3",
+    "next-intl": "^3.17.2",
     "zustand": "^4.5.0"
   },
   "devDependencies": {

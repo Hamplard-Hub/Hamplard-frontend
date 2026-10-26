@@ -19,6 +19,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useMobileDrawerFocusTrap } from '@/lib/hooks/use-focus-trap';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { coursesApi, messagesApi } from '@/lib/api/services';
 import { CATEGORY_META, getCategoryMeta } from '@/components/category/CategoryHero';
 import type { Category, Course } from '@/types';
@@ -510,6 +511,7 @@ export function Header() {
 
         {/* ── Desktop right: auth-dependent icons ── */}
         <div className="hidden items-center gap-2 md:flex">
+          <LanguageSwitcher />
           {isConnected ? (
             <>
               {/* Notifications */}

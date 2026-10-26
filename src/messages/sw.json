@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "home": "Nyumbani",
+    "courses": "Kozi",
+    "dashboard": "Dashibodi",
+    "login": "Ingia",
+    "signup": "Jisajili",
+    "logout": "Toka",
+    "settings": "Mipangilio"
+  },
+  "footer": {
+    "tagline": "Ujuzi wa vitendo kwa Afrika",
+    "links": "Viungo",
+    "legal": "Kisheria",
+    "privacy": "Sera ya Faragha",
+    "terms": "Masharti ya Huduma"
+  },
+  "auth": {
+    "email": "Anwani ya barua pepe",
+    "password": "Nenosiri",
+    "loginTitle": "Karibu tena",
+    "signupTitle": "Fungua akaunti yako",
+    "forgotPassword": "Umesahau nenosiri?",
+    "noAccount": "Huna akaunti?",
+    "hasAccount": "Una akaunti tayari?"
+  },
+  "dashboard": {
+    "welcome": "Karibu tena",
+    "myCourses": "Kozi zangu",
+    "progress": "Maendeleo",
+    "certificates": "Vyeti",
+    "downloads": "Upakuaji",
+    "wishlist": "Orodha ya matakwa",
+    "notifications": "Arifa"
+  },
+  "learn": {
+    "nextLesson": "Somo lijalo",
+    "previousLesson": "Somo lililopita",
+    "markComplete": "Weka alama kumaliza",
+    "completed": "Imekamilika",
+    "quiz": "Maswali",
+    "assignment": "Kazi"
+  },
+  "common": {
+    "save": "Hifadhi",
+    "cancel": "Ghairi",
+    "delete": "Futa",
+    "edit": "Hariri",
+    "loading": "Inapakia…",
+    "retry": "Jaribu tena",
+    "back": "Rudi",
+    "next": "Inayofuata",
+    "submit": "Wasilisha",
+    "language": "Lugha"
+  }
+}

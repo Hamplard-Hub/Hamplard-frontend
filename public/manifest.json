@@ -1,4 +1,12 @@
 {
+  "name": "Hamplard",
+  "short_name": "Hamplard",
+  "description": "Vocational skills learning platform for Africa",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#6d28d9",
+  "orientation": "portrait-primary",
   "name": "Hamplard — Learn Anywhere",
   "short_name": "Hamplard",
   "description": "Learn practical skills with Hamplard. Download lessons and keep studying even when the connection drops.",
@@ -17,6 +25,16 @@
       "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.svg",
+      "sizes": "180x180",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["education"],
+  "lang": "en"
       "purpose": "any"
     },
     {

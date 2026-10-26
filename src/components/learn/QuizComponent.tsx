@@ -6,6 +6,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Filter,
   RotateCcw,
   X,
 } from "lucide-react";
@@ -74,6 +75,8 @@ export function QuizComponent({
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
   const [submitted, setSubmitted] = useState<Record<string, boolean>>({});
   const [showResults, setShowResults] = useState(false);
+  const [showReview, setShowReview] = useState(false);
+  const [reviewFilter, setReviewFilter] = useState<"all" | "incorrect">("all");
   const [orderedQuestions, setOrderedQuestions] = useState<QuizQuestion[]>(() =>
     randomizeQuestions ? shuffleQuestions(questions) : questions,
   );
@@ -182,7 +185,8 @@ export function QuizComponent({
 
   const handleReview = useCallback(() => {
     setShowResults(false);
-    setCurrentIndex(0);
+    setShowReview(true);
+    setReviewFilter("all");
   }, []);
 
   const handleRetake = useCallback(() => {
@@ -190,6 +194,7 @@ export function QuizComponent({
     setAnswers({});
     setSubmitted({});
     setShowResults(false);
+    setShowReview(false);
 
     if (randomizeQuestions) {
       setOrderedQuestions(shuffleQuestions(questions));
@@ -278,6 +283,165 @@ export function QuizComponent({
               className="inline-flex items-center gap-2 rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50"
             >
               Continue to next lecture
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Review screen ──────────────────────────────────────────────────
+  if (showReview) {
+    const reviewItems = orderedQuestions.filter((q) => {
+      const isCorrect = isAnswerCorrect(q, answers[q.id] ?? []);
+      return reviewFilter === "all" || !isCorrect;
+    });
+
+    return (
+      <div className="rounded-2xl border border-ink-200 bg-white dark:bg-ink-900 dark:border-ink-700 p-6">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold text-ink-900 dark:text-ink-100">
+            Answer Review
+          </h2>
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-ink-500" />
+            <button
+              type="button"
+              onClick={() => setReviewFilter("all")}
+              className={cn(
+                "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                reviewFilter === "all"
+                  ? "bg-hamplard-primary text-white"
+                  : "border border-ink-200 text-ink-600 hover:bg-ink-50 dark:border-ink-700 dark:text-ink-400",
+              )}
+            >
+              All ({orderedQuestions.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setReviewFilter("incorrect")}
+              className={cn(
+                "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                reviewFilter === "incorrect"
+                  ? "bg-rose-600 text-white"
+                  : "border border-ink-200 text-ink-600 hover:bg-ink-50 dark:border-ink-700 dark:text-ink-400",
+              )}
+            >
+              Incorrect ({total - score})
+            </button>
+          </div>
+        </div>
+
+        {reviewItems.length === 0 && (
+          <p className="py-8 text-center text-sm text-ink-500">
+            No questions match this filter.
+          </p>
+        )}
+
+        <div className="space-y-6">
+          {reviewItems.map((q, idx) => {
+            const qOptions = normalizeOptions(q);
+            const givenAnswer = answers[q.id] ?? [];
+            const isCorrect = isAnswerCorrect(q, givenAnswer);
+            const correctOptionIds = new Set(
+              qOptions.filter((o) => o.isCorrect).map((o) => o.id),
+            );
+
+            return (
+              <div
+                key={q.id}
+                className={cn(
+                  "rounded-xl border p-4",
+                  isCorrect
+                    ? "border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30"
+                    : "border-rose-200 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/30",
+                )}
+              >
+                <div className="mb-2 flex items-start gap-2">
+                  {isCorrect ? (
+                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" />
+                  ) : (
+                    <X className="mt-0.5 h-4 w-4 flex-shrink-0 text-rose-600" />
+                  )}
+                  <p className="text-sm font-medium text-ink-900 dark:text-ink-100">
+                    <span className="mr-1 text-ink-400">Q{idx + 1}.</span>
+                    {q.question}
+                  </p>
+                </div>
+
+                {q.type === "short_answer" ? (
+                  <div className="ml-6 mt-2 space-y-1 text-xs">
+                    <p className="text-ink-600 dark:text-ink-400">
+                      <span className="font-semibold">Your answer:</span>{" "}
+                      <span className={isCorrect ? "text-emerald-700" : "text-rose-700"}>
+                        {givenAnswer[0] || <em>No answer</em>}
+                      </span>
+                    </p>
+                    {!isCorrect && (
+                      <p className="text-ink-600 dark:text-ink-400">
+                        <span className="font-semibold">Correct answer:</span>{" "}
+                        <span className="text-emerald-700">{q.correctAnswer}</span>
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="ml-6 mt-2 space-y-1">
+                    {qOptions.map((opt) => {
+                      const wasSelected = givenAnswer.includes(opt.id);
+                      const isOptCorrect = correctOptionIds.has(opt.id);
+                      return (
+                        <div
+                          key={opt.id}
+                          className={cn(
+                            "flex items-center gap-2 rounded-md px-2 py-1 text-xs",
+                            isOptCorrect && "font-semibold text-emerald-700 dark:text-emerald-400",
+                            wasSelected && !isOptCorrect && "text-rose-700 line-through dark:text-rose-400",
+                            !wasSelected && !isOptCorrect && "text-ink-500 dark:text-ink-400",
+                          )}
+                        >
+                          {isOptCorrect && <Check className="h-3 w-3 flex-shrink-0 text-emerald-600" />}
+                          {wasSelected && !isOptCorrect && <X className="h-3 w-3 flex-shrink-0 text-rose-500" />}
+                          {!isOptCorrect && !wasSelected && <span className="h-3 w-3 flex-shrink-0" />}
+                          {opt.text}
+                          {wasSelected && isOptCorrect && (
+                            <span className="ml-1 text-emerald-600">(your answer ✓)</span>
+                          )}
+                          {wasSelected && !isOptCorrect && (
+                            <span className="ml-1 text-rose-500">(your answer)</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {q.explanation && (
+                  <p className="ml-6 mt-2 rounded-md bg-white/60 px-3 py-2 text-xs text-ink-600 dark:bg-ink-800/40 dark:text-ink-400">
+                    <span className="font-semibold">Explanation:</span> {q.explanation}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-6 flex justify-center gap-3">
+          <button
+            type="button"
+            onClick={handleRetake}
+            className="inline-flex items-center gap-2 rounded-lg bg-hamplard-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-hamplard-mid"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Retake Quiz
+          </button>
+          {onContinue && (
+            <button
+              type="button"
+              onClick={onContinue}
+              className="inline-flex items-center gap-2 rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50 dark:border-ink-700 dark:text-ink-300"
+            >
+              Continue
               <ArrowRight className="h-4 w-4" />
             </button>
           )}
