@@ -250,6 +250,52 @@ export interface Category {
   count: number;
 }
 
+// ── Instructor profile ─────────────────────────────────────────────
+
+/**
+ * A public instructor profile.
+ *
+ * The API does not expose every field on every surface, so most of them are
+ * nullable: the UI renders whatever is present and hides the rest.
+ */
+export interface Instructor {
+  /** Stable identifier — the user id when known, otherwise the wallet address. */
+  id: string;
+  name: string;
+  avatarUrl: string | null;
+  /** One-line speciality shown under the name, e.g. "Master Tailor · Lagos". */
+  headline: string | null;
+  bio: string | null;
+  /** City/country the instructor teaches from. */
+  location: string | null;
+  /** External links. */
+  website: string | null;
+  twitter: string | null;
+  linkedin: string | null;
+  instagram: string | null;
+  /** Wallet address the instructor teaches under. */
+  stellarAddress: string | null;
+  /** Main teaching category, e.g. "Tailoring". */
+  category: string | null;
+  /** Average rating across the instructor's courses (0–5). */
+  rating: number;
+  /** How many reviews the average is based on. */
+  reviewCount: number;
+  /** Learners enrolled across the instructor's courses. */
+  totalStudents: number;
+  /** Number of published courses. */
+  totalCourses: number;
+}
+
+/** An instructor profile together with their courses and reviews. */
+export interface InstructorProfile extends Instructor {
+  courses: Course[];
+  reviews: Review[];
+}
+
+/** Sort orders offered by the instructors directory. */
+export type InstructorSort = "rated" | "popular" | "courses";
+
 // ── Review & Rating ────────────────────────────────────────────────
 
 export type ReviewSortOption =
@@ -477,6 +523,8 @@ export interface Conversation {
   lastMessage?: DirectMessage;
   unreadCount: number;
   updatedAt: string;
+}
+
 // ── Student Project Showcase Gallery (Issue #400) ──────────────────────────
 
 export interface ShowcaseComment {

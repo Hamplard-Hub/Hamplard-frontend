@@ -105,7 +105,16 @@ export const VideoPlayer = forwardRef<
       const { lessonsApi } = await import('@/lib/api/services');
       await lessonsApi.updateProgress(lessonId, enrollmentId, watched);
       onProgress?.(watched);
-    } catch {
+    } catch (error) {
+      // Offline (Issue #411): queue the update so it syncs once the
+      // connection is back. Server errors are ignored — the next autosave
+      // tick retries them anyway.
+      const isNetworkError = !error || !(error as { response?: unknown }).response;
+      const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+      if (isNetworkError || offline) {
+        const { queueProgressUpdate } = await import('@/lib/offline');
+        queueProgressUpdate({ lessonId, enrollmentId, watchedSecs: watched });
+      }
       // silently swallow — progress save should never crash the player
     }
   }, [enrollmentId, lessonId, onProgress]);

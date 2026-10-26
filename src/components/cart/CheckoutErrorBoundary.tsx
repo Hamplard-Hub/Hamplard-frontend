@@ -16,6 +16,8 @@ interface CheckoutErrorBoundaryState {
   hasError: boolean;
   resetKey: number;
   retryCount: number;
+  isRetrying: boolean;
+  retryCountdown: number;
   isWaiting: boolean;
   waitSecondsLeft: number;
 }
@@ -30,6 +32,8 @@ export class CheckoutErrorBoundary extends React.Component<
     hasError: false,
     resetKey: 0,
     retryCount: 0,
+    isRetrying: false,
+    retryCountdown: 0,
     isWaiting: false,
     waitSecondsLeft: 0,
   };
@@ -79,8 +83,6 @@ export class CheckoutErrorBoundary extends React.Component<
     this._clearCountdown();
     this.countdownTimer = setInterval(() => {
       this.setState((prev) => {
-    this._countdownTimer = setInterval(() => {
-      this.setState((prev): CheckoutErrorBoundaryState => {
         if (prev.waitSecondsLeft <= 1) {
           this._clearCountdown();
           // Actually perform the retry
@@ -97,10 +99,6 @@ export class CheckoutErrorBoundary extends React.Component<
           };
         }
         return { ...prev, waitSecondsLeft: prev.waitSecondsLeft - 1 };
-        return {
-          ...prev,
-          waitSecondsLeft: prev.waitSecondsLeft - 1,
-        };
       });
     }, 1000);
   };
@@ -161,50 +159,6 @@ export class CheckoutErrorBoundary extends React.Component<
             </p>
           ) : (
             <>
-              <p className="mt-2 max-w-sm text-sm leading-6 text-ink-500">
-                Your cart is safe.{' '}
-                {retryCount > 0 && (
-                  <span className="font-medium text-ink-700">
-                    Retry {retryCount} of {MAX_RETRIES - 1} attempted.
-                  </span>
-                )}{' '}
-                Try the checkout again, or contact support if the problem continues.
-              </p>
-
-              {isWaiting && (
-                <p
-                  aria-live="polite"
-                  className="mt-3 text-sm font-medium text-amber-600"
-                >
-                  Retrying in {waitSecondsLeft}s…
-                </p>
-              )}
-
-              <div className="mt-6 flex w-full max-w-xs flex-col gap-3 sm:flex-row">
-                <Button
-                  type="button"
-                  fullWidth
-                  disabled={isWaiting}
-                  onClick={this.handleRetry}
-                  icon={
-                    <RefreshCw
-                      className={`h-4 w-4 ${isWaiting ? 'animate-spin' : ''}`}
-                    />
-                  }
-                >
-                  {isWaiting
-                    ? `Retrying in ${waitSecondsLeft}s`
-                    : 'Try again'}
-                </Button>
-                <Link
-                  href="/help"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-ink-200 px-4 py-2 text-sm font-medium text-ink-900 transition-colors hover:bg-ink-50"
-                >
-                  <LifeBuoy className="h-4 w-4" aria-hidden="true" />
-                  Contact support
-                </Link>
-              </div>
-
               {retryCount > 0 && (
                 <p className="mt-3 text-xs text-ink-400">
                   Next retry waits {this._delaySeconds()}s (backoff increases each attempt)

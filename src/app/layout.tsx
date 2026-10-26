@@ -25,6 +25,14 @@ export const metadata: Metadata = {
     icon: '/favicon.svg',
     apple: '/apple-touch-icon.svg',
   },
+  // Web app manifest — makes the site installable and enables the offline
+  // lesson downloads (Issue #411).
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    title: 'Hamplard',
+    statusBarStyle: 'default',
+  },
   alternates: { canonical: siteUrl },
   openGraph: {
     type: 'website',
