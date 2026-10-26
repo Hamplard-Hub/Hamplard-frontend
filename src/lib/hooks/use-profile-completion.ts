@@ -68,8 +68,8 @@ export function useProfileCompletion(user: User | null, role: UserRole = 'STUDEN
       items.push({
         key: 'payout',
         label: 'Payout method',
-        href: '/dashboard/settings',
-        completed: false, // TODO: Update based on actual payout method data once available
+        href: '/dashboard/instructor/payouts',
+        completed: !!(user as any).payoutMethod,
       });
     }
 
