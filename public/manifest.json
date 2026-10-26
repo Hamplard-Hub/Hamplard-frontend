@@ -7,6 +7,19 @@
   "background_color": "#ffffff",
   "theme_color": "#6d28d9",
   "orientation": "portrait-primary",
+  "name": "Hamplard — Learn Anywhere",
+  "short_name": "Hamplard",
+  "description": "Learn practical skills with Hamplard. Download lessons and keep studying even when the connection drops.",
+  "start_url": "/dashboard/downloads",
+  "scope": "/",
+  "id": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#7F77DD",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["education", "productivity"],
   "icons": [
     {
       "src": "/favicon.svg",
@@ -22,4 +35,33 @@
   ],
   "categories": ["education"],
   "lang": "en"
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/hamplard-og.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "My Courses",
+      "short_name": "Courses",
+      "description": "Continue a course you have started",
+      "url": "/dashboard/my-courses"
+    },
+    {
+      "name": "Downloads",
+      "short_name": "Downloads",
+      "description": "Lessons saved for offline viewing",
+      "url": "/dashboard/downloads"
+    }
+  ]
 }

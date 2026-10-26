@@ -10,6 +10,7 @@ import {
 import { useIsWishlisted, useWishlistStore } from '@/lib/hooks/use-wishlist-store';
 import { useCompareStore } from '@/lib/hooks/use-compare-store';
 import { useHoverPrefetch } from '@/lib/hooks/useHoverPrefetch';
+import { courseInstructorPath } from '@/lib/instructors';
 import type { Course } from '@/types';
 
 // A 1×1 purple-toned blurred placeholder encoded as a base64 data URL.
@@ -42,6 +43,11 @@ export function CourseCard({
 }: Props) {
   const dest = href ?? `/dashboard/courses/${course.id}`;
   const mins = courseTotalMins(course.totalDuration ?? 0);
+
+  // The instructor's name links to their public profile (Issue #415). When the
+  // course carries no usable instructor identifier the name stays plain text.
+  const instructorName = course.instructor?.name ?? 'Hamplard Instructor';
+  const instructorHref = courseInstructorPath(course);
 
   // Warm the router cache for the course page once the pointer has rested
   // on the card for 200ms (skipped on touch devices, cancelled on early exit).
@@ -78,7 +84,8 @@ export function CourseCard({
   }
 
   function toggleWishlist(e: React.MouseEvent) {
-    // The card is wrapped in a Link — stop the click from navigating away.
+    // The wishlist button sits above the stretched card link — stop the click
+    // from reaching it so the learner stays on the page.
     e.preventDefault();
     e.stopPropagation();
     toggleWishlistId(course.id);
@@ -98,7 +105,7 @@ export function CourseCard({
   }, []);
 
   return (
-    <Link href={dest} className="group block relative">
+    <div className="group block relative">
       <article
         className={cn(
           'card overflow-hidden transition-all duration-200',
@@ -107,6 +114,18 @@ export function CourseCard({
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
+        {/*
+          The card is a single link to the course. The link is stretched over
+          the whole card instead of wrapping it, so the instructor's name can
+          be a real link to their profile without nesting one <a> inside
+          another.
+        */}
+        <Link
+          href={dest}
+          className="absolute inset-0 z-0 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary focus-visible:ring-offset-2"
+          aria-label={`View course: ${course.title}`}
+        />
+
         {/* ── Thumbnail ── */}
         <div className="relative aspect-video bg-gradient-to-br from-saffron-100 to-saffron-200 overflow-hidden">
           {course.thumbnailUrl ? (
@@ -156,7 +175,7 @@ export function CourseCard({
             onClick={toggleWishlist}
             aria-pressed={isWishlisted}
             aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-            className="absolute top-2.5 right-2.5 p-1.5 rounded-full bg-white/90 hover:bg-white shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-hamplard-primary"
+            className="absolute top-2.5 right-2.5 z-10 p-1.5 rounded-full bg-white/90 hover:bg-white shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-hamplard-primary"
           >
             <Heart
               className={cn(
@@ -168,7 +187,7 @@ export function CourseCard({
 
           {/* Preview video overlay */}
           {course.previewVideoUrl && (
-            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <div className="absolute inset-0 z-[1] bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
                 <div className="w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-l-[10px] border-l-ink-800 ml-1" />
               </div>
@@ -182,8 +201,17 @@ export function CourseCard({
           <h3 className="text-sm font-semibold text-ink-900 mb-2 line-clamp-2 leading-snug">
             {course.title}
           </h3>
-          <p className="text-xs text-ink-500 mb-3 truncate">
-            {course.instructor?.name ?? 'Hamplard Instructor'}
+          <p className="text-xs text-ink-500 mb-3 truncate relative z-10">
+            {instructorHref ? (
+              <Link
+                href={instructorHref}
+                className="rounded hover:text-hamplard-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary"
+              >
+                {instructorName}
+              </Link>
+            ) : (
+              instructorName
+            )}
           </p>
 
           {/* Star rating + review count */}
@@ -274,7 +302,7 @@ export function CourseCard({
           </div>
 
           {/* Compare checkbox */}
-          <div className="flex items-center gap-2 pt-3 border-t border-ink-100 mt-3">
+          <div className="flex items-center gap-2 pt-3 border-t border-ink-100 mt-3 relative z-10">
             <input
               type="checkbox"
               id={`compare-${course.id}`}
@@ -313,6 +341,6 @@ export function CourseCard({
           </div>
         </div>
       )}
-    </Link>
+    </div>
   );
 }

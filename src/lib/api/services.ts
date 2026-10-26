@@ -1,3 +1,6 @@
+import { apiClient } from "./client";
+import { getApiUrl } from "./config";
+import type {
 import { apiClient } from './client';
 import type {
   Achievement,
@@ -20,13 +23,34 @@ import type {
   Notification,
   PaginatedResponse,
   SavedPaymentMethod,
+  CourseModule,
+  Lesson,
+  LessonType,
+  Achievement,
+  DirectMessage,
+  Conversation,
+  MessageAttachment,
+  ShowcaseProject,
   ShowcaseComment,
   ShowcaseProject,
   StudentDetail,
   StudentEnrollmentRow,
   SubmitShowcasePayload,
+  LiveSession,
+  LiveSessionRecording,
+  Instructor,
+  InstructorProfile,
+  InstructorSort,
+  Review,
   User,
 } from '@/types';
+import {
+  aggregateInstructor,
+  aggregateInstructors,
+  filterInstructors,
+  instructorKey,
+  sortInstructors,
+} from '@/lib/instructors';
 
 const isBrowser = typeof window !== 'undefined';
 const ANNOUNCEMENTS_STORAGE_KEY = 'hamplard_announcements';
@@ -184,6 +208,182 @@ export const coursesApi = {
       ApiResponse<PaginatedResponse<Course>>
     >("/courses/admin/pending");
     return data.data;
+  },
+};
+
+// ----------------------------------------------------------
+// Instructors
+// ----------------------------------------------------------
+
+/** Query accepted by {@link instructorsApi.list}. */
+export interface InstructorListParams {
+  /** Free-text search over the instructor's name, headline and bio. */
+  search?: string;
+  /** Restrict to a teaching category, e.g. "Tailoring". */
+  category?: string;
+  /** Sort order. */
+  sort?: InstructorSort;
+  page?: number;
+  limit?: number;
+}
+
+/** How many courses the fallback aggregation pulls in per request. */
+const INSTRUCTOR_FALLBACK_PAGE_SIZE = 100;
+/** Upper bound on fallback requests so a large catalogue cannot hang the page. */
+const INSTRUCTOR_FALLBACK_MAX_PAGES = 5;
+
+/**
+ * Probes the public instructors endpoint.
+ *
+ * A plain `fetch` is used instead of `apiClient` on purpose: this is a
+ * capability probe, and the axios client's retry/back-off would add seconds to
+ * the page load on deployments that do not expose the endpoint yet.
+ *
+ * @returns the parsed payload, or `null` when the endpoint is unavailable.
+ */
+async function probeInstructorsEndpoint(
+  path: string,
+  params?: Record<string, string | number | undefined>,
+): Promise<unknown | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+
+  try {
+    const base = getApiUrl().replace(/\/+$/, '');
+    const url = new URL(`${base}${path}`);
+    Object.entries(params ?? {}).forEach(([key, value]) => {
+      if (value !== undefined && value !== '') url.searchParams.set(key, String(value));
+    });
+
+    const res = await fetch(url.toString(), {
+      signal: controller.signal,
+      headers: { Accept: 'application/json' },
+      ...(typeof window === 'undefined' ? { next: { revalidate: 3600 } } : {}),
+    });
+    if (!res.ok) return null;
+
+    const body = await res.json();
+    return body?.data ?? null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/** Every published course the fallback aggregation can work with. */
+async function fetchAllCoursesForInstructors(): Promise<Course[]> {
+  const courses: Course[] = [];
+
+  for (let page = 1; page <= INSTRUCTOR_FALLBACK_MAX_PAGES; page += 1) {
+    const res = await coursesApi.list({ page, limit: INSTRUCTOR_FALLBACK_PAGE_SIZE });
+    const items = res.data ?? [];
+    courses.push(...items);
+
+    if (items.length < INSTRUCTOR_FALLBACK_PAGE_SIZE) break;
+    if (page >= (res.meta?.totalPages ?? 1)) break;
+  }
+
+  return courses;
+}
+
+/** Reviews for one course — used to enrich a derived instructor profile. */
+async function fetchCourseReviews(courseId: string): Promise<Review[]> {
+  try {
+    const { data } = await apiClient.get<ApiResponse<Review[]>>(
+      `/courses/${courseId}/reviews`,
+    );
+    return data.data ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export const instructorsApi = {
+  /**
+   * Lists instructors for the `/instructors` directory.
+   *
+   * When the API has no instructors endpoint the list is derived from the
+   * courses each instructor teaches, so the page always has something to show.
+   */
+  list: async (
+    params?: InstructorListParams,
+  ): Promise<PaginatedResponse<Instructor>> => {
+    const search = params?.search?.trim();
+    const category = params?.category?.trim();
+    const sort: InstructorSort = params?.sort ?? 'rated';
+    const page = Math.max(1, params?.page ?? 1);
+    const limit = Math.max(1, params?.limit ?? 12);
+
+    const payload = await probeInstructorsEndpoint('/instructors', {
+      search,
+      category,
+      sort,
+      page,
+      limit,
+    });
+
+    if (payload) {
+      const body = payload as Partial<PaginatedResponse<Instructor>>;
+      if (Array.isArray(body.data)) {
+        return {
+          data: body.data,
+          meta: body.meta ?? {
+            total: body.data.length,
+            page,
+            limit,
+            totalPages: 1,
+          },
+        };
+      }
+    }
+
+    // ── Fallback: derive the directory from the course catalogue ──
+    const courses = await fetchAllCoursesForInstructors();
+    const all = sortInstructors(
+      filterInstructors(aggregateInstructors(courses), { search, category }),
+      sort,
+    );
+
+    const start = (page - 1) * limit;
+    return {
+      data: all.slice(start, start + limit),
+      meta: {
+        total: all.length,
+        page,
+        limit,
+        totalPages: Math.max(1, Math.ceil(all.length / limit)),
+      },
+    };
+  },
+
+  /**
+   * Loads a single instructor profile.
+   *
+   * Returns `null` when the instructor does not exist.
+   */
+  get: async (id: string): Promise<InstructorProfile | null> => {
+    if (!id?.trim()) return null;
+
+    const payload = await probeInstructorsEndpoint(`/instructors/${encodeURIComponent(id)}`);
+    if (payload) return payload as InstructorProfile;
+
+    // ── Fallback: derive the profile from the instructor's courses ──
+    const courses = await fetchAllCoursesForInstructors();
+    const own = courses.filter((course) => instructorKey(course) === id);
+    if (own.length === 0) return null;
+
+    const reviews = (
+      await Promise.all(own.map((course) => fetchCourseReviews(course.id)))
+    ).flat();
+
+    return {
+      ...aggregateInstructor(own),
+      courses: own,
+      reviews: reviews.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      ),
+    };
   },
 };
 
@@ -1618,6 +1818,9 @@ export const messagesApi = {
     const conversations = await messagesApi.getConversations();
     return conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
   },
+};
+
+// ----------------------------------------------------------
 // Student Project Showcase Gallery (Issue #400)
 // ----------------------------------------------------------
 
