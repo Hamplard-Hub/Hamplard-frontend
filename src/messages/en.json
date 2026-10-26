@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "home": "Home",
+    "courses": "Courses",
+    "dashboard": "Dashboard",
+    "login": "Log in",
+    "signup": "Sign up",
+    "logout": "Log out",
+    "settings": "Settings"
+  },
+  "footer": {
+    "tagline": "Practical skills for Africa",
+    "links": "Links",
+    "legal": "Legal",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service"
+  },
+  "auth": {
+    "email": "Email address",
+    "password": "Password",
+    "loginTitle": "Welcome back",
+    "signupTitle": "Create your account",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?"
+  },
+  "dashboard": {
+    "welcome": "Welcome back",
+    "myCourses": "My Courses",
+    "progress": "Progress",
+    "certificates": "Certificates",
+    "downloads": "Downloads",
+    "wishlist": "Wishlist",
+    "notifications": "Notifications"
+  },
+  "learn": {
+    "nextLesson": "Next Lesson",
+    "previousLesson": "Previous Lesson",
+    "markComplete": "Mark as complete",
+    "completed": "Completed",
+    "quiz": "Quiz",
+    "assignment": "Assignment"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading…",
+    "retry": "Retry",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "language": "Language"
+  }
+}

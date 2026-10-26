@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "home": "Ile",
+    "courses": "Awọn ẹkọ",
+    "dashboard": "Pẹpẹ iṣẹ",
+    "login": "Wọle",
+    "signup": "Forukọsilẹ",
+    "logout": "Jade",
+    "settings": "Eto"
+  },
+  "footer": {
+    "tagline": "Ọgbọn iṣe fún Áfríkà",
+    "links": "Awọn ọna abayo",
+    "legal": "Ofin",
+    "privacy": "Eto aṣiri",
+    "terms": "Awọn ọrọ iṣẹ"
+  },
+  "auth": {
+    "email": "Adirẹsi imeeli",
+    "password": "Ọrọ aṣina",
+    "loginTitle": "Kaabo padà",
+    "signupTitle": "Ṣẹda akọọlẹ rẹ",
+    "forgotPassword": "Gbagbe ọrọ aṣina?",
+    "noAccount": "Ò ní akọọlẹ?",
+    "hasAccount": "Ní akọọlẹ tẹlẹ?"
+  },
+  "dashboard": {
+    "welcome": "Kaabo padà",
+    "myCourses": "Awọn ẹkọ mi",
+    "progress": "Ilọsiwaju",
+    "certificates": "Awọn iwe-ẹri",
+    "downloads": "Awọn igbasilẹ",
+    "wishlist": "Atokọ ifẹ",
+    "notifications": "Awọn ifitonileti"
+  },
+  "learn": {
+    "nextLesson": "Ẹkọ atẹle",
+    "previousLesson": "Ẹkọ ti tẹlẹ",
+    "markComplete": "Samisi bi pari",
+    "completed": "Ti pari",
+    "quiz": "Idanwò",
+    "assignment": "Iṣẹ"
+  },
+  "common": {
+    "save": "Fipamọ",
+    "cancel": "Fagilé",
+    "delete": "Parẹ",
+    "edit": "Ṣatunkọ",
+    "loading": "Ẹrù gbigbe…",
+    "retry": "Gbiyanju lẹẹkansi",
+    "back": "Padà",
+    "next": "Tẹle",
+    "submit": "Firanṣẹ",
+    "language": "Ede"
+  }
+}

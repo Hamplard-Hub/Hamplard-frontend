@@ -4,8 +4,9 @@ import React, {
   useRef, useState, useEffect, useCallback,
   forwardRef, useImperativeHandle
 } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Headphones } from 'lucide-react';
 import { VideoControls } from './VideoControls';
+import { useLowBandwidth } from '@/lib/hooks/use-low-bandwidth';
 import type { VideoQualityLevel, VideoQualities } from '@/types';
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -80,8 +81,14 @@ export const VideoPlayer = forwardRef<
   const [buffering,    setBuffering]    = useState(false);
   const [showControls, setShowControls] = useState(true);
 
+  // ── Low-bandwidth mode ────────────────────────────────────────
+  const { enabled: lowBandwidth } = useLowBandwidth();
+  const [audioOnly, setAudioOnly] = useState(false);
+
   // ── Quality state ─────────────────────────────────────────────
-  const [quality, setQuality] = useState<VideoQualityLevel>('auto');
+  const [quality, setQuality] = useState<VideoQualityLevel>(() =>
+    lowBandwidth ? '360p' : 'auto',
+  );
   // Tracks the URL currently loaded into the <video> element
   const [activeSrc, setActiveSrc] = useState(src);
   // Stash position before switching so we can restore it after load
@@ -89,11 +96,11 @@ export const VideoPlayer = forwardRef<
 
   // ── Reset quality when the lesson changes ────────────────────
   useEffect(() => {
-    setQuality('auto');
+    setQuality(lowBandwidth ? '360p' : 'auto');
     setActiveSrc(src);
     pendingSeekRef.current = null;
     pendingPlayRef.current = false;
-  }, [src]);
+  }, [src, lowBandwidth]);
 
   // ── Save progress helper ──────────────────────────────────────
   const saveProgress = useCallback(async () => {
@@ -361,11 +368,32 @@ export const VideoPlayer = forwardRef<
         if (e.key === ' ') e.preventDefault(); // prevent page scroll
       }}
     >
+      {/* Audio-only overlay */}
+      {audioOnly && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-ink-900 z-10 pointer-events-none">
+          <Headphones className="h-16 w-16 text-white/70" />
+          <p className="mt-3 text-sm text-white/60">Audio-only mode</p>
+        </div>
+      )}
+
+      {/* Low-bandwidth audio-only toggle */}
+      {lowBandwidth && (
+        <button
+          type="button"
+          onClick={() => setAudioOnly((v) => !v)}
+          className="absolute top-3 right-3 z-20 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-black/80"
+        >
+          <Headphones className="h-3.5 w-3.5" />
+          {audioOnly ? 'Show video' : 'Audio only'}
+        </button>
+      )}
+
       {/* The actual <video> element */}
       {/* eslint-disable-next-line jsx-a11y/media-has-caption -- captions handled via <track> */}
       <video
         ref={videoRef}
         src={activeSrc}
+        style={audioOnly ? { visibility: 'hidden' } : undefined}
         className="lesson-caption-video w-full h-full"
         preload="metadata"
         playsInline

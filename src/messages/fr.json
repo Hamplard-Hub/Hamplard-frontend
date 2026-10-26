@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "courses": "Cours",
+    "dashboard": "Tableau de bord",
+    "login": "Connexion",
+    "signup": "Inscription",
+    "logout": "Déconnexion",
+    "settings": "Paramètres"
+  },
+  "footer": {
+    "tagline": "Compétences pratiques pour l'Afrique",
+    "links": "Liens",
+    "legal": "Juridique",
+    "privacy": "Politique de confidentialité",
+    "terms": "Conditions d'utilisation"
+  },
+  "auth": {
+    "email": "Adresse e-mail",
+    "password": "Mot de passe",
+    "loginTitle": "Bienvenue",
+    "signupTitle": "Créer votre compte",
+    "forgotPassword": "Mot de passe oublié ?",
+    "noAccount": "Pas encore de compte ?",
+    "hasAccount": "Vous avez déjà un compte ?"
+  },
+  "dashboard": {
+    "welcome": "Bon retour",
+    "myCourses": "Mes cours",
+    "progress": "Progression",
+    "certificates": "Certificats",
+    "downloads": "Téléchargements",
+    "wishlist": "Liste de souhaits",
+    "notifications": "Notifications"
+  },
+  "learn": {
+    "nextLesson": "Leçon suivante",
+    "previousLesson": "Leçon précédente",
+    "markComplete": "Marquer comme terminé",
+    "completed": "Terminé",
+    "quiz": "Quiz",
+    "assignment": "Devoir"
+  },
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "loading": "Chargement…",
+    "retry": "Réessayer",
+    "back": "Retour",
+    "next": "Suivant",
+    "submit": "Soumettre",
+    "language": "Langue"
+  }
+}
