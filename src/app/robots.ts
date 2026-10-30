@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { absoluteUrl, siteUrl } from '@/lib/seo';
+import { absoluteUrl, siteUrl, DISALLOWED_PATHS } from '@/lib/seo';
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: ['/', '/courses', '/categories', '/teach', '/about'],
-        disallow: ['/dashboard', '/checkout', '/api', '/auth'],
+        disallow: DISALLOWED_PATHS,
       },
     ],
     sitemap: [absoluteUrl('/sitemap.xml')],
