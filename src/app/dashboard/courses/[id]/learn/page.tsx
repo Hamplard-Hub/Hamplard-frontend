@@ -175,9 +175,19 @@ export default function LearnPage() {
       const completedSet = new Set(
         e.lessonProgress?.filter((p: { completed: boolean }) => p.completed).map((p: { lessonId: string }) => p.lessonId),
       );
-      const requested = initialLessonRef.current
+      const requestedCandidate = initialLessonRef.current
         ? allLessons.find((l) => l.id === initialLessonRef.current)
         : undefined;
+      let requested = requestedCandidate;
+      if (requested && c.modules) {
+        const reqModIdx = c.modules.findIndex((m) => m.lessons.some((ml) => ml.id === requested!.id));
+        if (reqModIdx !== -1) {
+          const lock = getModuleLockInfo(c.modules[reqModIdx], reqModIdx, c.modules, completedSet);
+          if (lock.isLocked) {
+            requested = undefined;
+          }
+        }
+      }
       const first = requested ?? allLessons.find((l) => {
         if (completedSet.has(l.id)) return false;
         const modIdx = c.modules?.findIndex((m) => m.lessons.some((ml) => ml.id === l.id)) ?? -1;
