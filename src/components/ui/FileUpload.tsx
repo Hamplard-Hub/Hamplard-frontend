@@ -351,7 +351,6 @@ export function FileUpload({
   function handleRetry(item: UploadItem) {
     updateItem(item.id, { status: 'uploading', progress: 0, errorMessage: undefined });
     onUploadStart?.();
-    startUpload({ ...item, status: 'uploading', progress: 0 });
     startUpload({ ...item, status: 'uploading', progress: 0, errorMessage: undefined });
   }
 
