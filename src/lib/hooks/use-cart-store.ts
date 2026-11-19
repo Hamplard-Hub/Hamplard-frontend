@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Course } from '@/types';
+import { priceInCents } from '@/lib/utils/money';
 
 export interface CartItem {
   courseId: string;
@@ -14,6 +15,7 @@ interface CartStore {
   addItems: (courses: Course[]) => number;
   removeItem: (courseId: string) => void;
   clearCart: () => void;
+  /** Returns total price in cents (integer) */
   getTotalPrice: () => number;
   getItemCount: () => number;
 }
@@ -67,7 +69,7 @@ export const useCartStore = create<CartStore>((set, get) => ({
   },
 
   getTotalPrice: () => {
-    return get().items.reduce((total, item) => total + item.course.price, 0);
+    return get().items.reduce((total, item) => total + priceInCents(item.course.price), 0);
   },
 
   getItemCount: () => {

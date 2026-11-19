@@ -21,7 +21,8 @@ import { WalletPaymentButton } from '@/components/checkout/WalletPaymentButton';
 import { friendlyStripeError } from '@/lib/stripe/errors';
 import { simulatePaymentConfirmation } from '@/lib/stripe/simulate';
 import { isStripeConfigured } from '@/lib/stripe/client';
-import { cn, formatUsdc } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { centsToDisplay } from '@/lib/utils/money';
 
 type PaymentMethodChoice = 'card' | 'paypal';
 type Status = 'idle' | 'processing' | 'succeeded';
@@ -37,9 +38,9 @@ export interface BillingDetails {
 }
 
 export interface PaymentFormProps {
-  /** Order total, used on the pay button and the Apple Pay / Google Pay sheet. */
+  /** Order total in cents (integer), used on the pay button and the Apple Pay / Google Pay sheet. */
   amount: number;
-  /** ISO currency of `amount`; checkout prices are in US dollars. */
+  /** ISO currency of `amount`; checkout prices are in USD cents. */
   currency?: string;
   /**
    * Confirms the charge once Stripe has tokenised the card (or the wallet has
@@ -248,7 +249,7 @@ export function PaymentForm({
         <CheckCircle2 className="mx-auto h-10 w-10 text-leaf-600" aria-hidden="true" />
         <h2 className="mt-3 text-lg font-semibold text-ink-900">Payment successful</h2>
         <p className="mt-1 text-sm text-ink-700">
-          We&apos;ve charged {formatUsdc(amount)}. Your courses are unlocking now.
+          We&apos;ve charged {centsToDisplay(amount)}. Your courses are unlocking now.
         </p>
       </div>
     );
@@ -566,7 +567,7 @@ export function PaymentForm({
             disabled={!stripe || stripeUnavailable || walletOpen}
             icon={<Lock className="h-4 w-4" aria-hidden="true" />}
           >
-            Pay {formatUsdc(amount)}
+            Pay {centsToDisplay(amount)}
           </Button>
 
           <p className="flex items-center justify-center gap-2 text-xs text-ink-500">
