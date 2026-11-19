@@ -2,11 +2,11 @@
   "name": "hamplard-frontend",
   "version": "0.1.0",
   "private": true,
-  "description": "Hamplard — Next.js frontend for Africa's practical skills learning platform",
+  "description": "Hamplard \u2014 Next.js frontend for Africa's practical skills learning platform",
   "scripts": {
-    "dev": "next dev --port 3001",
-    "build": "next build",
-    "start": "next start --port 3001",
+    "dev": "node init && next dev --port 3001",
+    "build": "node init && next build",
+    "start": "node init && next start --port 3001",
     "typecheck": "tsc --noEmit",
     "lint": "next lint",
     "test": "vitest run",
@@ -14,8 +14,7 @@
     "test:e2e:ui": "playwright test --ui",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build",
-    "typecheck": "tsc --noEmit"
+    "build-storybook": "node init && storybook build"
   },
   "overrides": {
     "axios": "^1.7.9",
