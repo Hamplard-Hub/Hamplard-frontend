@@ -20,7 +20,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => createQueryClient());
   const rehydrate = useAuthStore((s) => s.rehydrate);
 
-  useEffect(() => { rehydrate(); }, [rehydrate]);
+  useEffect(() => { void rehydrate(); }, [rehydrate]);
 
   // ── Offline lesson downloads (Issue #411) ────────────────────────────────
   // Registers the service worker and delivers any progress that was queued

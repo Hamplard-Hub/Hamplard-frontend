@@ -1,6 +1,7 @@
 // lib/api/client.ts
 import axios, { AxiosError } from 'axios';
 import { getApiUrl } from './config';
+import { useAuthStore } from '@/lib/hooks/use-auth-store';
 
 const baseURL = getApiUrl();
 
@@ -67,8 +68,18 @@ apiClient.interceptors.response.use(
 
     // Redirect to login on 401 (only after retries are exhausted / not retryable)
     if (err.response?.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('hamplard_token');
-      window.location.href = '/login';
+      const currentPath = window.location.pathname;
+      // Clear the full session via the store so the cookie is also removed.
+      useAuthStore.getState().logout();
+      // Avoid a redirect loop when already on /login.
+      if (currentPath !== '/login') {
+        const url = new URL('/login', window.location.href);
+        // Only allow same-origin callback paths to prevent open-redirect.
+        if (currentPath.startsWith('/')) {
+          url.searchParams.set('callbackUrl', currentPath);
+        }
+        window.location.href = url.toString();
+      }
     }
 
     return Promise.reject(err);

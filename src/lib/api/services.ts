@@ -92,7 +92,8 @@ const emitNotificationsUpdated = () => {
 export const authApi = {
   getNonce: async (address: string) => {
     const { data } = await apiClient.get<ApiResponse<{ nonce: string }>>(
-      `/auth/nonce?address=${address}`,
+      '/auth/nonce',
+      { params: { address } },
     );
     return data.data.nonce;
   },

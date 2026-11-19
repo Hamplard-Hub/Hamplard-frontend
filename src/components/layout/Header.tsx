@@ -84,7 +84,7 @@ const NAV_LINKS = [
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function Header() {
-  const { isConnected, user, logout } = useAuthStore();
+  const { isConnected, user, logout, isHydrating } = useAuthStore();
   const cartCount = useCartStore((s) => s.getItemCount());
   const pathname = usePathname();
 
@@ -580,7 +580,12 @@ export function Header() {
                   aria-controls={avatarOpen ? 'user-menu' : undefined}
                   aria-label="User menu"
                 >
-                  {user?.avatarUrl ? (
+                  {isHydrating ? (
+                    <span
+                      className="flex h-8 w-8 animate-pulse rounded-full bg-white/20"
+                      aria-label="Loading user"
+                    />
+                  ) : user?.avatarUrl ? (
                     <img
                       src={user.avatarUrl}
                       alt={`${user?.name ?? 'User'} avatar`}
@@ -597,7 +602,9 @@ export function Header() {
                   <div className="absolute right-0 top-full mt-2 w-52 rounded-xl border border-white/10 bg-[#26215C] p-1.5 shadow-lg animate-fade-in">
                     <div className="border-b border-white/10 px-3 py-2.5">
                       <p className="text-sm font-semibold text-white">
-                        {user?.name ?? 'User'}
+                        {isHydrating
+                          ? <span className="inline-block h-3 w-24 animate-pulse rounded bg-white/20" />
+                          : (user?.name ?? 'User')}
                       </p>
                       <p className="text-xs text-slate-400 truncate">
                         {user?.email ?? user?.stellarAddress ?? ''}
