@@ -8,21 +8,23 @@ import { StepProgress, type CheckoutStep } from '@/components/checkout/StepProgr
 import { OrderReview } from '@/components/checkout/OrderReview';
 import { ConfirmationStep } from '@/components/checkout/ConfirmationStep';
 import { useCartStore, type CartItem } from '@/lib/hooks/use-cart-store';
-import { formatUsdc } from '@/lib/utils';
+import { centsToDisplay, percentOf, applyDiscount, priceInCents } from '@/lib/utils/money';
+import type { PaymentMethod } from '@stripe/stripe-js';
 
 export function CheckoutContent() {
   const { items, getTotalPrice, clearCart } = useCartStore();
   const [currentStep, setCurrentStep] = useState<CheckoutStep>(1);
-  const [promoDiscount, setPromoDiscount] = useState(0);
+  const [promoCents, setPromoCents] = useState(0);
   const [receipt, setReceipt] = useState<{
     items: CartItem[];
-    total: number;
-    transactionId: string;
+    totalCents: number;
+    orderId: string;
   } | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
-  const subtotal = getTotalPrice();
-  const platformFee = subtotal * 0.025;
-  const total = subtotal + platformFee - promoDiscount;
+  const subtotalCents = getTotalPrice();
+  const platformFeeCents = percentOf(subtotalCents, 2.5); // 2.5% platform fee
+  const totalCents = applyDiscount(subtotalCents + platformFeeCents, promoCents);
 
   const handleNextStep = () => {
     if (currentStep < 3) {
@@ -36,11 +38,27 @@ export function CheckoutContent() {
     }
   };
 
-  const handlePaymentSuccess = () => {
-    const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
-    setReceipt({ items, total, transactionId });
-    clearCart();
-    setCurrentStep(3);
+  const handlePaymentSuccess = async (paymentMethod: PaymentMethod) => {
+    try {
+      // Create order on backend
+      const orderId = await createOrder({
+        items,
+        totalCents,
+        paymentMethodId: paymentMethod.id,
+        promoCode: promoCents > 0 ? 'applied' : undefined,
+      });
+
+      setReceipt({
+        items,
+        totalCents,
+        orderId,
+      });
+      clearCart();
+      setCurrentStep(3);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create order. Please contact support.';
+      setPaymentError(message);
+    }
   };
 
   return (
@@ -64,8 +82,9 @@ export function CheckoutContent() {
       {/* Step 1: Order Review */}
       {currentStep === 1 && (
         <OrderReview
-          onNext={(discount) => {
-            setPromoDiscount(discount);
+          onNext={(discountCents) => {
+            setPromoCents(discountCents);
+            setPaymentError(null);
             handleNextStep();
           }}
         />
@@ -80,8 +99,18 @@ export function CheckoutContent() {
               Pay with Apple Pay, Google Pay, or your card to complete the purchase.
             </p>
 
+            {paymentError && (
+              <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-4">
+                <p className="text-sm text-rose-800">{paymentError}</p>
+              </div>
+            )}
+
             <StripeProvider>
-              <PaymentForm amount={total} onSuccess={handlePaymentSuccess} className="mt-6" />
+              <PaymentForm
+                amount={totalCents}
+                onSuccess={handlePaymentSuccess}
+                className="mt-6"
+              />
             </StripeProvider>
           </section>
 
@@ -95,15 +124,32 @@ export function CheckoutContent() {
                   <li key={item.courseId} className="flex items-start justify-between gap-3">
                     <span className="text-sm text-ink-700">{item.course.title}</span>
                     <span className="shrink-0 text-sm font-medium text-ink-900">
-                      {formatUsdc(item.course.price)}
+                      {centsToDisplay(priceInCents(item.course.price))}
                     </span>
                   </li>
                 ))}
               </ul>
 
-              <div className="mt-4 flex items-center justify-between">
-                <span className="text-sm font-semibold text-ink-900">Total</span>
-                <span className="text-xl font-bold text-hamplard-primary">{formatUsdc(total)}</span>
+              <div className="mt-4 space-y-2 text-sm text-ink-600">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>{centsToDisplay(subtotalCents)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Platform fee (2.5%)</span>
+                  <span>{centsToDisplay(platformFeeCents)}</span>
+                </div>
+                {promoCents > 0 && (
+                  <div className="flex justify-between text-leaf-700">
+                    <span>Discount</span>
+                    <span>-{centsToDisplay(promoCents)}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 flex items-center justify-between border-t border-ink-200 pt-4">
+                <span className="text-base font-semibold text-ink-900">Total</span>
+                <span className="text-xl font-bold text-hamplard-primary">{centsToDisplay(totalCents)}</span>
               </div>
             </div>
           </aside>
@@ -114,4 +160,35 @@ export function CheckoutContent() {
       {currentStep === 3 && receipt && <ConfirmationStep receipt={receipt} />}
     </div>
   );
+}
+
+/**
+ * Create an order on the backend.
+ * This should integrate with your actual backend API once available.
+ */
+async function createOrder(payload: {
+  items: CartItem[];
+  totalCents: number;
+  paymentMethodId: string;
+  promoCode?: string;
+}): Promise<string> {
+  // TODO: Replace with actual backend API call once payment service is integrated
+  // For now, this returns a mock order ID
+  if (!payload.items.length) {
+    throw new Error('No items in order');
+  }
+
+  // Simulate backend call
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      // In production, this would be: const { data } = await apiClient.post('/orders', payload);
+      // return data.orderId;
+      const orderId = `order_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+      if (orderId) {
+        resolve(orderId);
+      } else {
+        reject(new Error('Failed to create order'));
+      }
+    }, 500);
+  });
 }

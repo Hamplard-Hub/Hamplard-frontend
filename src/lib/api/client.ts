@@ -28,9 +28,28 @@ const RETRYABLE_STATUSES = new Set([429, 503]);
 /** Status codes we must never retry (client errors). */
 const NO_RETRY_STATUSES = new Set([400, 401, 403, 404]);
 
+/** HTTP methods that are safe to retry (idempotent). */
+const RETRYABLE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+/**
+ * Determines if an error is safe to retry.
+ * Only retries idempotent methods (GET, HEAD, OPTIONS) on network timeouts.
+ * For POST/PATCH/DELETE, only retries if Idempotency-Key header is present.
+ */
 function isRetryable(err: AxiosError): boolean {
+  const config = err.config as (typeof err.config & { _retryCount?: number }) | undefined;
+  const method = (config?.method ?? 'GET').toUpperCase();
+
   // Network timeout (no response at all)
-  if (!err.response) return true;
+  if (!err.response) {
+    // Only retry idempotent methods on network timeout
+    if (RETRYABLE_METHODS.has(method)) return true;
+
+    // For non-idempotent methods, only retry if Idempotency-Key is present
+    if (config?.headers?.['Idempotency-Key']) return true;
+
+    return false;
+  }
 
   const status = err.response.status;
   if (NO_RETRY_STATUSES.has(status)) return false;

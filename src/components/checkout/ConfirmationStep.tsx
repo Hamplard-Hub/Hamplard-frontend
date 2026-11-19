@@ -5,14 +5,14 @@ import Link from 'next/link';
 import { CheckCircle2, Download, ArrowRight, BookOpen, GraduationCap, Award } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useCartStore, type CartItem } from '@/lib/hooks/use-cart-store';
-import { formatUsdc } from '@/lib/utils';
+import { centsToDisplay } from '@/lib/utils/money';
 import { cn } from '@/lib/utils';
 
 interface ConfirmationStepProps {
   receipt: {
     items: CartItem[];
-    total: number;
-    transactionId: string;
+    totalCents: number;
+    orderId: string;
   };
 }
 
@@ -69,18 +69,18 @@ export function ConfirmationStep({ receipt }: ConfirmationStepProps) {
             showAnimation ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
           )}
         >
-          We&apos;ve charged <strong className="text-hamplard-primary">{formatUsdc(receipt.total)}</strong>.
+          We&apos;ve charged <strong className="text-hamplard-primary">{centsToDisplay(receipt.totalCents)}</strong>.
           You now have access to {receipt.items.length} course{receipt.items.length === 1 ? '' : 's'}.
         </p>
 
-        {/* Transaction ID */}
+        {/* Order ID */}
         <p
           className={cn(
             'mt-2 text-xs text-ink-400 font-mono transition-all duration-500 delay-500',
             showAnimation ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
           )}
         >
-          Transaction ID: {receipt.transactionId}
+          Order ID: {receipt.orderId}
         </p>
 
         {/* Enrolled courses */}
@@ -128,8 +128,13 @@ export function ConfirmationStep({ receipt }: ConfirmationStepProps) {
             showAnimation ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
           )}
         >
-          <Link href="/dashboard/courses">
+          <Link href={`/dashboard/orders/${receipt.orderId}`}>
             <Button variant="primary" size="lg" icon={<ArrowRight className="h-4 w-4" />} iconPosition="right">
+              View Order
+            </Button>
+          </Link>
+          <Link href="/dashboard/courses">
+            <Button variant="tertiary" size="lg" icon={<BookOpen className="h-4 w-4" />}>
               Go to My Courses
             </Button>
           </Link>
