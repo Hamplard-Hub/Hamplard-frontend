@@ -17,6 +17,10 @@
     "build-storybook": "storybook build",
     "typecheck": "tsc --noEmit"
   },
+  "overrides": {
+    "axios": "^1.7.9",
+    "follow-redirects": "^1.15.9"
+  },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
@@ -28,20 +32,19 @@
     "@stripe/stripe-js": "^7.10.0",
     "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-query-devtools": "^5.101.4",
-    "axios": "^1.6.0",
+    "axios": "^1.7.9",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.0",
     "date-fns": "^3.3.0",
     "isomorphic-dompurify": "^2.36.0",
     "lucide-react": "^0.383.0",
-    "next": "14.2.0",
+    "next": "14.2.35",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "react-hook-form": "^7.83.0",
     "recharts": "^2.12.7",
     "tailwind-merge": "^2.2.0",
     "zod": "^4.4.3",
-    "next-intl": "^3.17.2",
     "zustand": "^4.5.0"
   },
   "devDependencies": {
