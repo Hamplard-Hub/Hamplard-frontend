@@ -1,7 +1,5 @@
-import { apiClient } from "./client";
-import { getApiUrl } from "./config";
-import type {
 import { apiClient } from './client';
+import { getApiUrl } from "./config";
 import type {
   Achievement,
   Announcement,
@@ -17,6 +15,7 @@ import type {
   LeaderboardPeriod,
   LeaderboardResponse,
   Lesson,
+  LessonType,
   LiveSession,
   LiveSessionRecording,
   MessageAttachment,
@@ -24,20 +23,11 @@ import type {
   PaginatedResponse,
   SavedPaymentMethod,
   CourseModule,
-  Lesson,
-  LessonType,
-  Achievement,
-  DirectMessage,
-  Conversation,
-  MessageAttachment,
   ShowcaseProject,
   ShowcaseComment,
-  ShowcaseProject,
   StudentDetail,
   StudentEnrollmentRow,
   SubmitShowcasePayload,
-  LiveSession,
-  LiveSessionRecording,
   Instructor,
   InstructorProfile,
   InstructorSort,
