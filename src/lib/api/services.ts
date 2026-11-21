@@ -859,17 +859,11 @@ export const usersApi = {
     return data.data;
   },
   requestDataExport: async (): Promise<{ message: string; downloadUrl?: string }> => {
-    try {
-      const { data } = await apiClient.post<ApiResponse<{ message: string; downloadUrl?: string }>>(
-        '/users/me/export-data',
-      );
-      return data.data;
-    } catch {
-      // Fallback response when endpoint is mock / offline
-      return {
-        message: "Your data export is being prepared, you'll receive an email when ready",
-      };
-    }
+    // No blanket catch - let errors propagate to the UI (#551)
+    const { data } = await apiClient.post<ApiResponse<{ message: string; downloadUrl?: string }>>(
+      '/users/me/export-data',
+    );
+    return data.data;
   },
 };
 
