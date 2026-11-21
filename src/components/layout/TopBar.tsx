@@ -5,7 +5,9 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
   Bell, ChevronDown, Menu, Search, ShoppingCart, UserCircle2, X,
 } from 'lucide-react';
+import ThemeToggle from '@/components/layout/ThemeToggle';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
+import { notificationsApi } from '@/lib/api/services';
 import { shortAddress } from '@/lib/utils';
 
 const CATEGORIES = [
@@ -20,12 +22,29 @@ export function TopBar() {
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [isElevated, setIsElevated] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const onScroll = () => setIsElevated(window.scrollY > 8);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+
+    const refreshCount = async () => {
+      try {
+        const response = await notificationsApi.list({ unreadOnly: true });
+        setUnreadCount(response.data.length);
+      } catch {
+        setUnreadCount(0);
+      }
+    };
+
+    refreshCount();
+    window.addEventListener('hamplard:notifications-updated', refreshCount);
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('hamplard:notifications-updated', refreshCount as EventListener);
+    };
   }, []);
 
   const avatarText = useMemo(() => {
@@ -105,12 +124,13 @@ export function TopBar() {
         </form>
 
         <div className="ml-auto hidden items-center gap-2 lg:flex">
+          <ThemeToggle />
           {!isConnected ? (
             <>
-              <Link href="/auth/login" className="rounded-lg px-4 py-2 text-sm font-medium text-white hover:bg-[#3C3489]">
+              <Link href="/login" className="rounded-lg px-4 py-2 text-sm font-medium text-white hover:bg-[#3C3489]">
                 Login
               </Link>
-              <Link href="/auth/signup" className="rounded-lg bg-[#7F77DD] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3C3489]">
+              <Link href="/signup" className="rounded-lg bg-[#7F77DD] px-4 py-2 text-sm font-semibold text-white hover:bg-[#3C3489]">
                 Signup
               </Link>
             </>
@@ -118,7 +138,11 @@ export function TopBar() {
             <>
               <Link href="/notifications" className="relative rounded-lg p-2 text-white hover:bg-[#3C3489]" aria-label="Notifications">
                 <Bell className="h-5 w-5" />
-                <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[#7F77DD]" />
+                {unreadCount > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-[#7F77DD] px-1 text-[10px] font-semibold text-white">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </Link>
               <Link href="/dashboard/courses" className="rounded-lg p-2 text-white hover:bg-[#3C3489]" aria-label="Cart">
                 <ShoppingCart className="h-5 w-5" />
@@ -133,13 +157,13 @@ export function TopBar() {
           )}
         </div>
 
-        <div className="ml-auto lg:hidden">
+        <div className="ml-2 lg:ml-auto lg:hidden">
           {isConnected ? (
             <Link href="/dashboard/courses" aria-label="Account" className="inline-flex rounded-full bg-[#3C3489] p-2 text-white hover:bg-[#7F77DD]">
               <UserCircle2 className="h-5 w-5" />
             </Link>
           ) : (
-            <Link href="/auth/login" className="rounded-lg bg-[#7F77DD] px-3 py-2 text-sm font-semibold text-white">
+            <Link href="/login" className="rounded-lg bg-[#7F77DD] px-3 py-2 text-sm font-semibold text-white">
               Login
             </Link>
           )}
@@ -176,10 +200,10 @@ export function TopBar() {
           <div className="mt-3 grid grid-cols-1 gap-2">
             {!isConnected ? (
               <>
-                <Link href="/auth/login" className="rounded-lg border border-[#7F77DD] px-4 py-2 text-center text-sm font-medium text-white">
+                <Link href="/login" className="rounded-lg border border-[#7F77DD] px-4 py-2 text-center text-sm font-medium text-white">
                   Login
                 </Link>
-                <Link href="/auth/signup" className="rounded-lg bg-[#7F77DD] px-4 py-2 text-center text-sm font-semibold text-white hover:bg-[#3C3489]">
+                <Link href="/signup" className="rounded-lg bg-[#7F77DD] px-4 py-2 text-center text-sm font-semibold text-white hover:bg-[#3C3489]">
                   Signup
                 </Link>
               </>

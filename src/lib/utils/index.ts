@@ -17,13 +17,15 @@ export const formatUsdc = (price: number | string) =>
 /** Convert stroops to USDC */
 export const stroopsToUsdc = (stroops: string | bigint) => {
   const v = BigInt(stroops);
-  return parseFloat(`${v / 10_000_000n}.${(v % 10_000_000n).toString().padStart(7, '0')}`).toFixed(2);
+  const stroopsPerUsdc = BigInt(10_000_000);
+  return parseFloat(`${v / stroopsPerUsdc}.${(v % stroopsPerUsdc).toString().padStart(7, '0')}`).toFixed(2);
 };
 
 /** Convert USDC amount to stroops */
 export const usdcToStroops = (usdc: number | string): bigint => {
   const [whole, fraction = ''] = String(usdc).split('.');
-  return BigInt(whole) * 10_000_000n + BigInt(fraction.padEnd(7, '0').slice(0, 7));
+  const stroopsPerUsdc = BigInt(10_000_000);
+  return BigInt(whole) * stroopsPerUsdc + BigInt(fraction.padEnd(7, '0').slice(0, 7));
 };
 
 export const formatDate    = (d: string | null) => d ? format(new Date(d), 'MMM d, yyyy') : '—';

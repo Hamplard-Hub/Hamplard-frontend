@@ -1,35 +1,25 @@
-import {
-  isConnected, getAddress, signTransaction,
-  requestAccess, getNetwork, WatchWalletChanges,
-} from '@stellar/freighter-api';
+import { isConnected, signTransaction, requestAccess, getNetwork, getPublicKey } from '@stellar/freighter-api';
 
 export async function isFreighterInstalled(): Promise<boolean> {
-  try { const r = await isConnected(); return r.isConnected; }
+  try { return await isConnected(); }
   catch { return false; }
 }
 
 export async function connectFreighter(): Promise<string> {
-  const r = await requestAccess();
-  if (r.error) throw new Error(r.error);
+  await requestAccess();
   return getUserAddress();
 }
 
 export async function getUserAddress(): Promise<string> {
-  const r = await getAddress();
-  if (r.error) throw new Error(r.error);
-  return r.address;
+  return await getPublicKey();
 }
 
 export async function getWalletNetwork(): Promise<string> {
-  const r = await getNetwork();
-  if (r.error) throw new Error(r.error);
-  return r.network;
+  return await getNetwork();
 }
 
 export async function signTx(xdr: string, networkPassphrase: string): Promise<string> {
-  const r = await signTransaction(xdr, { networkPassphrase });
-  if (r.error) throw new Error(r.error);
-  return r.signedTxXdr;
+  return await signTransaction(xdr, { networkPassphrase });
 }
 
 export async function signNonce(nonce: string, networkPassphrase: string): Promise<string> {
@@ -47,12 +37,4 @@ export async function signNonce(nonce: string, networkPassphrase: string): Promi
     .build();
 
   return signTx(tx.toXDR(), networkPassphrase);
-}
-
-export function watchWallet(onChange: (address: string) => void): () => void {
-  const watcher = new WatchWalletChanges(3000);
-  watcher.watch(async () => {
-    try { onChange(await getUserAddress()); } catch {}
-  });
-  return () => watcher.stop();
 }

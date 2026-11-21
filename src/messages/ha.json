@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "home": "Gida",
+    "courses": "Darussa",
+    "dashboard": "Allon Ayyuka",
+    "login": "Shiga",
+    "signup": "Yi Rajista",
+    "logout": "Fita",
+    "settings": "Saiti"
+  },
+  "footer": {
+    "tagline": "Ƙwarewa ta aiki don Afirka",
+    "links": "Hanyoyin",
+    "legal": "Doka",
+    "privacy": "Manufar Sirri",
+    "terms": "Sharuɗɗan Amfani"
+  },
+  "auth": {
+    "email": "Adireshin imel",
+    "password": "Kalmar sirri",
+    "loginTitle": "Barka da komawa",
+    "signupTitle": "Ƙirƙiri asusunka",
+    "forgotPassword": "Manta kalmar sirri?",
+    "noAccount": "Ba ka da asusun?",
+    "hasAccount": "Kana da asusun tuni?"
+  },
+  "dashboard": {
+    "welcome": "Barka da komawa",
+    "myCourses": "Darussa na",
+    "progress": "Ci gaba",
+    "certificates": "Takaddun shaida",
+    "downloads": "Saukakke",
+    "wishlist": "Jerin buƙata",
+    "notifications": "Sanarwa"
+  },
+  "learn": {
+    "nextLesson": "Darasi mai zuwa",
+    "previousLesson": "Darasi da ya wuce",
+    "markComplete": "Alamta cikakke",
+    "completed": "An gama",
+    "quiz": "Tambayoyi",
+    "assignment": "Aiki"
+  },
+  "common": {
+    "save": "Ajiye",
+    "cancel": "Soke",
+    "delete": "Goge",
+    "edit": "Gyara",
+    "loading": "Ana lodawa…",
+    "retry": "Sake gwadawa",
+    "back": "Koma",
+    "next": "Gaba",
+    "submit": "Aika",
+    "language": "Harshe"
+  }
+}

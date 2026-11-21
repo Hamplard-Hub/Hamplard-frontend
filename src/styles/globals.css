@@ -1,5 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-@import './tokens.css';
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+@import "./tokens.css";
+@import "./reduced-motion.css";
 
 @tailwind base;
 @tailwind components;
@@ -9,7 +10,6 @@
   :root {
     --progress: 0%;
   }
-
   body {
     background-color: var(--color-bg-page);
     color: var(--color-text-body);
@@ -20,64 +20,169 @@
     font-weight: var(--type-body-font-weight);
     @apply antialiased;
   }
-
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     color: var(--color-text-heading);
     margin: 0;
   }
-
-  h1 { font-family: var(--type-h1-family); font-size: var(--type-h1-size); line-height: var(--type-h1-line-height); letter-spacing: var(--type-h1-letter-spacing); font-weight: var(--type-h1-font-weight); }
-  h2 { font-family: var(--type-h2-family); font-size: var(--type-h2-size); line-height: var(--type-h2-line-height); letter-spacing: var(--type-h2-letter-spacing); font-weight: var(--type-h2-font-weight); }
-  h3 { font-family: var(--type-h3-family); font-size: var(--type-h3-size); line-height: var(--type-h3-line-height); letter-spacing: var(--type-h3-letter-spacing); font-weight: var(--type-h3-font-weight); }
-  h4 { font-family: var(--type-h4-family); font-size: var(--type-h4-size); line-height: var(--type-h4-line-height); letter-spacing: var(--type-h4-letter-spacing); font-weight: var(--type-h4-font-weight); }
-  h5 { font-family: var(--type-h5-family); font-size: var(--type-h5-size); line-height: var(--type-h5-line-height); letter-spacing: var(--type-h5-letter-spacing); font-weight: var(--type-h5-font-weight); }
-  h6 { font-family: var(--type-h6-family); font-size: var(--type-h6-size); line-height: var(--type-h6-line-height); letter-spacing: var(--type-h6-letter-spacing); font-weight: var(--type-h6-font-weight); }
+  h1 {
+    font-family: var(--type-h1-family);
+    font-size: var(--type-h1-size);
+    line-height: var(--type-h1-line-height);
+    letter-spacing: var(--type-h1-letter-spacing);
+    font-weight: var(--type-h1-font-weight);
+  }
+  h2 {
+    font-family: var(--type-h2-family);
+    font-size: var(--type-h2-size);
+    line-height: var(--type-h2-line-height);
+    letter-spacing: var(--type-h2-letter-spacing);
+    font-weight: var(--type-h2-font-weight);
+  }
+  h3 {
+    font-family: var(--type-h3-family);
+    font-size: var(--type-h3-size);
+    line-height: var(--type-h3-line-height);
+    letter-spacing: var(--type-h3-letter-spacing);
+    font-weight: var(--type-h3-font-weight);
+  }
+  h4 {
+    font-family: var(--type-h4-family);
+    font-size: var(--type-h4-size);
+    line-height: var(--type-h4-line-height);
+    letter-spacing: var(--type-h4-letter-spacing);
+    font-weight: var(--type-h4-font-weight);
+  }
+  h5 {
+    font-family: var(--type-h5-family);
+    font-size: var(--type-h5-size);
+    line-height: var(--type-h5-line-height);
+    letter-spacing: var(--type-h5-letter-spacing);
+    font-weight: var(--type-h5-font-weight);
+  }
+  h6 {
+    font-family: var(--type-h6-family);
+    font-size: var(--type-h6-size);
+    line-height: var(--type-h6-line-height);
+    letter-spacing: var(--type-h6-letter-spacing);
+    font-weight: var(--type-h6-font-weight);
+  }
 }
 
 @layer components {
-  /* Buttons */
   .btn {
     @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm transition-all duration-150 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98];
     border-radius: var(--radius-xl);
     font-weight: var(--font-weight-medium);
   }
-  .btn-primary   { @apply btn; background-color: var(--color-bg-primary-hover); color: var(--color-text-on-primary); box-shadow: var(--shadow-sm); }
-  .btn-primary:hover { background-color: #322b73; }
-  .btn-primary:focus-visible { box-shadow: var(--shadow-focus); }
-  .btn-secondary { @apply btn border; background-color: var(--color-bg-page); color: var(--color-text-heading); border-color: var(--color-border-default); }
-  .btn-secondary:hover { background-color: var(--color-bg-subtle); }
-  .btn-ghost     { @apply btn; color: var(--color-text-link); }
-  .btn-ghost:hover { background-color: var(--color-bg-subtle); }
-  .btn-danger    { @apply btn bg-red-600 text-white hover:bg-red-700; }
-  .btn-leaf      { @apply btn bg-leaf-600 text-white hover:bg-leaf-700; }
-
-  /* Cards */
-  .card         { @apply rounded-2xl border; background-color: var(--color-bg-page); border-color: var(--color-border-default); box-shadow: var(--shadow-sm); }
-  .card-lifted  { @apply rounded-2xl border; background-color: var(--color-bg-page); border-color: var(--color-border-default); box-shadow: var(--shadow-lg); }
-
-  /* Form elements */
-  .input        { @apply w-full rounded-xl border px-3.5 py-2.5 text-sm transition-all focus:outline-none; border-color: var(--color-border-default); background-color: var(--color-bg-page); color: var(--color-text-body); }
-  .input::placeholder { color: var(--color-text-muted); }
-  .input:focus { border-color: var(--color-focus-ring); box-shadow: var(--shadow-focus); }
-  .label        { @apply mb-1.5 block; color: var(--color-text-heading); font-family: var(--type-label-family); font-size: var(--type-label-size); line-height: var(--type-label-line-height); letter-spacing: var(--type-label-letter-spacing); font-weight: var(--type-label-font-weight); }
-  .select       { @apply input appearance-none cursor-pointer; }
-  .textarea     { @apply input resize-none; }
-
-  /* Badges */
-  .badge          { @apply inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-medium; }
-  .badge-active   { @apply badge bg-leaf-50 text-leaf-700; }
-  .badge-pending  { @apply badge bg-saffron-50 text-saffron-700; }
-  .badge-draft    { @apply badge bg-ink-100 text-ink-600; }
-  .badge-paused   { @apply badge bg-orange-50 text-orange-700; }
-  .badge-archived { @apply badge bg-ink-100 text-ink-500; }
-  .badge-free     { @apply badge bg-leaf-50 text-leaf-700; }
-
-  /* Level chips */
-  .chip-beginner     { @apply badge bg-blue-50 text-blue-700; }
-  .chip-intermediate { @apply badge bg-purple-50 text-purple-700; }
-  .chip-advanced     { @apply badge bg-red-50 text-red-700; }
-
-  /* Progress bar */
+  .btn-primary {
+    @apply btn;
+    background-color: var(--color-bg-primary-hover);
+    color: var(--color-text-on-primary);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-primary:hover {
+    background-color: #322b73;
+  }
+  .btn-primary:focus-visible {
+    box-shadow: var(--shadow-focus);
+  }
+  .btn-secondary {
+    @apply btn border;
+    background-color: var(--color-bg-page);
+    color: var(--color-text-heading);
+    border-color: var(--color-border-default);
+  }
+  .btn-secondary:hover {
+    background-color: var(--color-bg-subtle);
+  }
+  .btn-ghost {
+    @apply btn;
+    color: var(--color-text-link);
+  }
+  .btn-ghost:hover {
+    background-color: var(--color-bg-subtle);
+  }
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700;
+  }
+  .btn-leaf {
+    @apply btn bg-leaf-600 text-white hover:bg-leaf-700;
+  }
+  .card {
+    @apply rounded-2xl border;
+    background-color: var(--color-bg-page);
+    border-color: var(--color-border-default);
+    box-shadow: var(--shadow-sm);
+  }
+  .card-lifted {
+    @apply rounded-2xl border;
+    background-color: var(--color-bg-page);
+    border-color: var(--color-border-default);
+    box-shadow: var(--shadow-lg);
+  }
+  .input {
+    @apply w-full rounded-xl border px-3.5 py-2.5 text-sm transition-all focus:outline-none;
+    border-color: var(--color-border-default);
+    background-color: var(--color-bg-page);
+    color: var(--color-text-body);
+  }
+  .input::placeholder {
+    color: var(--color-text-muted);
+  }
+  .input:focus {
+    border-color: var(--color-focus-ring);
+    box-shadow: var(--shadow-focus);
+  }
+  .label {
+    @apply mb-1.5 block;
+    color: var(--color-text-heading);
+    font-family: var(--type-label-family);
+    font-size: var(--type-label-size);
+    line-height: var(--type-label-line-height);
+    letter-spacing: var(--type-label-letter-spacing);
+    font-weight: var(--type-label-font-weight);
+  }
+  .select {
+    @apply input appearance-none cursor-pointer;
+  }
+  .textarea {
+    @apply input resize-none;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-medium;
+  }
+  .badge-active {
+    @apply badge bg-leaf-50 text-leaf-700;
+  }
+  .badge-pending {
+    @apply badge bg-saffron-50 text-saffron-700;
+  }
+  .badge-draft {
+    @apply badge bg-ink-100 text-ink-700;
+  }
+  .badge-paused {
+    @apply badge bg-orange-50 text-orange-700;
+  }
+  .badge-archived {
+    @apply badge bg-ink-100 text-ink-500;
+  }
+  .badge-free {
+    @apply badge bg-leaf-50 text-leaf-700;
+  }
+  .chip-beginner {
+    @apply badge bg-blue-50 text-blue-700;
+  }
+  .chip-intermediate {
+    @apply badge bg-purple-50 text-purple-700;
+  }
+  .chip-advanced {
+    @apply badge bg-red-50 text-red-700;
+  }
   .progress-bar {
     @apply w-full h-2 bg-ink-100 rounded-full overflow-hidden;
   }
@@ -86,10 +191,254 @@
   }
 
   /* Section heading with display font */
-  .section-heading { color: var(--color-text-heading); font-family: var(--type-h3-family); font-size: var(--type-h3-size); line-height: var(--type-h3-line-height); letter-spacing: var(--type-h3-letter-spacing); font-weight: var(--type-h3-font-weight); }
-
-  /* Course grid */
+  .section-heading {
+    color: var(--color-text-heading);
+    font-family: var(--type-h3-family);
+    font-size: var(--type-h3-size);
+    line-height: var(--type-h3-line-height);
+    letter-spacing: var(--type-h3-letter-spacing);
+    font-weight: var(--type-h3-font-weight);
+  }
   .course-grid {
     @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Hero animations */
+@keyframes heroFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes floatBadge1 {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@keyframes floatBadge2 {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+@keyframes floatBadge3 {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-fade-up,
+  .hero-right {
+    animation: none !important;
+  }
+}
+
+/* Category pill marquee */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+.marquee-track {
+  animation: marquee 28s linear infinite;
+}
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
+
+/* ── Print styles ──────────────────────────────────────────────────────────
+ * The lesson view renders a print-only guide (see PrintableLessonGuide).
+ * Everything else — navigation, sidebars, buttons and the video player — is
+ * removed so the printed page contains only the lesson guide.
+ * ------------------------------------------------------------------------ */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* App chrome: navigation, headers, sidebars, footers, interactive controls
+     and the video player. */
+  nav,
+  header,
+  aside,
+  footer,
+  button,
+  video,
+  iframe,
+  [role='navigation'],
+  .print-hide {
+    display: none !important;
+  }
+
+  /* Reveal the print-only lesson guide. */
+  .print-only {
+    display: block !important;
+  }
+
+  /* The app shell is a fixed-height, scroll-contained layout. Printing must
+     not clip the guide, so heights and overflow are released for print. */
+  html,
+  body,
+  #main-content,
+  .print-shell,
+  .print-shell main,
+  .print-root,
+  .print-root * {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .print-root {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Keep a step (and its image) from being split across two pages. */
+  .print-avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-guide-header {
+    border-bottom: 2px solid #000;
+    margin-bottom: 8mm;
+    padding-bottom: 4mm;
+  }
+
+  .print-guide-eyebrow {
+    font-size: 10pt;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0 0 2mm;
+  }
+
+  .print-guide-title {
+    font-size: 20pt;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  .print-guide-description {
+    font-size: 11pt;
+    margin: 3mm 0 0;
+  }
+
+  .print-guide-section {
+    margin-bottom: 8mm;
+  }
+
+  .print-guide-heading {
+    font-size: 13pt;
+    font-weight: 700;
+    margin: 0 0 3mm;
+    border-bottom: 1px solid #999;
+    padding-bottom: 1.5mm;
+  }
+
+  .print-guide-table {
+    border-collapse: collapse;
+    font-size: 10.5pt;
+    width: 100%;
+  }
+
+  .print-guide-table th,
+  .print-guide-table td {
+    border: 1px solid #bbb;
+    padding: 2mm 2.5mm;
+    text-align: left;
+  }
+
+  .print-guide-table th {
+    background: #eee;
+  }
+
+  .print-guide-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .print-guide-step {
+    margin-bottom: 6mm;
+  }
+
+  .print-guide-step-title {
+    font-size: 12pt;
+    font-weight: 700;
+    margin: 0 0 2mm;
+  }
+
+  .print-guide-step-number {
+    display: inline-block;
+    min-width: 6mm;
+    height: 6mm;
+    line-height: 6mm;
+    text-align: center;
+    border: 1px solid #000;
+    border-radius: 50%;
+    font-size: 10pt;
+    margin-right: 3mm;
+  }
+
+  .print-guide-step-description {
+    font-size: 10.5pt;
+    margin: 0 0 2mm;
+  }
+
+  .print-guide-step-image {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ccc;
+  }
+
+  .print-guide-footer {
+    border-top: 1px solid #999;
+    font-size: 9pt;
+    padding-top: 2mm;
   }
 }

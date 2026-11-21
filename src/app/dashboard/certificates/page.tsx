@@ -6,6 +6,9 @@ import { Award, ExternalLink, Copy, CheckCircle2 } from 'lucide-react';
 import { certificatesApi } from '@/lib/api/services';
 import { formatDate, shortAddress, copyToClipboard } from '@/lib/utils';
 import type { Certificate } from '@/types';
+import { SocialShare } from '@/components/ui/SocialShare';
+import { Breadcrumb } from '@/components/ui';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export default function CertificatesPage() {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
@@ -32,6 +35,13 @@ export default function CertificatesPage() {
   return (
     <div>
       <div className="mb-6">
+        <Breadcrumb
+          items={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Certificates' },
+          ]}
+          className="mb-3"
+        />
         <h1 className="section-heading">My Certificates</h1>
         <p className="text-sm text-ink-500 mt-0.5">
           {certificates.length} certificate{certificates.length !== 1 ? 's' : ''} earned
@@ -39,16 +49,13 @@ export default function CertificatesPage() {
       </div>
 
       {certificates.length === 0 ? (
-        <div className="card p-12 text-center">
-          <Award className="w-12 h-12 text-saffron-200 mx-auto mb-3" />
-          <p className="text-sm font-medium text-ink-700">No certificates yet</p>
-          <p className="text-xs text-ink-400 mt-1">
-            Complete a course to earn your first blockchain-verified certificate.
-          </p>
-          <Link href="/dashboard/courses" className="btn-primary mt-4 inline-flex">
-            Go to my courses
-          </Link>
-        </div>
+        <EmptyState
+          icon={<Award className="w-6 h-6" />}
+          title="No certificates yet"
+          description="Complete a course to earn your first blockchain-verified certificate."
+          actionLabel="Go to my courses"
+          actionHref="/dashboard/courses"
+        />
       ) : (
         <div className="space-y-4">
           {certificates.map((cert) => (
@@ -80,23 +87,31 @@ export default function CertificatesPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                      onClick={() => handleCopy(cert.id)}
-                      className="btn-secondary text-xs"
-                    >
-                      {copied === cert.id
-                        ? <><CheckCircle2 className="w-3.5 h-3.5 text-leaf-500" />Copied!</>
-                        : <><Copy className="w-3.5 h-3.5" />Copy verification link</>
-                      }
-                    </button>
-                    <Link
-                      href={`/certificates/${cert.id}`}
-                      className="btn-ghost text-xs"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      View certificate
-                    </Link>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        onClick={() => handleCopy(cert.id)}
+                        className="btn-secondary text-xs"
+                      >
+                        {copied === cert.id
+                          ? <><CheckCircle2 className="w-3.5 h-3.5 text-leaf-500" />Copied!</>
+                          : <><Copy className="w-3.5 h-3.5" />Copy verification link</>
+                        }
+                      </button>
+                      <Link
+                        href={`/certificates/${cert.id}`}
+                        className="btn-ghost text-xs"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        View certificate
+                      </Link>
+                    </div>
+                    <SocialShare
+                      courseTitle={cert.courseTitle}
+                      variant="icon"
+                      size="sm"
+                      className="flex gap-2"
+                    />
                   </div>
                 </div>
               </div>

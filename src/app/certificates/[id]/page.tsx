@@ -1,9 +1,68 @@
+import type { Metadata } from 'next';
 import { certificatesApi } from '@/lib/api/services';
 import { formatDate, shortAddress } from '@/lib/utils';
 import { Award, CheckCircle2, XCircle, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+import { SocialShare } from '@/components/ui/SocialShare';
+
+const DEFAULT_OG_IMAGE = '/hamplard-og.svg';
 
 interface Props { params: { id: string } }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const defaultTitle = 'Hamplard Certificate';
+  const defaultDescription =
+    'Verify Hamplard certificate ownership and completion details for students and courses.';
+
+  try {
+    const result = await certificatesApi.verify(params.id);
+    const cert = result?.certificate;
+    const studentName =
+      cert?.student?.name ||
+      (cert?.student?.stellarAddress ? shortAddress(cert.student.stellarAddress, 6) : 'Learner');
+    const courseTitle = cert?.courseTitle ?? cert?.course?.title ?? 'Hamplard course';
+    const title = `${studentName} • ${courseTitle} | Hamplard Certificate`;
+    const description = `${studentName} completed ${courseTitle} on Hamplard. Verify certificate ${params.id}.`;
+
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        url: `https://hamplard.app/certificates/${params.id}`,
+        siteName: 'Hamplard',
+        type: 'article',
+        images: [{ url: DEFAULT_OG_IMAGE, alt: title }],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: [DEFAULT_OG_IMAGE],
+      },
+    };
+  } catch {
+    return {
+      title: defaultTitle,
+      description: defaultDescription,
+      openGraph: {
+        title: defaultTitle,
+        description: defaultDescription,
+        url: `https://hamplard.app/certificates/${params.id}`,
+        siteName: 'Hamplard',
+        type: 'article',
+        images: [{ url: DEFAULT_OG_IMAGE, alt: 'Hamplard Certificate' }],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: defaultTitle,
+        description: defaultDescription,
+        images: [DEFAULT_OG_IMAGE],
+      },
+    };
+  }
+}
 
 export default async function CertificateVerifyPage({ params }: Props) {
   let result: any = null;

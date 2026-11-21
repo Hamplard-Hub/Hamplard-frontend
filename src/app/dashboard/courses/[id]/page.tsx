@@ -14,6 +14,7 @@ import {
   formatUsdc, formatDuration, levelChip, timeAgo, usdcToStroops,
 } from '@/lib/utils';
 import type { Course, Enrollment } from '@/types';
+import { Breadcrumb } from '@/components/ui';
 
 const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS!;
 
@@ -78,11 +79,14 @@ export default function CourseDetailPage() {
 
   return (
     <div>
-      <Link href="/"
-        className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-900 mb-5 transition-colors">
-        <ArrowLeft className="w-4 h-4" />
-        All courses
-      </Link>
+      <Breadcrumb
+        items={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'My Courses', href: '/dashboard/courses' },
+          { label: course.title },
+        ]}
+        className="mb-5"
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}
@@ -199,7 +203,7 @@ export default function CourseDetailPage() {
                 }
               </button>
             ) : (
-              <Link href={`/auth/login?callbackUrl=/dashboard/courses/${id}`}
+              <Link href={`/login?callbackUrl=/dashboard/courses/${id}`}
                 className="btn-primary w-full text-base py-3 text-center block">
                 Sign in to enroll
               </Link>
@@ -213,7 +217,7 @@ export default function CourseDetailPage() {
               {[
                 { icon: BookOpen, text: `${totalLessons} structured lessons` },
                 { icon: Clock,    text: `${Math.ceil((course.totalDuration ?? 0) / 60)}+ minutes of content` },
-                { icon: Award,    text: 'Blockchain-verified certificate' },
+                { icon: Award,    text: "Blockchain-verified certificate" },
               ].map(({ icon: Icon, text }) => (
                 <div key={text} className="flex items-center gap-2.5 text-xs text-ink-500">
                   <Icon className="w-3.5 h-3.5 text-saffron-500 flex-shrink-0" />

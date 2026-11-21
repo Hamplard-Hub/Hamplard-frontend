@@ -36,7 +36,7 @@ async function invokeContract(caller: string, method: string, args: xdr.ScVal[])
   const signed    = await signTx(assembled.toXDR(), PASSPHRASE);
 
   const { Transaction } = await import('@stellar/stellar-sdk');
-  const resp = await rpc.sendTransaction(new Transaction(signed));
+  const resp = await rpc.sendTransaction(new Transaction(signed, PASSPHRASE));
   if (resp.status === 'ERROR') throw new Error('Submission failed');
 
   return waitForTx(resp.hash);

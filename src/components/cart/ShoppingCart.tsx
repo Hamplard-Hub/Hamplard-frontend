@@ -1,0 +1,294 @@
+'use client';
+
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ShoppingBag, X, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { useCartStore } from '@/lib/hooks/use-cart-store';
+import { promoCodesApi } from '@/lib/api/services';
+import { Button } from '@/components/ui/Button';
+import { formatUsdc } from '@/lib/utils';
+import { CheckoutErrorBoundary } from './CheckoutErrorBoundary';
+
+// ── Types ──────────────────────────────────────────────────────────────────
+
+interface ShoppingCartProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+interface AppliedPromo {
+  code: string;
+  discountType: 'PERCENTAGE' | 'FIXED';
+  discountValue: number;
+}
+
+// ── Inner content (wrapped by error boundary) ─────────────────────────────
+
+function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
+  const router = useRouter();
+  const { items, removeItem, clearCart, getTotalPrice } = useCartStore();
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [isValidatingPromo, setIsValidatingPromo] = useState(false);
+
+  const subtotal = getTotalPrice();
+  const itemCount = items.length;
+
+  const discountAmount = appliedPromo
+    ? appliedPromo.discountType === 'PERCENTAGE'
+      ? (subtotal * appliedPromo.discountValue) / 100
+      // Cap fixed discounts at the subtotal so finalPrice never goes negative
+      : Math.min(appliedPromo.discountValue, subtotal)
+    : 0;
+  const finalPrice = Math.max(0, subtotal - discountAmount);
+
+  const handleCheckout = () => {
+    setIsCheckingOut(true);
+    router.push('/checkout');
+  };
+
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) {
+      setPromoError('Enter a promo code');
+      return;
+    }
+    if (items.length === 0) return;
+
+    setIsValidatingPromo(true);
+    setPromoError(null);
+
+    try {
+      const result = await promoCodesApi.validate(promoCode.toUpperCase(), items[0].courseId);
+      setAppliedPromo(result as AppliedPromo);
+      setPromoCode('');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Invalid promo code';
+      setPromoError(message);
+    } finally {
+      setIsValidatingPromo(false);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setAppliedPromo(null);
+    setPromoCode('');
+    setPromoError(null);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="flex flex-col h-full bg-white">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-ink-100 px-4 py-4">
+        <div className="flex items-center gap-2">
+          <ShoppingBag className="w-5 h-5 text-hamplard-primary" />
+          <h2 className="text-lg font-semibold text-ink-900">Shopping Cart</h2>
+          {itemCount > 0 && (
+            <span className="bg-hamplard-primary text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+              {itemCount}
+            </span>
+          )}
+        </div>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-ink-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-hamplard-primary"
+            aria-label="Close cart"
+          >
+            <X className="w-5 h-5 text-ink-500" />
+          </button>
+        )}
+      </div>
+
+      {/* Items List */}
+      <div className="flex-1 overflow-y-auto">
+        {itemCount === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full py-12 px-4">
+            <ShoppingBag className="w-12 h-12 text-ink-200 mb-3" />
+            <p className="text-center text-ink-600 font-medium mb-1">Your cart is empty</p>
+            <p className="text-center text-sm text-ink-400 mb-4">
+              Browse our courses and add them to get started
+            </p>
+            <Link href="/courses">
+              <Button variant="primary" size="md">
+                Browse Courses
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3 p-4">
+            {items.map((item) => (
+              <div
+                key={item.courseId}
+                className="flex gap-3 p-3 bg-ink-50 rounded-lg hover:bg-ink-100 transition-colors"
+              >
+                {/* Thumbnail */}
+                {item.course.thumbnailUrl ? (
+                  <img
+                    src={item.course.thumbnailUrl}
+                    alt={`${item.course.title} course thumbnail`}
+                    className="w-16 h-16 object-cover rounded-md flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-16 h-16 bg-gradient-to-br from-saffron-100 to-saffron-200 rounded-md flex items-center justify-center flex-shrink-0">
+                    <span className="text-lg">📚</span>
+                  </div>
+                )}
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-saffron-600 font-medium uppercase">
+                    {item.course.category}
+                  </p>
+                  <h3 className="text-sm font-semibold text-ink-900 line-clamp-2">
+                    {item.course.title}
+                  </h3>
+                  <p className="text-xs text-ink-500 mt-1">
+                    by {item.course.instructor?.name || 'Hamplard Instructor'}
+                  </p>
+                  <p className="text-base font-bold text-hamplard-primary mt-2">
+                    {formatUsdc(item.course.price)}
+                  </p>
+                </div>
+
+                {/* Remove Button */}
+                <button
+                  onClick={() => removeItem(item.courseId)}
+                  className="p-1 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0 text-red-600 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  aria-label={`Remove ${item.course.title} from cart`}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      {itemCount > 0 && (
+        <div className="border-t border-ink-100 bg-gray-50 p-4 space-y-3">
+          {/* Promo Code Section */}
+          {!appliedPromo ? (
+            <div className="bg-white rounded-lg p-3 border border-ink-100">
+              <label htmlFor="promo-code" className="text-xs font-medium text-ink-600 block mb-2">
+                Have a promo code?
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="promo-code"
+                  type="text"
+                  placeholder="Enter code"
+                  value={promoCode}
+                  onChange={(e) => {
+                    setPromoCode(e.target.value.toUpperCase());
+                    setPromoError(null);
+                  }}
+                  className="flex-1 px-3 py-2 text-sm border border-ink-200 rounded-lg focus:ring-2 focus:ring-hamplard-primary focus:border-transparent"
+                  disabled={isValidatingPromo}
+                />
+                <button
+                  onClick={handleApplyPromo}
+                  disabled={isValidatingPromo || !promoCode.trim()}
+                  className="px-3 py-2 text-sm font-medium bg-hamplard-primary text-white rounded-lg hover:bg-hamplard-mid disabled:bg-ink-200 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isValidatingPromo ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    'Apply'
+                  )}
+                </button>
+              </div>
+              {promoError && (
+                <p className="text-xs text-rose-600 mt-2 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {promoError}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-200 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-emerald-900">
+                  ✓ Promo applied: <code className="font-mono font-semibold">{appliedPromo.code}</code>
+                </p>
+                <p className="text-xs text-emerald-700 mt-1">
+                  Saving {formatUsdc(discountAmount)}
+                </p>
+              </div>
+              <button
+                onClick={handleRemovePromo}
+                className="p-1 hover:bg-emerald-100 rounded transition-colors"
+                aria-label="Remove promo code"
+              >
+                <X className="w-4 h-4 text-emerald-700" />
+              </button>
+            </div>
+          )}
+
+          {/* Summary */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-ink-600">Subtotal ({itemCount} course{itemCount !== 1 ? 's' : ''})</span>
+              <span className="font-semibold text-ink-900">{formatUsdc(subtotal)}</span>
+            </div>
+            {appliedPromo && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-emerald-700">Discount</span>
+                <span className="font-semibold text-emerald-700">-{formatUsdc(discountAmount)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-ink-600">Platform fee</span>
+              <span className="text-ink-500">Calculated at checkout</span>
+            </div>
+          </div>
+
+          {/* Total */}
+          <div className="pt-2 border-t border-ink-200">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-base font-semibold text-ink-900">Total</span>
+              <span className="text-xl font-bold text-hamplard-primary">{formatUsdc(finalPrice)}</span>
+            </div>
+
+            {/* Single checkout button */}
+            <Button
+              fullWidth
+              variant="primary"
+              size="lg"
+              onClick={handleCheckout}
+              disabled={isCheckingOut}
+              icon={<ArrowRight className="w-4 h-4" />}
+              iconPosition="right"
+            >
+              {isCheckingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Proceed to Checkout'}
+            </Button>
+
+            <button
+              onClick={clearCart}
+              className="w-full mt-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+            >
+              Clear Cart
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Exported component (error boundary wrapper) ───────────────────────────
+
+export function ShoppingCart(props: ShoppingCartProps) {
+  return (
+    <CheckoutErrorBoundary>
+      <ShoppingCartContent {...props} />
+    </CheckoutErrorBoundary>
+  );
+}
+
+export default ShoppingCart;

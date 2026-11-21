@@ -1,0 +1,236 @@
+/**
+ * Reduced Motion Support
+ * 
+ * This file applies prefers-reduced-motion: reduce overrides to all animations
+ * and transitions in the application. It can be activated by:
+ * 
+ * 1. System preference: User enables "Reduce motion" in OS settings
+ * 2. Manual toggle: User enables "Reduce motion" in dashboard settings
+ * 
+ * The .reduce-motion class is applied to the html element when the user
+ * manually enables reduced motion, bypassing the need for OS support.
+ */
+
+/* System preference: automatically disables all non-essential animations */
+@media (prefers-reduced-motion: reduce) {
+  /* Animations */
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* Disable animate-pulse */
+  .animate-pulse {
+    animation: none;
+  }
+
+  /* Disable animate-spin */
+  .animate-spin {
+    animation: none;
+  }
+
+  /* Disable all Tailwind transition classes */
+  .transition,
+  .transition-all,
+  .transition-colors,
+  .transition-opacity,
+  .transition-transform,
+  .transition-[grid-template-rows] {
+    transition: none !important;
+  }
+
+  /* Disable transform-based animations */
+  .hover\:scale-105:hover,
+  .active\:scale-95:active {
+    transform: none !important;
+  }
+
+  /* Disable rotate transitions */
+  .rotate-180 {
+    transition: none;
+  }
+
+  /* Disable translate transitions */
+  [style*="translate"] {
+    transition: none !important;
+  }
+
+  /* Disable progress bar animation */
+  [role="progressbar"] {
+    transition: none !important;
+  }
+
+  /* Disable backdrop blur for modals (instant appearance) */
+  .backdrop-blur {
+    backdrop-filter: none !important;
+  }
+
+  /* Disable shadow transitions */
+  .hover\:shadow,
+  .focus\:shadow {
+    transition: none !important;
+  }
+
+  /* Disable button/link hover animations */
+  button,
+  a,
+  [role="button"] {
+    transition: none !important;
+  }
+}
+
+/* Manual override: apply when user explicitly enables reduced motion */
+html.reduce-motion,
+html[data-reduce-motion="true"] {
+  /* Animations */
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* Disable animate-pulse */
+  .animate-pulse {
+    animation: none;
+  }
+
+  /* Disable animate-spin */
+  .animate-spin {
+    animation: none;
+  }
+
+  /* Disable all Tailwind transition classes */
+  .transition,
+  .transition-all,
+  .transition-colors,
+  .transition-opacity,
+  .transition-transform,
+  .transition-[grid-template-rows] {
+    transition: none !important;
+  }
+
+  /* Disable transform-based animations */
+  .hover\:scale-105:hover,
+  .active\:scale-95:active {
+    transform: none !important;
+  }
+
+  /* Disable rotate transitions */
+  .rotate-180 {
+    transition: none;
+  }
+
+  /* Disable translate transitions */
+  [style*="translate"] {
+    transition: none !important;
+  }
+
+  /* Disable progress bar animation */
+  [role="progressbar"] {
+    transition: none !important;
+  }
+
+  /* Disable backdrop blur for modals */
+  .backdrop-blur {
+    backdrop-filter: none !important;
+  }
+
+  /* Disable shadow transitions */
+  .hover\:shadow,
+  .focus\:shadow {
+    transition: none !important;
+  }
+
+  /* Disable button/link hover animations */
+  button,
+  a,
+  [role="button"] {
+    transition: none !important;
+  }
+
+  /* Disable video autoplay */
+  video[autoplay] {
+    animation: none;
+    transition: none;
+  }
+
+  /* Disable carousel/slider animations */
+  .swiper-container,
+  [role="region"][aria-label*="carousel"] {
+    transition: none !important;
+  }
+}
+
+/* Scoped animations - these are still disabled even without the class */
+@media (prefers-reduced-motion: reduce) {
+  /* Toast notifications */
+  .toast-enter,
+  .toast-exit {
+    animation: none;
+    transition: none !important;
+  }
+
+  /* Modal animations */
+  .modal-enter,
+  .modal-exit {
+    animation: none;
+    transition: none !important;
+  }
+
+  /* Dropdown animations */
+  .dropdown-enter,
+  .dropdown-exit {
+    animation: none;
+    transition: none !important;
+  }
+
+  /* Fade in animations */
+  @keyframes fadeIn {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Slide animations */
+  @keyframes slideIn {
+    from {
+      transform: none;
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes slideOut {
+    from {
+      transform: none;
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  /* Skeleton loading pulse animations */
+  @keyframes shimmer {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+}

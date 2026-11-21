@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { BookOpen, Plus, Search } from 'lucide-react';
 import { enrollmentsApi } from '@/lib/api/services';
 import { CourseCard } from '@/components/courses/CourseCard';
+import { CourseCardSkeleton } from '@/components/skeletons';
 import type { Enrollment } from '@/types';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 
 export default function DashboardCoursesPage() {
-  const { user } = useAuthStore();
-  const isInstructor = user?.role === 'INSTRUCTOR' || user?.role === 'ADMIN';
+  const { user }       = useAuthStore();
+  const isInstructor   = user?.role === 'INSTRUCTOR' || user?.role === 'ADMIN';
 
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading,     setLoading]     = useState(true);
@@ -18,7 +19,8 @@ export default function DashboardCoursesPage() {
 
   useEffect(() => {
     if (isInstructor) { setLoading(false); return; }
-    enrollmentsApi.getMy()
+    enrollmentsApi
+      .getMy()
       .then((r) => setEnrollments(r.data))
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -28,7 +30,7 @@ export default function DashboardCoursesPage() {
     e.course?.title?.toLowerCase().includes(search.toLowerCase()),
   );
 
-  // Instructor view — redirect to instructor dashboard
+  // ── Instructor redirect view ────────────────────────────────────
   if (isInstructor) {
     return (
       <div>
@@ -50,21 +52,24 @@ export default function DashboardCoursesPage() {
     );
   }
 
+  // ── Student view ────────────────────────────────────────────────
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="section-heading">My Learning</h1>
-          <p className="text-sm text-ink-500 mt-0.5">
-            {enrollments.length} course{enrollments.length !== 1 ? 's' : ''} enrolled
-          </p>
+          {!loading && (
+            <p className="text-sm text-ink-500 mt-0.5">
+              {enrollments.length} course{enrollments.length !== 1 ? 's' : ''} enrolled
+            </p>
+          )}
         </div>
         <Link href="/" className="btn-secondary">
           Browse more courses
         </Link>
       </div>
 
-      {/* Search */}
+      {/* Search input */}
       <div className="relative mb-5 max-w-xs">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400" />
         <input
@@ -73,32 +78,33 @@ export default function DashboardCoursesPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="input pl-9"
+          disabled={loading}
         />
       </div>
 
+      {/* Loading state — CourseCardSkeleton grid */}
       {loading ? (
-        <div className="course-grid">
+        <div className="course-grid" aria-live="polite" aria-label="Loading enrolled courses">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="card overflow-hidden animate-pulse">
-              <div className="aspect-video bg-ink-100" />
-              <div className="p-4 space-y-2">
-                <div className="h-3 bg-ink-100 rounded w-20" />
-                <div className="h-4 bg-ink-100 rounded w-full" />
-                <div className="h-3 bg-ink-100 rounded w-32" />
-              </div>
-            </div>
+            <CourseCardSkeleton key={i} />
           ))}
         </div>
       ) : filtered.length === 0 ? (
         <div className="card p-12 text-center">
           <BookOpen className="w-10 h-10 text-saffron-200 mx-auto mb-3" />
-          <p className="text-sm font-medium text-ink-700">No courses yet</p>
-          <p className="text-xs text-ink-400 mt-1">
-            Browse the course catalogue and start learning today.
+          <p className="text-sm font-medium text-ink-700">
+            {search ? 'No matching courses' : 'No courses yet'}
           </p>
-          <Link href="/" className="btn-primary mt-4 inline-flex">
-            Browse courses
-          </Link>
+          <p className="text-xs text-ink-400 mt-1">
+            {search
+              ? 'Try a different search term.'
+              : 'Browse the course catalogue and start learning today.'}
+          </p>
+          {!search && (
+            <Link href="/" className="btn-primary mt-4 inline-flex">
+              Browse courses
+            </Link>
+          )}
         </div>
       ) : (
         <div className="course-grid">

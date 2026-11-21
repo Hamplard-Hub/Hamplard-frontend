@@ -1,22 +1,60 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = ['/auth/login', '/courses', '/certificates'];
+/**
+ * Exact public paths and their sub-routes.
+ * Matching is segment-aware: `/courses` is public but `/coursesX` is not.
+ */
+const PUBLIC_PATHS = [
+  '/login',
+  '/signup',
+  '/forgot-password',
+  '/auth/login',
+  '/auth/signup',
+  '/courses',
+  '/certificates',
+];
+
+/**
+ * Routes that require authentication.
+ * Any path that starts with one of these prefixes (or equals it) is protected.
+ */
+const PROTECTED_PREFIXES = [
+  '/dashboard',
+  '/checkout',
+  '/notifications',
+  '/gift',
+  '/settings',
+];
+
+/** Returns true when the path is public (exact match or sub-route). */
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(p + '/'),
+  );
+}
+
+/** Returns true when the path requires the user to be authenticated. */
+function isProtectedPath(pathname: string): boolean {
+  return PROTECTED_PREFIXES.some(
+    (p) => pathname === p || pathname.startsWith(p + '/'),
+  );
+}
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Public: auth page, public course browsing, certificate verification
-  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) return NextResponse.next();
-  // Root and static
-  if (pathname === '/') return NextResponse.next();
+  // Root and public paths need no auth check.
+  if (pathname === '/' || isPublicPath(pathname)) return NextResponse.next();
 
   const token = request.cookies.get('hamplard_token')?.value;
-  if (!token && pathname.startsWith('/dashboard')) {
-    const url = new URL('/auth/login', request.url);
+
+  if (!token && isProtectedPath(pathname)) {
+    const url = new URL('/login', request.url);
     url.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(url);
   }
+
   return NextResponse.next();
 }
 

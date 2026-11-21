@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Bell, CheckCheck, Loader2 } from 'lucide-react';
 import { notificationsApi } from '@/lib/api/services';
 import { timeAgo } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/EmptyState';
 import type { Notification } from '@/types';
 
 const TYPE_COLORS: Record<string, string> = {
@@ -17,6 +18,7 @@ const TYPE_COLORS: Record<string, string> = {
   ASSIGNMENT_SUBMITTED: 'bg-blue-50 text-blue-700',
   PAYMENT_RECEIVED:     'bg-leaf-50 text-leaf-700',
   NEW_ENROLLMENT:       'bg-saffron-50 text-saffron-700',
+  COURSE_ANNOUNCEMENT:  'bg-blue-50 text-blue-700',
 };
 
 export default function NotificationsPage() {
@@ -69,10 +71,11 @@ export default function NotificationsPage() {
           <Loader2 className="w-5 h-5 text-saffron-400 animate-spin" />
         </div>
       ) : notifications.length === 0 ? (
-        <div className="card p-12 text-center">
-          <Bell className="w-8 h-8 text-saffron-200 mx-auto mb-3" />
-          <p className="text-sm text-ink-500">No notifications yet</p>
-        </div>
+        <EmptyState
+          icon={<Bell className="w-6 h-6" />}
+          title="No notifications yet"
+          description="You’re all caught up for now. New course and platform updates will appear here."
+        />
       ) : (
         <div className="card divide-y divide-ink-50">
           {notifications.map((n) => (
@@ -92,7 +95,7 @@ export default function NotificationsPage() {
                   <span className={`badge text-[10px] flex-shrink-0 ${
                     TYPE_COLORS[n.type] ?? 'bg-ink-100 text-ink-600'
                   }`}>
-                    {n.type.replace(/_/g, ' ').toLowerCase()}
+                    {n.type === 'COURSE_ANNOUNCEMENT' ? 'announcement' : n.type.replace(/_/g, ' ').toLowerCase()}
                   </span>
                 </div>
                 <p className="text-xs text-ink-500 leading-relaxed">{n.message}</p>

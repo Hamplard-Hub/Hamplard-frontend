@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
+  <defs>
+    <linearGradient id="apple-icon-gradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7F77DD" />
+      <stop offset="100%" stop-color="#26215C" />
+    </linearGradient>
+  </defs>
+  <!-- Background with rounded corners for iOS home screen -->
+  <rect width="180" height="180" rx="40" fill="url(#apple-icon-gradient)" />
+  <!-- Letter H -->
+  <text x="90" y="135" font-family="Inter, system-ui, sans-serif" font-size="110" font-weight="700" fill="#FFFFFF" text-anchor="middle">H</text>
+</svg>
