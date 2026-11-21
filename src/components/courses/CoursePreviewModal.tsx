@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { X, Volume2, VolumeX, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useRestoreFocus } from '@/lib/hooks/use-restore-focus';
 
 export interface CoursePreviewModalProps {
   isOpen: boolean;
@@ -38,6 +39,8 @@ export function CoursePreviewModal({
   instructorName,
   posterUrl,
 }: CoursePreviewModalProps) {
+  useRestoreFocus(isOpen);
+
   const modalRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
