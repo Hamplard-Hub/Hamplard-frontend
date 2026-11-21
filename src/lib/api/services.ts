@@ -247,6 +247,13 @@ export const usersApi = {
     const { data } = await apiClient.get('/users/me/instructor-stats');
     return data.data;
   },
+  requestDataExport: async (): Promise<{ message: string }> => {
+    // No blanket catch - let errors propagate to the UI for proper error handling
+    const { data } = await apiClient.post<ApiResponse<{ message: string }>>(
+      '/users/me/data-export'
+    );
+    return data.data;
+  },
 };
 
 // ----------------------------------------------------------
@@ -260,5 +267,108 @@ export const uploadsApi = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return data.data as { url: string; filename: string; size: number };
+  },
+};
+
+// ----------------------------------------------------------
+// Payment Methods
+// ----------------------------------------------------------
+
+export interface SavedPaymentMethod {
+  id: string;
+  lastFour: string;
+  brand: string;
+  isDefault: boolean;
+  createdAt?: string;
+}
+
+const isBrowser = typeof window !== 'undefined';
+const PAYMENT_METHODS_STORAGE_KEY = 'hamplard_payment_methods';
+
+const paymentMethodsStorageKey = () => {
+  if (!isBrowser) return PAYMENT_METHODS_STORAGE_KEY;
+  const address = localStorage.getItem('hamplard_address') ?? 'anonymous';
+  return `${PAYMENT_METHODS_STORAGE_KEY}:${address}`;
+};
+
+const readSavedPaymentMethods = (): SavedPaymentMethod[] => {
+  if (!isBrowser) return [];
+  try {
+    const raw = localStorage.getItem(paymentMethodsStorageKey());
+    return raw ? (JSON.parse(raw) as SavedPaymentMethod[]) : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeSavedPaymentMethods = (methods: SavedPaymentMethod[]) => {
+  if (isBrowser) {
+    localStorage.setItem(paymentMethodsStorageKey(), JSON.stringify(methods));
+  }
+};
+
+const isNetworkOrNotFound = (error: any) => {
+  return !error.response || error.response?.status === 404;
+};
+
+export const paymentMethodsApi = {
+  list: async (): Promise<SavedPaymentMethod[]> => {
+    try {
+      const { data } = await apiClient.get<ApiResponse<SavedPaymentMethod[]>>('/payment-methods');
+      return data.data;
+    } catch (error) {
+      // [TODO] Remove localStorage fallback once /payment-methods endpoint is deployed
+      if (isNetworkOrNotFound(error)) {
+        console.warn('[FALLBACK] Using localStorage for payment methods - endpoint not available');
+        return readSavedPaymentMethods();
+      }
+      throw error;
+    }
+  },
+
+  remove: async (id: string): Promise<void> => {
+    const current = readSavedPaymentMethods();
+    try {
+      await apiClient.delete(`/payment-methods/${id}`);
+      // Update local cache on success
+      const updated = current.filter(m => m.id !== id);
+      writeSavedPaymentMethods(updated);
+    } catch (error) {
+      // [TODO] Remove localStorage fallback once endpoint is deployed
+      if (isNetworkOrNotFound(error)) {
+        console.warn('[FALLBACK] Using localStorage for payment method deletion');
+        const updated = current.filter(m => m.id !== id);
+        writeSavedPaymentMethods(updated);
+        return;
+      }
+      // Real errors (403, 500, etc.) should propagate to UI
+      throw error;
+    }
+  },
+
+  setDefault: async (id: string): Promise<void> => {
+    const current = readSavedPaymentMethods();
+    try {
+      await apiClient.patch(`/payment-methods/${id}/default`);
+      // Update local cache on success
+      const updated = current.map(m => ({
+        ...m,
+        isDefault: m.id === id,
+      }));
+      writeSavedPaymentMethods(updated);
+    } catch (error) {
+      // [TODO] Remove localStorage fallback once endpoint is deployed
+      if (isNetworkOrNotFound(error)) {
+        console.warn('[FALLBACK] Using localStorage for setting default payment method');
+        const updated = current.map(m => ({
+          ...m,
+          isDefault: m.id === id,
+        }));
+        writeSavedPaymentMethods(updated);
+        return;
+      }
+      // Real errors should propagate to UI
+      throw error;
+    }
   },
 };
