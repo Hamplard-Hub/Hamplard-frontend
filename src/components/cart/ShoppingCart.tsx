@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShoppingBag, X, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { useCartStore } from '@/lib/hooks/use-cart-store';
+import { useRestoreFocus } from '@/lib/hooks/use-restore-focus';
 import { promoCodesApi } from '@/lib/api/services';
 import { Button } from '@/components/ui/Button';
 import { formatUsdc } from '@/lib/utils';
@@ -284,6 +285,8 @@ function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
 // ── Exported component (error boundary wrapper) ───────────────────────────
 
 export function ShoppingCart(props: ShoppingCartProps) {
+  useRestoreFocus((props.isOpen ?? true) && Boolean(props.onClose));
+
   return (
     <CheckoutErrorBoundary>
       <ShoppingCartContent {...props} />
