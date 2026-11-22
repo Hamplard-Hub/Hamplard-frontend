@@ -55,9 +55,6 @@ export default function LearnPage() {
   // Captured once so the initial load does not re-run on every lesson change
   const initialLessonRef = useRef<string | null>(lessonParam);
   const toast = useToast();
-  // requestedLessonId reserved for future deep-link support
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _requestedLessonId = searchParams.get("lesson");
 
   const [course, setCourse] = useState<Course | null>(null);
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
