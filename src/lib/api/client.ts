@@ -1,6 +1,7 @@
 // lib/api/client.ts
 import axios, { AxiosError } from 'axios';
 import { getApiUrl } from './config';
+import { useAuthStore } from '@/lib/hooks/use-auth-store';
 
 const baseURL = getApiUrl();
 
@@ -28,9 +29,28 @@ const RETRYABLE_STATUSES = new Set([429, 503]);
 /** Status codes we must never retry (client errors). */
 const NO_RETRY_STATUSES = new Set([400, 401, 403, 404]);
 
+/** HTTP methods that are safe to retry (idempotent). */
+const RETRYABLE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+/**
+ * Determines if an error is safe to retry.
+ * Only retries idempotent methods (GET, HEAD, OPTIONS) on network timeouts.
+ * For POST/PATCH/DELETE, only retries if Idempotency-Key header is present.
+ */
 function isRetryable(err: AxiosError): boolean {
+  const config = err.config as (typeof err.config & { _retryCount?: number }) | undefined;
+  const method = (config?.method ?? 'GET').toUpperCase();
+
   // Network timeout (no response at all)
-  if (!err.response) return true;
+  if (!err.response) {
+    // Only retry idempotent methods on network timeout
+    if (RETRYABLE_METHODS.has(method)) return true;
+
+    // For non-idempotent methods, only retry if Idempotency-Key is present
+    if (config?.headers?.['Idempotency-Key']) return true;
+
+    return false;
+  }
 
   const status = err.response.status;
   if (NO_RETRY_STATUSES.has(status)) return false;
@@ -67,8 +87,18 @@ apiClient.interceptors.response.use(
 
     // Redirect to login on 401 (only after retries are exhausted / not retryable)
     if (err.response?.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('hamplard_token');
-      window.location.href = '/login';
+      const currentPath = window.location.pathname;
+      // Clear the full session via the store so the cookie is also removed.
+      useAuthStore.getState().logout();
+      // Avoid a redirect loop when already on /login.
+      if (currentPath !== '/login') {
+        const url = new URL('/login', window.location.href);
+        // Only allow same-origin callback paths to prevent open-redirect.
+        if (currentPath.startsWith('/')) {
+          url.searchParams.set('callbackUrl', currentPath);
+        }
+        window.location.href = url.toString();
+      }
     }
 
     return Promise.reject(err);
