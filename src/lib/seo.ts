@@ -23,6 +23,10 @@ export const DISALLOWED_PATHS = [
   '/auth',
   '/components-demo',
   '/api',
+  '/gift/claim',
+  '/checkout',
+  '/cart',
+  '/reset-password',
 ];
 
 /** Static public routes, in sitemap priority order. */
