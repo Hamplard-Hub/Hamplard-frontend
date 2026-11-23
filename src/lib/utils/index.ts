@@ -69,3 +69,4 @@ export const generateCourseId = (category: string) => {
   const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
   return `COURSE-${slug}-${rand}`;
 };
+export { getSafeCallbackUrl, safeRedirectPath, DEFAULT_LOGIN_REDIRECT } from './safe-redirect';

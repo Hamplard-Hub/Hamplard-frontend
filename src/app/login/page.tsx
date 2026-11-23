@@ -9,6 +9,7 @@ import { AxiosError } from 'axios';
 import { Eye, EyeOff, Facebook, Loader2 } from 'lucide-react';
 import { authApi } from '@/lib/api/services';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
+import { getSafeCallbackUrl } from '@/lib/utils/safe-redirect';
 import { loginSchema, type LoginFormValues } from '@/lib/validations/login';
 
 function GoogleIcon() {
@@ -67,8 +68,7 @@ function LoginForm() {
       const address = user.stellarAddress ?? user.email ?? user.id;
       setAuth(address, accessToken, user, values.rememberMe);
 
-      const callbackUrl = searchParams.get('callbackUrl');
-      router.push(callbackUrl ?? '/dashboard');
+      router.push(getSafeCallbackUrl(searchParams.get('callbackUrl')));
     } catch (error) {
       if (error instanceof AxiosError) {
         const message =
