@@ -528,6 +528,11 @@ export const assignmentsApi = {
     return data.data;
   },
 
+  listForCurrentStudent: async (): Promise<any[]> => {
+    const { data } = await apiClient.get('/assignments/student/my');
+    return data.data;
+  },
+
   submit: async (
     assignmentId: string,
     submissionUrl: string,
@@ -553,6 +558,41 @@ export const assignmentsApi = {
 
   getPending: async () => {
     const { data } = await apiClient.get("/assignments/instructor/pending");
+    return data.data;
+  },
+};
+
+// ----------------------------------------------------------
+// Payouts
+// ----------------------------------------------------------
+export const payoutsApi = {
+  getStats: async (): Promise<{
+    available: number;
+    pending: number;
+    lifetime: number;
+  }> => {
+    const { data } = await apiClient.get<ApiResponse<{
+      available: number;
+      pending: number;
+      lifetime: number;
+    }>>('/payouts/stats');
+    return data.data;
+  },
+
+  list: async (): Promise<Array<{
+    id: string;
+    date: string;
+    amount: number;
+    method: string;
+    status: 'PAID' | 'PENDING' | 'PROCESSING';
+  }>> => {
+    const { data } = await apiClient.get<ApiResponse<Array<{
+      id: string;
+      date: string;
+      amount: number;
+      method: string;
+      status: 'PAID' | 'PENDING' | 'PROCESSING';
+    }>>>('/payouts/history');
     return data.data;
   },
 };
