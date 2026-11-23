@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { ArrowLeft, Clock, User, Calendar } from 'lucide-react';
+import { serializeJsonLd } from '@/lib/structured-data';
 
 interface BlogPost {
   slug: string;
@@ -134,7 +135,7 @@ function ArticleJsonLd({ post }: { post: BlogPost }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }}
     />
   );
 }

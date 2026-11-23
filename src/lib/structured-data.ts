@@ -2,6 +2,24 @@ import type { Course, Instructor } from '@/types';
 import { absoluteUrl, siteConfig, siteUrl } from './seo';
 
 /**
+ * Serializes a JSON-LD payload for safe inline use inside a <script> tag.
+ *
+ * JSON.stringify does not escape `<`, so a value such as `</script><script>`
+ * would terminate the script element early (stored XSS via instructor- or
+ * course-supplied text). Replacing `<`, `>`, `&` and the JS line/paragraph
+ * separators with unicode escapes keeps the output valid JSON and valid JS
+ * while making it impossible to close the tag from within the data.
+ */
+export function serializeJsonLd(data: unknown): string {
+  return JSON.stringify(data)
+    .replace(/</g, '\u003c')
+    .replace(/>/g, '\u003e')
+    .replace(/&/g, '\u0026')
+    .replace(/\u2028/g, '\u2028')
+    .replace(/\u2029/g, '\u2029');
+}
+
+/**
  * schema.org/Course payload for course detail pages.
  *
  * Only fields the API actually populates are emitted — Rich Results flags empty
