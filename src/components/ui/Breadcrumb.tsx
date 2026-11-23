@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { absoluteUrl } from '@/lib/seo';
+import { serializeJsonLd } from '@/lib/structured-data';
 
 export interface BreadcrumbItem {
   label: string;
@@ -44,18 +45,6 @@ const toRenderItems = (items: BreadcrumbItem[]): RenderBreadcrumbItem[] =>
 const ABSOLUTE_URL_PATTERN = /^[a-z][a-z\d+\-.]*:\/\//i;
 
 const toAbsoluteUrl = (href: string) => (ABSOLUTE_URL_PATTERN.test(href) ? href : absoluteUrl(href));
-
-/**
- * Escapes characters that could terminate the inline <script> early
- * (e.g. a label containing "</script>") or break JS parsing.
- */
-const serializeJsonLd = (data: unknown) =>
-  JSON.stringify(data)
-    .replace(/</g, '\\u003c')
-    .replace(/>/g, '\\u003e')
-    .replace(/&/g, '\\u0026')
-    .replace(/\u2028/g, '\\u2028')
-    .replace(/\u2029/g, '\\u2029');
 
 /**
  * Schema.org BreadcrumbList requires absolute URLs for the `item` property

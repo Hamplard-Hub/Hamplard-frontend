@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { getInstructorForMetadata } from '@/lib/api/server';
 import { buildMetadata, siteConfig } from '@/lib/seo';
-import { buildInstructorJsonLd } from '@/lib/structured-data';
+import { buildInstructorJsonLd, serializeJsonLd } from '@/lib/structured-data';
 import { CourseCard } from '@/components/courses/CourseCard';
 import { ReviewCard } from '@/components/Reviews/ReviewCard';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
@@ -209,7 +209,7 @@ export default async function InstructorProfilePage({ params }: PageProps) {
     <div className="min-h-screen bg-ink-50">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildInstructorJsonLd(instructor)) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(buildInstructorJsonLd(instructor)) }}
       />
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 space-y-8">
