@@ -17,7 +17,9 @@ const NETWORK     = process.env.NEXT_PUBLIC_STELLAR_NETWORK ?? 'testnet';
 const PASSPHRASE  = NETWORK === 'mainnet' ? Networks.PUBLIC : Networks.TESTNET;
 
 let _rpc: SorobanRpc.Server;
-const getRpc = () => (_rpc ??= new SorobanRpc.Server(RPC_URL, { allowHttp: true }));
+const getRpc = () => (_rpc ??= new SorobanRpc.Server(RPC_URL, {
+  allowHttp: RPC_URL.startsWith('http://localhost') || process.env.NODE_ENV !== 'production',
+}));
 
 async function invokeContract(caller: string, method: string, args: xdr.ScVal[]): Promise<string> {
   const rpc      = getRpc();
