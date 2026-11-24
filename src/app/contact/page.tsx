@@ -12,6 +12,9 @@ type FormErrors = Partial<Record<keyof ContactFormData, string>>;
 
 const subjects = ['General', 'Billing', 'Technical', 'Instructor', 'Report'] as const;
 
+// Field order used to focus the first invalid field on submit.
+const FIELD_ORDER: Array<keyof ContactFormData> = ['name', 'email', 'subject', 'message'];
+
 export default function ContactPage() {
   const [values, setValues] = useState<ContactFormData>({
     name: '',
@@ -24,18 +27,18 @@ export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const toast = useToastContext();
 
-  const validate = (data: ContactFormData): boolean => {
+  const validate = (data: ContactFormData): FormErrors => {
     try {
       contactFormSchema.parse(data);
       setErrors({});
-      return true;
+      return {};
     } catch (err: any) {
       const nextErrors: FormErrors = {};
       err.errors?.forEach((error: any) => {
         nextErrors[error.path[0] as keyof ContactFormData] = error.message;
       });
       setErrors(nextErrors);
-      return false;
+      return nextErrors;
     }
   };
 
@@ -57,7 +60,12 @@ export default function ContactPage() {
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!validate(values)) return;
+    const nextErrors = validate(values);
+    const firstInvalid = FIELD_ORDER.find((field) => nextErrors[field]);
+    if (firstInvalid) {
+      document.getElementById(firstInvalid)?.focus();
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -145,10 +153,11 @@ export default function ContactPage() {
                     placeholder="John Doe"
                     disabled={isSubmitting}
                     aria-invalid={!!errors.name}
+                    aria-describedby={errors.name ? 'name-error' : undefined}
                   />
                   {errors.name && (
-                    <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-                      <AlertCircle className="h-3 w-3" />
+                    <p id="name-error" className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="h-3 w-3" aria-hidden="true" />
                       {errors.name}
                     </p>
                   )}
@@ -172,10 +181,11 @@ export default function ContactPage() {
                     placeholder="you@example.com"
                     disabled={isSubmitting}
                     aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? 'email-error' : undefined}
                   />
                   {errors.email && (
-                    <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-                      <AlertCircle className="h-3 w-3" />
+                    <p id="email-error" className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="h-3 w-3" aria-hidden="true" />
                       {errors.email}
                     </p>
                   )}
@@ -197,6 +207,7 @@ export default function ContactPage() {
                     }`}
                     disabled={isSubmitting}
                     aria-invalid={!!errors.subject}
+                    aria-describedby={errors.subject ? 'subject-error' : undefined}
                   >
                     {subjects.map((subject) => (
                       <option key={subject} value={subject}>
@@ -205,8 +216,8 @@ export default function ContactPage() {
                     ))}
                   </select>
                   {errors.subject && (
-                    <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-                      <AlertCircle className="h-3 w-3" />
+                    <p id="subject-error" className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="h-3 w-3" aria-hidden="true" />
                       {errors.subject}
                     </p>
                   )}
@@ -229,10 +240,11 @@ export default function ContactPage() {
                     placeholder="Tell us how we can help you..."
                     disabled={isSubmitting}
                     aria-invalid={!!errors.message}
+                    aria-describedby={errors.message ? 'message-error' : undefined}
                   />
                   {errors.message && (
-                    <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-                      <AlertCircle className="h-3 w-3" />
+                    <p id="message-error" className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="h-3 w-3" aria-hidden="true" />
                       {errors.message}
                     </p>
                   )}

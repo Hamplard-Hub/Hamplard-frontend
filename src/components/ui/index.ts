@@ -39,3 +39,7 @@ export { ProgressRing } from './ProgressRing';
 export type { ProgressRingProps } from './ProgressRing';
 export { EmptyState } from './EmptyState';
 export type { EmptyStateProps } from './EmptyState';
+export { Switch } from './Switch';
+export type { SwitchProps } from './Switch';
+export { SmartImage } from './SmartImage';
+export type { SmartImageProps } from './SmartImage';

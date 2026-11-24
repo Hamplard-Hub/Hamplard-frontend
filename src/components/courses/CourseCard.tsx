@@ -2,7 +2,6 @@
 
 import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Clock, Heart, Star, Users } from 'lucide-react';
 import {
   cn, courseTotalMins, formatUsdc, levelChip,
@@ -11,12 +10,8 @@ import { useIsWishlisted, useWishlistStore } from '@/lib/hooks/use-wishlist-stor
 import { useCompareStore } from '@/lib/hooks/use-compare-store';
 import { useHoverPrefetch } from '@/lib/hooks/useHoverPrefetch';
 import { courseInstructorPath } from '@/lib/instructors';
+import { SmartImage } from '@/components/ui/SmartImage';
 import type { Course } from '@/types';
-
-// A 1×1 purple-toned blurred placeholder encoded as a base64 data URL.
-// Used as the blur placeholder while the real image loads.
-const BLUR_DATA_URL =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAYAAAC09K7GAAAAHklEQVQI12NgYGD4z8BQDwAEgAF/QualIQAAAABJRU5ErkJggg==';
 
 type BadgeVariant = 'bestseller' | 'new' | 'hot';
 
@@ -128,29 +123,26 @@ export function CourseCard({
 
         {/* ── Thumbnail ── */}
         <div className="relative aspect-video bg-gradient-to-br from-saffron-100 to-saffron-200 overflow-hidden">
-          {course.thumbnailUrl ? (
-            <Image
-              src={course.thumbnailUrl}
-              alt={`${course.title} course thumbnail`}
-              fill
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
-              priority={priority}
-              placeholder="blur"
-              blurDataURL={BLUR_DATA_URL}
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-4xl">
-                {course.category === 'Tailoring'       ? '🧵' :
-                 course.category === 'Baking'          ? '🍰' :
-                 course.category === 'Photography'     ? '📷' :
-                 course.category === 'Makeup Artistry' ? '💄' :
-                 course.category === 'Hairstyling'     ? '💇' :
-                 course.category === 'Nail Technology' ? '💅' : '🎓'}
-              </span>
-            </div>
-          )}
+          <SmartImage
+            src={course.thumbnailUrl}
+            alt={`${course.title} course thumbnail`}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            priority={priority}
+            fallback={
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-4xl" aria-hidden="true">
+                  {course.category === 'Tailoring'       ? '🧵' :
+                   course.category === 'Baking'          ? '🍰' :
+                   course.category === 'Photography'     ? '📷' :
+                   course.category === 'Makeup Artistry' ? '💄' :
+                   course.category === 'Hairstyling'     ? '💇' :
+                   course.category === 'Nail Technology' ? '💅' : '🎓'}
+                </span>
+              </div>
+            }
+          />
 
           {/* Badge — top-left */}
           {badge && BADGE_STYLES[badge] && (

@@ -15,6 +15,15 @@ type SignupValues = {
 
 type SignupErrors = Partial<Record<keyof SignupValues, string>>;
 
+// Field order used to focus the first invalid field and to order the summary.
+const FIELD_ORDER: Array<{ name: keyof SignupValues; label: string }> = [
+  { name: 'name', label: 'Full name' },
+  { name: 'email', label: 'Email' },
+  { name: 'password', label: 'Password' },
+  { name: 'confirmPassword', label: 'Confirm Password' },
+  { name: 'acceptTerms', label: 'Terms' },
+];
+
 export default function SignupPage() {
   const router = useRouter();
   const [values, setValues] = useState<SignupValues>({
@@ -26,6 +35,7 @@ export default function SignupPage() {
   });
   const [errors, setErrors] = useState<SignupErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const hasErrors = useMemo(() => Object.values(errors).some(Boolean), [errors]);
 
@@ -54,13 +64,22 @@ export default function SignupPage() {
     }
 
     setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+    return nextErrors;
+  };
+
+  const focusField = (name: keyof SignupValues) => {
+    document.getElementById(name)?.focus();
   };
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const isValid = validate(values);
-    if (!isValid) return;
+    setSubmitAttempted(true);
+    const nextErrors = validate(values);
+    const firstInvalid = FIELD_ORDER.find(({ name }) => nextErrors[name]);
+    if (firstInvalid) {
+      focusField(firstInvalid.name);
+      return;
+    }
     setIsSubmitting(true);
     
     try {
@@ -91,6 +110,34 @@ export default function SignupPage() {
             </p>
 
             <form className="space-y-4" onSubmit={onSubmit} noValidate>
+              {submitAttempted && hasErrors && (
+                <div
+                  role="alert"
+                  aria-labelledby="signup-error-summary-title"
+                  className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"
+                >
+                  <p id="signup-error-summary-title" className="font-semibold">
+                    Please fix the highlighted fields and try again.
+                  </p>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                    {FIELD_ORDER.filter(({ name }) => errors[name]).map(({ name }) => (
+                      <li key={name}>
+                        <a
+                          href={`#${name}`}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            focusField(name);
+                          }}
+                          className="underline hover:text-red-800"
+                        >
+                          {errors[name]}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-[#26215C]" htmlFor="name">
                   Full name
@@ -106,8 +153,13 @@ export default function SignupPage() {
                   }`}
                   placeholder="Your full name"
                   aria-invalid={!!errors.name}
+                  aria-describedby={errors.name ? 'name-error' : undefined}
                 />
-                {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name}</p>}
+                {errors.name && (
+                  <p id="name-error" className="mt-1 text-xs text-red-600">
+                    {errors.name}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -125,8 +177,13 @@ export default function SignupPage() {
                   }`}
                   placeholder="you@example.com"
                   aria-invalid={!!errors.email}
+                  aria-describedby={errors.email ? 'email-error' : undefined}
                 />
-                {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
+                {errors.email && (
+                  <p id="email-error" className="mt-1 text-xs text-red-600">
+                    {errors.email}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -144,8 +201,13 @@ export default function SignupPage() {
                   }`}
                   placeholder="Create a password"
                   aria-invalid={!!errors.password}
+                  aria-describedby={errors.password ? 'password-error' : undefined}
                 />
-                {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
+                {errors.password && (
+                  <p id="password-error" className="mt-1 text-xs text-red-600">
+                    {errors.password}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -163,13 +225,21 @@ export default function SignupPage() {
                   }`}
                   placeholder="Confirm your password"
                   aria-invalid={!!errors.confirmPassword}
+                  aria-describedby={errors.confirmPassword ? 'confirmPassword-error' : undefined}
                 />
-                {errors.confirmPassword && <p className="mt-1 text-xs text-red-600">{errors.confirmPassword}</p>}
+                {errors.confirmPassword && (
+                  <p id="confirmPassword-error" className="mt-1 text-xs text-red-600">
+                    {errors.confirmPassword}
+                  </p>
+                )}
               </div>
 
               <label className="inline-flex items-start gap-2 text-sm text-[#26215C]">
                 <input
+                  id="acceptTerms"
                   type="checkbox"
+                  aria-invalid={!!errors.acceptTerms}
+                  aria-describedby={errors.acceptTerms ? 'acceptTerms-error' : undefined}
                   checked={values.acceptTerms}
                   onChange={(event) => setValues((prev) => ({ ...prev, acceptTerms: event.target.checked }))}
                   className="mt-0.5 h-4 w-4 rounded border-[#B3ADDF] text-[#7F77DD] focus:ring-[#7F77DD]"
@@ -182,7 +252,11 @@ export default function SignupPage() {
                   .
                 </span>
               </label>
-              {errors.acceptTerms && <p className="text-xs text-red-600">{errors.acceptTerms}</p>}
+              {errors.acceptTerms && (
+                <p id="acceptTerms-error" className="text-xs text-red-600">
+                  {errors.acceptTerms}
+                </p>
+              )}
 
               <button
                 type="submit"
@@ -210,12 +284,6 @@ export default function SignupPage() {
                 </button>
               </div>
             </form>
-
-            {hasErrors && (
-              <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
-                Please fix the highlighted fields and try again.
-              </p>
-            )}
 
             <p className="mt-6 text-sm text-[#554F99]">
               Already have an account?{' '}

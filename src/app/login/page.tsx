@@ -54,6 +54,7 @@ function LoginForm() {
       rememberMe: false,
     },
     mode: 'onBlur',
+    shouldFocusError: true,
   });
 
   const onSubmit = async (values: LoginFormValues) => {
@@ -104,6 +105,7 @@ function LoginForm() {
               autoComplete="email"
               placeholder="you@example.com"
               aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? 'email-error' : undefined}
               className={`w-full rounded-xl border px-4 py-2.5 text-sm text-[#26215C] outline-none transition disabled:cursor-not-allowed disabled:opacity-60 ${
                 errors.email
                   ? 'border-red-400 bg-red-50/40'
@@ -111,7 +113,11 @@ function LoginForm() {
               }`}
               {...register('email')}
             />
-            {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
+            {errors.email && (
+              <p id="email-error" className="mt-1 text-xs text-red-600">
+                {errors.email.message}
+              </p>
+            )}
           </div>
 
           <div>
@@ -125,6 +131,7 @@ function LoginForm() {
                 autoComplete="current-password"
                 placeholder="Enter your password"
                 aria-invalid={!!errors.password}
+                aria-describedby={errors.password ? 'password-error' : undefined}
                 className={`w-full rounded-xl border px-4 py-2.5 pr-11 text-sm text-[#26215C] outline-none transition disabled:cursor-not-allowed disabled:opacity-60 ${
                   errors.password
                     ? 'border-red-400 bg-red-50/40'
@@ -142,7 +149,9 @@ function LoginForm() {
               </button>
             </div>
             {errors.password && (
-              <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
+              <p id="password-error" className="mt-1 text-xs text-red-600">
+                {errors.password.message}
+              </p>
             )}
           </div>
 
