@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { ShoppingCart } from '@/components/cart/ShoppingCart';
+import { CartDrawer } from '@/components/cart/CartDrawer';
 import { SearchBar } from '@/components/search/SearchBar';
 import { useCartStore } from '@/lib/hooks/use-cart-store';
 import { Heart, ShoppingCart as CartIcon } from 'lucide-react';
@@ -98,7 +99,9 @@ export default function ComponentsDemoClient() {
           <h1 className="text-2xl font-bold text-ink-900">Component Library Demo</h1>
           <button
             onClick={() => setShowCart(!showCart)}
-            className="relative p-2 hover:bg-ink-50 rounded-lg transition-colors"
+            aria-label="Open cart"
+            aria-expanded={showCart}
+            className="relative p-2 hover:bg-ink-50 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary"
           >
             <CartIcon className="w-6 h-6 text-hamplard-primary" />
             {cartCount > 0 && (
@@ -221,6 +224,9 @@ export default function ComponentsDemoClient() {
           </aside>
         </div>
       </div>
+
+      {/* Cart drawer */}
+      <CartDrawer open={showCart} onClose={() => setShowCart(false)} />
 
       {/* Documentation Section */}
       <div className="max-w-7xl mx-auto px-4 py-8 mt-8 border-t border-ink-100">

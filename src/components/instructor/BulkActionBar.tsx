@@ -44,7 +44,7 @@ export function BulkActionBar({
             aria-label="Select a bulk action"
             value={action}
             onChange={(event) => setAction(event.target.value as BulkActionType)}
-            className="h-10 appearance-none rounded-xl border border-[#D3D0F2] bg-white px-3 pr-8 text-sm font-medium text-[#26215C] outline-none"
+            className="h-10 appearance-none rounded-xl border border-[#D3D0F2] bg-white px-3 pr-8 text-sm font-medium text-[#26215C] outline-none focus-visible:ring-2 focus-visible:ring-[#7F77DD]/40"
           >
             <option value="publish">Publish</option>
             <option value="unpublish">Unpublish</option>
@@ -60,7 +60,7 @@ export function BulkActionBar({
               aria-label="Choose a new course category"
               value={category}
               onChange={(event) => setCategory(event.target.value)}
-              className="h-10 appearance-none rounded-xl border border-[#D3D0F2] bg-white px-3 pr-8 text-sm text-[#26215C] outline-none"
+              className="h-10 appearance-none rounded-xl border border-[#D3D0F2] bg-white px-3 pr-8 text-sm text-[#26215C] outline-none focus-visible:ring-2 focus-visible:ring-[#7F77DD]/40"
             >
               <option value="">Choose category</option>
               {categories.map((item) => (

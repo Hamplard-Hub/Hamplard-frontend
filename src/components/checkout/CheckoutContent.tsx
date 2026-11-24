@@ -71,7 +71,7 @@ export function CheckoutContent() {
         <div className="flex items-center justify-start">
           <button
             onClick={handlePreviousStep}
-            className="inline-flex items-center gap-1.5 text-sm text-ink-600 hover:text-ink-900 transition-colors focus:outline-none focus:underline"
+            className="inline-flex items-center gap-1.5 text-sm text-ink-600 hover:text-ink-900 rounded transition-colors focus:outline-none focus:underline focus-visible:ring-2 focus-visible:ring-hamplard-primary"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to order review
