@@ -73,6 +73,10 @@ export const VideoPlayer = forwardRef<
   const [volume,       setVolume]       = useState(1);
   const [muted,        setMuted]        = useState(false);
   const [speed,        setSpeed]        = useState(1);
+  const [hasCaptionsPreference, setHasCaptionsPreference] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.sessionStorage.getItem(CAPTIONS_STORAGE_KEY) !== null;
+  });
   const [subtitlesOn, setSubtitlesOn] = useState(() => {
     if (typeof window === 'undefined') return false;
     return window.sessionStorage.getItem(CAPTIONS_STORAGE_KEY) === 'true';
@@ -136,13 +140,20 @@ export const VideoPlayer = forwardRef<
 
   // ── Sync subtitle track visibility ───────────────────────────
   useEffect(() => {
-    window.sessionStorage.setItem(CAPTIONS_STORAGE_KEY, String(subtitlesOn));
-  }, [subtitlesOn]);
+    if (hasCaptionsPreference) {
+      window.sessionStorage.setItem(CAPTIONS_STORAGE_KEY, String(subtitlesOn));
+    }
+  }, [hasCaptionsPreference, subtitlesOn]);
 
   const syncCaptionTrack = useCallback(() => {
     const track = captionsTrackRef.current?.track;
-    if (track) track.mode = subtitlesOn && captionsUrl ? 'showing' : 'hidden';
-  }, [captionsUrl, subtitlesOn]);
+    if (!track) return;
+    if (hasCaptionsPreference) {
+      track.mode = subtitlesOn && captionsUrl ? 'showing' : 'hidden';
+    } else {
+      setSubtitlesOn(track.mode === 'showing');
+    }
+  }, [captionsUrl, hasCaptionsPreference, subtitlesOn]);
 
   useEffect(() => {
     syncCaptionTrack();
@@ -321,7 +332,10 @@ export const VideoPlayer = forwardRef<
     setSpeed(rate);
   };
 
-  const handleSubtitles = () => setSubtitlesOn((s) => !s);
+  const handleSubtitles = () => {
+    setHasCaptionsPreference(true);
+    setSubtitlesOn((s) => !s);
+  };
 
   // ── Quality switching ─────────────────────────────────────────
   // Ref to remember whether we should resume playback after a src switch
@@ -390,9 +404,9 @@ export const VideoPlayer = forwardRef<
         <button
           type="button"
           onClick={() => setAudioOnly((v) => !v)}
-          className="absolute top-3 right-3 z-20 flex items-center gap-1.5 rounded-full bg-black/60 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-black/80"
+          className="absolute top-3 right-3 z-20 flex min-h-11 items-center gap-1.5 rounded-full bg-black/60 px-3 text-xs font-medium text-white transition-colors hover:bg-black/80"
         >
-          <Headphones className="h-3.5 w-3.5" />
+          <Headphones className="h-3.5 w-3.5" aria-hidden="true" />
           {audioOnly ? 'Show video' : 'Audio only'}
         </button>
       )}
@@ -424,6 +438,7 @@ export const VideoPlayer = forwardRef<
             src={captionsUrl}
             srcLang="en"
             label="English captions"
+            default={!hasCaptionsPreference}
             onLoad={syncCaptionTrack}
           />
         )}

@@ -69,7 +69,9 @@ export function TopBar() {
           className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-white hover:bg-[#3C3489] lg:hidden"
           onClick={() => setMobileOpen((prev) => !prev)}
         >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          {mobileOpen
+            ? <X className="h-5 w-5" aria-hidden="true" />
+            : <Menu className="h-5 w-5" aria-hidden="true" />}
         </button>
 
         <Link href="/" className="shrink-0 font-display text-xl font-semibold tracking-tight text-white">

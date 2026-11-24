@@ -76,7 +76,7 @@ export function FilterDrawer({ open, onClose, courses, resultCount }: FilterDraw
             aria-label="Close filters"
             className="rounded-lg p-1.5 text-ink-500 transition-colors hover:bg-ink-50 hover:text-ink-900"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 

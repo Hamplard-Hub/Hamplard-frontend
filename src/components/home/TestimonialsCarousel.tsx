@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Star, Quote } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pause, Play, Star, Quote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // ── Types ─────────────────────────────────────────────────────────
@@ -76,7 +76,7 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
       
       {/* Quote text */}
       <blockquote className="text-sm sm:text-base text-ink-700 leading-relaxed mb-6 flex-1">
-        "{testimonial.quote}"
+        &ldquo;{testimonial.quote}&rdquo;
       </blockquote>
       
       {/* Author info */}
@@ -115,7 +115,8 @@ export function TestimonialsCarousel({
   subtitle = 'Real stories from learners who transformed their skills on Hamplard',
 }: TestimonialsCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isPausedByUser, setIsPausedByUser] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   // Cards visible at once; mirrors the basis-* breakpoints on the slides below.
   // Starts at 1 on both server and client so hydration matches, then syncs on mount.
@@ -163,9 +164,9 @@ export function TestimonialsCarousel({
   useEffect(() => {
     // Don't auto-advance if:
     // - User prefers reduced motion
-    // - Carousel is paused (hover)
+    // - Carousel is paused by the user or pointer hover
     // - Less than 2 testimonials
-    if (prefersReducedMotion || isPaused || totalPositions < 2) {
+    if (prefersReducedMotion || isPausedByUser || isHovered || totalPositions < 2) {
       return;
     }
 
@@ -178,17 +179,20 @@ export function TestimonialsCarousel({
         clearTimeout(autoAdvanceTimerRef.current);
       }
     };
-  }, [activeIndex, isPaused, prefersReducedMotion, totalPositions, autoAdvanceInterval]);
+  }, [activeIndex, isPausedByUser, isHovered, prefersReducedMotion, totalPositions, autoAdvanceInterval]);
 
   const goToPrevious = useCallback(() => {
+    setIsPausedByUser(true);
     setActiveIndex((prev) => (prev - 1 + totalPositions) % totalPositions);
   }, [totalPositions]);
 
   const goToNext = useCallback(() => {
+    setIsPausedByUser(true);
     setActiveIndex((prev) => (prev + 1) % totalPositions);
   }, [totalPositions]);
 
   const goToIndex = useCallback((index: number) => {
+    setIsPausedByUser(true);
     setActiveIndex(index);
   }, []);
 
@@ -213,9 +217,19 @@ export function TestimonialsCarousel({
   return (
     <section
       className="py-12 sm:py-16"
+      aria-roledescription="carousel"
       aria-label="Student testimonials"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onFocusCapture={(event) => {
+        if (
+          event.target instanceof HTMLElement &&
+          event.target.hasAttribute('data-carousel-rotation-control')
+        ) {
+          return;
+        }
+        setIsPausedByUser(true);
+      }}
       onKeyDown={handleKeyDown}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -226,6 +240,28 @@ export function TestimonialsCarousel({
             <p className="text-sm sm:text-base text-ink-500 max-w-2xl mx-auto">
               {subtitle}
             </p>
+          )}
+          {totalPositions > 1 && (
+            <button
+              type="button"
+              data-carousel-rotation-control
+              onClick={() => setIsPausedByUser((paused) => !paused)}
+              disabled={prefersReducedMotion}
+              aria-label={
+                prefersReducedMotion
+                  ? 'Automatic slide rotation is disabled by your reduced motion preference'
+                  : isPausedByUser
+                    ? 'Resume automatic slide rotation'
+                    : 'Pause automatic slide rotation'
+              }
+              aria-pressed={isPausedByUser}
+              className="mx-auto mt-4 inline-flex min-h-11 items-center gap-2 rounded-lg border border-ink-200 px-4 text-sm font-medium text-ink-700 hover:bg-hamplard-lilac focus:outline-none focus:ring-2 focus:ring-hamplard-primary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isPausedByUser
+                ? <Play className="h-4 w-4" aria-hidden="true" />
+                : <Pause className="h-4 w-4" aria-hidden="true" />}
+              {isPausedByUser ? 'Resume rotation' : 'Pause rotation'}
+            </button>
           )}
         </div>
 
@@ -238,13 +274,13 @@ export function TestimonialsCarousel({
             aria-label="Previous testimonial"
             className={cn(
               'hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10',
-              'w-10 h-10 sm:w-12 sm:h-12 items-center justify-center rounded-full',
+              'w-11 h-11 sm:w-12 sm:h-12 items-center justify-center rounded-full',
               'bg-white shadow-md border border-ink-100',
               'transition-all hover:bg-hamplard-lilac hover:scale-110',
               'focus:outline-none focus:ring-2 focus:ring-hamplard-primary focus:ring-offset-2'
             )}
           >
-            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-hamplard-deep" />
+            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-hamplard-deep" aria-hidden="true" />
           </button>
 
           {/* Next Button */}
@@ -254,13 +290,13 @@ export function TestimonialsCarousel({
             aria-label="Next testimonial"
             className={cn(
               'hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10',
-              'w-10 h-10 sm:w-12 sm:h-12 items-center justify-center rounded-full',
+              'w-11 h-11 sm:w-12 sm:h-12 items-center justify-center rounded-full',
               'bg-white shadow-md border border-ink-100',
               'transition-all hover:bg-hamplard-lilac hover:scale-110',
               'focus:outline-none focus:ring-2 focus:ring-hamplard-primary focus:ring-offset-2'
             )}
           >
-            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-hamplard-deep" />
+            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-hamplard-deep" aria-hidden="true" />
           </button>
 
           {/* Mobile Arrows */}
@@ -269,17 +305,17 @@ export function TestimonialsCarousel({
               type="button"
               onClick={goToPrevious}
               aria-label="Previous testimonial"
-              className="w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-sm border border-ink-200 hover:bg-hamplard-lilac transition-colors focus:outline-none focus:ring-2 focus:ring-hamplard-primary"
+              className="w-11 h-11 flex items-center justify-center rounded-full bg-white shadow-sm border border-ink-200 hover:bg-hamplard-lilac transition-colors focus:outline-none focus:ring-2 focus:ring-hamplard-primary"
             >
-              <ChevronLeft className="w-5 h-5 text-hamplard-deep" />
+              <ChevronLeft className="w-5 h-5 text-hamplard-deep" aria-hidden="true" />
             </button>
             <button
               type="button"
               onClick={goToNext}
               aria-label="Next testimonial"
-              className="w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-sm border border-ink-200 hover:bg-hamplard-lilac transition-colors focus:outline-none focus:ring-2 focus:ring-hamplard-primary"
+              className="w-11 h-11 flex items-center justify-center rounded-full bg-white shadow-sm border border-ink-200 hover:bg-hamplard-lilac transition-colors focus:outline-none focus:ring-2 focus:ring-hamplard-primary"
             >
-              <ChevronRight className="w-5 h-5 text-hamplard-deep" />
+              <ChevronRight className="w-5 h-5 text-hamplard-deep" aria-hidden="true" />
             </button>
           </div>
 
@@ -294,13 +330,18 @@ export function TestimonialsCarousel({
               style={{
                 transform: `translateX(-${activeIndex * (100 / itemsPerPage)}%)`,
               }}
-              role="region"
+              role="group"
+              aria-label="Testimonial slides"
+              tabIndex={0}
               aria-live="polite"
               aria-atomic="true"
             >
-              {testimonials.map((testimonial) => (
+              {testimonials.map((testimonial, index) => (
                 <div
                   key={testimonial.id}
+                  role="group"
+                  aria-roledescription="slide"
+                  aria-label={`Slide ${index + 1} of ${totalTestimonials}: ${testimonial.name}`}
                   className="shrink-0 basis-full md:basis-1/2 lg:basis-1/3 px-2 sm:px-3"
                 >
                   <TestimonialCard testimonial={testimonial} />
@@ -313,25 +354,28 @@ export function TestimonialsCarousel({
           {totalPositions > 1 && (
             <div
               className="flex items-center justify-center gap-2 mt-8"
-              role="tablist"
+              role="group"
               aria-label="Testimonial navigation"
             >
               {testimonials.slice(0, totalPositions).map((testimonial, index) => (
                 <button
                   key={testimonial.id}
                   type="button"
-                  role="tab"
-                  aria-selected={index === activeIndex}
-                  aria-label={`Go to testimonial ${index + 1}`}
+                  aria-current={index === activeIndex ? 'true' : undefined}
+                  aria-label={`Go to testimonial ${index + 1} of ${totalPositions}`}
                   onClick={() => goToIndex(index)}
-                  className={cn(
-                    'rounded-full transition-all duration-300',
-                    'focus:outline-none focus:ring-2 focus:ring-hamplard-primary focus:ring-offset-2',
-                    index === activeIndex
-                      ? 'w-8 h-2 bg-hamplard-primary'
-                      : 'w-2 h-2 bg-ink-200 hover:bg-ink-300'
-                  )}
-                />
+                  className="flex h-11 w-11 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-hamplard-primary focus:ring-offset-2"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      'rounded-full transition-all duration-300',
+                      index === activeIndex
+                        ? 'w-8 h-2 bg-hamplard-primary'
+                        : 'w-2 h-2 bg-ink-200 hover:bg-ink-300'
+                    )}
+                  />
+                </button>
               ))}
             </div>
           )}

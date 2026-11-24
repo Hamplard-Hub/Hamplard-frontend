@@ -275,7 +275,7 @@ export function SearchBar({
               className="absolute right-3 rounded p-1 transition-colors hover:bg-ink-100"
               aria-label="Clear search"
             >
-              <X className="h-4 w-4 text-ink-400" />
+              <X className="h-4 w-4 text-ink-400" aria-hidden="true" />
             </button>
           )}
         </div>
@@ -298,7 +298,7 @@ export function SearchBar({
                     onClick={clearHistory}
                     className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <Trash2 className="h-3 w-3" aria-hidden="true" />
                     Clear history
                   </button>
                 </div>
@@ -338,7 +338,7 @@ export function SearchBar({
                       className="rounded p-1 text-ink-400 opacity-0 transition-opacity hover:bg-ink-100 hover:text-ink-700 group-hover:opacity-100"
                       aria-label={`Remove saved search ${saved.query}`}
                     >
-                      <X className="h-3.5 w-3.5" />
+                      <X className="h-3.5 w-3.5" aria-hidden="true" />
                     </button>
                   </div>
                 ))}

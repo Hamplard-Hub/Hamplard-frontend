@@ -92,7 +92,7 @@ export function MessageComposer({ onSendMessage, disabled = false }: MessageComp
                 className="p-1 rounded-full hover:bg-ink-200 text-ink-400 hover:text-ink-700 transition-colors"
                 aria-label={`Remove attachment ${att.name}`}
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3.5 h-3.5" aria-hidden="true" />
               </button>
             </div>
           ))}

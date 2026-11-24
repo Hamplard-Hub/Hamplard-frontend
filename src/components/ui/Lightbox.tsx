@@ -206,7 +206,7 @@ export function Lightbox({
             title="Close Lightbox (Esc)"
             aria-label="Close Lightbox"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
       </div>

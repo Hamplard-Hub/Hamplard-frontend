@@ -96,7 +96,7 @@ export function ProjectModal({
             className="absolute right-4 top-4 z-10 rounded-full bg-white/80 p-2 text-ink-600 shadow-md backdrop-blur-sm hover:bg-white hover:text-ink-900 transition-colors"
             aria-label="Close modal"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
 
           {/* Left Column: Full Project Image */}

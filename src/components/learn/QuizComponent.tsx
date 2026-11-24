@@ -360,9 +360,9 @@ export function QuizComponent({
               >
                 <div className="mb-2 flex items-start gap-2">
                   {isCorrect ? (
-                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" />
+                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" aria-hidden="true" />
                   ) : (
-                    <X className="mt-0.5 h-4 w-4 flex-shrink-0 text-rose-600" />
+                    <X className="mt-0.5 h-4 w-4 flex-shrink-0 text-rose-600" aria-hidden="true" />
                   )}
                   <p className="text-sm font-medium text-ink-900 dark:text-ink-100">
                     <span className="mr-1 text-ink-400">Q{idx + 1}.</span>
@@ -400,8 +400,8 @@ export function QuizComponent({
                             !wasSelected && !isOptCorrect && "text-ink-500 dark:text-ink-400",
                           )}
                         >
-                          {isOptCorrect && <Check className="h-3 w-3 flex-shrink-0 text-emerald-600" />}
-                          {wasSelected && !isOptCorrect && <X className="h-3 w-3 flex-shrink-0 text-rose-500" />}
+                          {isOptCorrect && <Check className="h-3 w-3 flex-shrink-0 text-emerald-600" aria-hidden="true" />}
+                          {wasSelected && !isOptCorrect && <X className="h-3 w-3 flex-shrink-0 text-rose-500" aria-hidden="true" />}
                           {!isOptCorrect && !wasSelected && <span className="h-3 w-3 flex-shrink-0" />}
                           {opt.text}
                           {wasSelected && isOptCorrect && (
@@ -558,10 +558,10 @@ export function QuizComponent({
                   {option.text}
                 </span>
                 {showCorrect && (
-                  <Check className="h-4 w-4 flex-shrink-0 text-emerald-600" />
+                  <Check className="h-4 w-4 flex-shrink-0 text-emerald-600" aria-hidden="true" />
                 )}
                 {showIncorrect && (
-                  <X className="h-4 w-4 flex-shrink-0 text-rose-600" />
+                  <X className="h-4 w-4 flex-shrink-0 text-rose-600" aria-hidden="true" />
                 )}
               </label>
             );
@@ -583,9 +583,9 @@ export function QuizComponent({
         >
           <div className="flex items-center gap-2">
             {correct ? (
-              <Check className="h-5 w-5 text-emerald-600" />
+              <Check className="h-5 w-5 text-emerald-600" aria-hidden="true" />
             ) : (
-              <X className="h-5 w-5 text-rose-600" />
+              <X className="h-5 w-5 text-rose-600" aria-hidden="true" />
             )}
             <span
               className={cn(

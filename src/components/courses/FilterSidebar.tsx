@@ -87,7 +87,7 @@ export function FilterSidebar({
             className="lg:hidden p-1 rounded-lg hover:bg-ink-50 text-ink-400"
             aria-label="Close filters"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       </div>

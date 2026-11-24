@@ -227,7 +227,7 @@ export default function ProgressList({ enrollments }: { enrollments: Enrollment[
               className="absolute top-4 right-4 p-1.5 rounded-full text-ink-400 hover:text-ink-700 hover:bg-ink-100 transition-colors"
               aria-label="Close share dialog"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
 
             <div className="mb-4">

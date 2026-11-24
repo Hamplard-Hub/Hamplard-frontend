@@ -321,10 +321,10 @@ export function DialogContent({
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-md p-1 text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-900 focus:outline-none focus:ring-2 focus:ring-hamplard-primary"
+          className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-md text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-900 focus:outline-none focus:ring-2 focus:ring-hamplard-primary"
           aria-label="Close dialog"
         >
-          <X className="h-5 w-5" />
+          <X className="h-5 w-5" aria-hidden="true" />
         </button>
       )}
       <div id={`${titleId}-content`}>{children}</div>

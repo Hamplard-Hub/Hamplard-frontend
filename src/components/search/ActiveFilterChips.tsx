@@ -94,10 +94,10 @@ export function ActiveFilterChips() {
           key={chip.key}
           type="button"
           onClick={chip.onRemove}
-          className="group inline-flex items-center gap-1.5 rounded-pill bg-hamplard-lilac py-1 pl-3 pr-2 text-sm font-medium text-hamplard-deep transition-colors hover:bg-hamplard-primary hover:text-white"
+          className="group inline-flex min-h-11 items-center gap-1.5 rounded-pill bg-hamplard-lilac py-1 pl-3 pr-2 text-sm font-medium text-hamplard-deep transition-colors hover:bg-hamplard-primary hover:text-white"
         >
           <span>{chip.label}</span>
-          <X className="h-3.5 w-3.5 opacity-60 transition-opacity group-hover:opacity-100" />
+          <X className="h-3.5 w-3.5 opacity-60 transition-opacity group-hover:opacity-100" aria-hidden="true" />
           <span className="sr-only">Remove filter {chip.label}</span>
         </button>
       ))}
@@ -105,7 +105,7 @@ export function ActiveFilterChips() {
         <button
           type="button"
           onClick={clearFilters}
-          className="ml-1 text-sm font-medium text-hamplard-mid underline-offset-2 hover:underline"
+          className="ml-1 min-h-11 px-2 text-sm font-medium text-hamplard-mid underline-offset-2 hover:underline"
         >
           Clear all
         </button>
