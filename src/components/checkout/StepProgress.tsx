@@ -1,5 +1,6 @@
 'use client';
 
+import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const CHECKOUT_STEPS = [
@@ -40,12 +41,17 @@ export function StepProgress({ currentStep, className }: StepProgressProps) {
                   aria-current={isCurrent ? 'step' : undefined}
                 >
                   {isCompleted ? (
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
+                    <Check className="h-5 w-5" aria-hidden="true" />
                   ) : (
                     step.step
                   )}
+                  <span className="sr-only">
+                    {isCompleted
+                      ? 'Completed'
+                      : isCurrent
+                        ? 'Current step'
+                        : 'Not started'}
+                  </span>
                 </span>
                 <span
                   className={cn(

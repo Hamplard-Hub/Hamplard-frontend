@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -167,9 +168,11 @@ function RelatedBundleCard({ bundle }: { bundle: BundleSummary }) {
       className="group flex gap-3 rounded-2xl border border-ink-100 bg-white p-4 shadow-sm transition hover:border-hamplard-primary hover:shadow-md"
     >
       {bundle.thumbnailUrl && (
-        <img
+        <Image
           src={bundle.thumbnailUrl}
           alt=""
+          width={56}
+          height={56}
           className="h-14 w-14 rounded-lg object-cover shrink-0"
         />
       )}

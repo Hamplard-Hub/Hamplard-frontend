@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import { useState } from 'react';
 import { ChevronRight, X, CheckCircle2, Circle } from 'lucide-react';
@@ -90,7 +91,7 @@ export function StudentTable({
                   <td className="px-5 py-3">
                     <div className="h-8 w-8 rounded-full overflow-hidden bg-saffron-100 flex items-center justify-center shrink-0">
                       {row.studentAvatarUrl ? (
-                        <img src={row.studentAvatarUrl} alt="" className="h-full w-full object-cover" />
+                        <Image src={row.studentAvatarUrl} alt="" width={32} height={32} className="h-full w-full object-cover" />
                       ) : (
                         <span className="text-sm font-bold text-saffron-700">
                           {row.studentName?.charAt(0)?.toUpperCase() ?? '?'}
@@ -185,7 +186,7 @@ export function StudentTable({
               <div className="flex items-center gap-3 px-5 py-4">
                 <div className="h-10 w-10 rounded-full overflow-hidden bg-saffron-100 flex items-center justify-center shrink-0">
                   {detail.studentAvatarUrl ? (
-                    <img src={detail.studentAvatarUrl} alt="" className="h-full w-full object-cover" />
+                    <Image src={detail.studentAvatarUrl} alt="" width={40} height={40} className="h-full w-full object-cover" />
                   ) : (
                     <span className="text-sm font-bold text-saffron-700">
                       {detail.studentName?.charAt(0)?.toUpperCase() ?? '?'}

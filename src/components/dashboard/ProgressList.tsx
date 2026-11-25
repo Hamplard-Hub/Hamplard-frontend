@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -161,9 +162,9 @@ export default function ProgressList({ enrollments }: { enrollments: Enrollment[
             const isComplete = percent >= 100;
             return (
               <Link key={enrollment.id} href={href} className="card p-3 sm:p-4 flex flex-col sm:flex-row gap-4 hover:shadow-lifted transition-shadow group relative">
-                <div className="w-full sm:w-40 aspect-video sm:aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-br from-saffron-100 to-saffron-200 flex-shrink-0">
+                <div className="relative w-full sm:w-40 aspect-video sm:aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-br from-saffron-100 to-saffron-200 flex-shrink-0">
                   {enrollment.course.thumbnailUrl ? (
-                    <img src={enrollment.course.thumbnailUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    <Image src={enrollment.course.thumbnailUrl} alt="" fill sizes="(max-width: 640px) 100vw, 160px" className="object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-saffron-700"><BookOpen className="w-8 h-8" /></div>
                   )}
@@ -244,9 +245,12 @@ export default function ProgressList({ enrollments }: { enrollments: Enrollment[
 
             {/* Generated OG Image Preview */}
             <div className="rounded-xl overflow-hidden border border-ink-200 mb-5 bg-ink-900 relative shadow-inner">
-              <img
+              <Image
                 src={getOgImageUrl(shareItem)}
                 alt={`Progress card for ${shareItem.enrollment.course.title}`}
+                width={1200}
+                height={630}
+                unoptimized
                 className="w-full h-auto object-cover"
               />
             </div>

@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -129,9 +130,11 @@ function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
               >
                 {/* Thumbnail */}
                 {item.course.thumbnailUrl ? (
-                  <img
+                  <Image
                     src={item.course.thumbnailUrl}
                     alt={`${item.course.title} course thumbnail`}
+                    width={64}
+                    height={64}
                     className="w-16 h-16 object-cover rounded-md flex-shrink-0"
                   />
                 ) : (

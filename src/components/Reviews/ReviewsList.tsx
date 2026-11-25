@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 
 import { useEffect, useMemo, useState } from "react";
 import { RatingSummary } from "./RatingSummary";
@@ -127,9 +128,11 @@ export default function ReviewsList({ reviews }: ReviewsListProps) {
                   <div className="flex items-center gap-4">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-ink-200 font-semibold">
                       {review.reviewer.avatar ? (
-                        <img
+                        <Image
                           src={review.reviewer.avatar}
                           alt={`${review.reviewer.name} avatar`}
+                          width={40}
+                          height={40}
                           className="h-10 w-10 rounded-full object-cover"
                         />
                       ) : (

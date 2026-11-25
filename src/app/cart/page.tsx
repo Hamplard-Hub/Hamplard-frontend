@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import { Suspense, useState } from 'react';
 import Link from 'next/link';
@@ -115,9 +116,11 @@ function CartPageContent() {
                     {items.map((item) => (
                       <div key={item.courseId} className="p-6 flex gap-4">
                         {item.course.thumbnailUrl ? (
-                          <img
+                          <Image
                             src={item.course.thumbnailUrl}
                             alt={item.course.title}
+                            width={128}
+                            height={80}
                             className="w-32 h-20 object-cover rounded-lg flex-shrink-0"
                           />
                         ) : (
@@ -174,9 +177,11 @@ function CartPageContent() {
                     {savedForLater.map((item, idx) => (
                       <div key={idx} className="p-6 flex gap-4">
                         {item.course.thumbnailUrl ? (
-                          <img
+                          <Image
                             src={item.course.thumbnailUrl}
                             alt={item.course.title}
+                            width={128}
+                            height={80}
                             className="w-32 h-20 object-cover rounded-lg flex-shrink-0"
                           />
                         ) : (

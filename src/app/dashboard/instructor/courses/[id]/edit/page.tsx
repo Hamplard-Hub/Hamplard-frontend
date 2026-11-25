@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -724,10 +725,12 @@ export default function CourseEditPage() {
               />
               <FieldError message={errors.thumbnailUrl?.message} />
               {thumbnailUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={thumbnailUrl}
                   alt="Course thumbnail preview"
+                  width={640}
+                  height={144}
+                  unoptimized
                   className="mt-3 h-36 w-full rounded-xl object-cover"
                 />
               )}
