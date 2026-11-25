@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { PaymentForm } from '@/components/checkout/PaymentForm';
-import { StripeProvider } from '@/components/checkout/StripeProvider';
+import { StripeProviderDynamic } from '@/components/checkout/StripeProviderDynamic';
 import { StepProgress, type CheckoutStep } from '@/components/checkout/StepProgress';
 import { OrderReview } from '@/components/checkout/OrderReview';
 import { ConfirmationStep } from '@/components/checkout/ConfirmationStep';
@@ -105,13 +105,13 @@ export function CheckoutContent() {
               </div>
             )}
 
-            <StripeProvider>
+            <StripeProviderDynamic>
               <PaymentForm
                 amount={totalCents}
                 onSuccess={handlePaymentSuccess}
                 className="mt-6"
               />
-            </StripeProvider>
+            </StripeProviderDynamic>
           </section>
 
           {/* Order summary sidebar */}

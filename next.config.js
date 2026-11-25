@@ -1,6 +1,14 @@
 /** @type {import('next').NextConfig} */
 
 // ---------------------------------------------------------------------------
+// Bundle Analyzer
+// ---------------------------------------------------------------------------
+
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
+// ---------------------------------------------------------------------------
 // Security-header helpers
 // ---------------------------------------------------------------------------
 
@@ -119,4 +127,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig);
