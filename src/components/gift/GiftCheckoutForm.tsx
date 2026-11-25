@@ -1,9 +1,10 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2, Mail, MessageSquare, Calendar, Gift } from 'lucide-react';
 import { giftSchema, type GiftFormValues } from '@/lib/validations/gift';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { cn } from '@/lib/utils';
 
 interface GiftCheckoutFormProps {
@@ -22,6 +23,7 @@ export function GiftCheckoutForm({
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<GiftFormValues>({
     resolver: zodResolver(giftSchema),
@@ -82,17 +84,25 @@ export function GiftCheckoutForm({
             Delivery date <span className="text-red-500">*</span>
           </span>
         </label>
-        <input
-          id="deliveryDate"
-          type="date"
-          min={todayStr}
-          aria-invalid={!!errors.deliveryDate}
-          aria-describedby={errors.deliveryDate ? 'deliveryDate-error' : undefined}
-          className={cn(
-            'input',
-            errors.deliveryDate && 'border-red-400 bg-red-50/40 focus:border-red-400',
+        <Controller
+          name="deliveryDate"
+          control={control}
+          render={({ field }) => (
+            <DatePicker
+              id="deliveryDate"
+              name={field.name}
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              min={todayStr}
+              aria-invalid={!!errors.deliveryDate}
+              aria-describedby={errors.deliveryDate ? 'deliveryDate-error' : undefined}
+              calendarLabel="Choose delivery date"
+              className={cn(
+                errors.deliveryDate && 'border-red-400 bg-red-50/40 focus:border-red-400',
+              )}
+            />
           )}
-          {...register('deliveryDate')}
         />
         {errors.deliveryDate && (
           <p id="deliveryDate-error" className="mt-1 text-xs text-red-600" role="alert">

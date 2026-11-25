@@ -39,3 +39,5 @@ export { ProgressRing } from './ProgressRing';
 export type { ProgressRingProps } from './ProgressRing';
 export { EmptyState } from './EmptyState';
 export type { EmptyStateProps } from './EmptyState';
+export { DatePicker } from './DatePicker';
+export type { DatePickerProps } from './DatePicker';
