@@ -60,9 +60,9 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans:    ['DM Sans', 'system-ui', 'sans-serif'],
-        display: ['Playfair Display', 'Georgia', 'serif'],
-        mono:    ['JetBrains Mono', 'monospace'],
+        sans:    ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'Georgia', 'serif'],
+        mono:    ['var(--font-mono)', 'monospace'],
       },
       fontSize: {
         h1: ['var(--type-h1-size)', { lineHeight: 'var(--type-h1-line-height)', letterSpacing: 'var(--type-h1-letter-spacing)', fontWeight: 'var(--type-h1-font-weight)' }],
