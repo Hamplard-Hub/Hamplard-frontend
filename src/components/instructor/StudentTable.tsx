@@ -169,9 +169,9 @@ export function StudentTable({
               type="button"
               onClick={onCloseDetail}
               aria-label="Close detail"
-              className="rounded-lg p-1 text-ink-400 hover:text-ink-700 hover:bg-ink-50 transition"
+              className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-400 transition hover:bg-ink-50 hover:text-ink-700"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
 

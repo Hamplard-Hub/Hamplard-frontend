@@ -514,6 +514,7 @@ export function FileUpload({
                         className="h-full rounded-full bg-indigo-500 transition-all"
                         style={{ width: `${item.progress}%` }}
                         role="progressbar"
+                        aria-label={`Upload progress for ${item.file.name}`}
                         aria-valuenow={item.progress}
                         aria-valuemin={0}
                         aria-valuemax={100}
@@ -542,7 +543,7 @@ export function FileUpload({
                     <button
                       type="button"
                       onClick={() => handleRetry(item)}
-                      className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      className="flex h-11 w-11 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
                       aria-label={`Retry ${item.file.name}`}
                     >
                       <RotateCcw className="h-4 w-4" aria-hidden="true" />
@@ -552,7 +553,7 @@ export function FileUpload({
                     <button
                       type="button"
                       onClick={() => handleCancel(item)}
-                      className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      className="flex h-11 w-11 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
                       aria-label={`Cancel ${item.file.name}`}
                     >
                       <X className="h-4 w-4" aria-hidden="true" />
@@ -561,7 +562,7 @@ export function FileUpload({
                     <button
                       type="button"
                       onClick={() => removeItem(item.id)}
-                      className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      className="flex h-11 w-11 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
                       aria-label={`Remove ${item.file.name}`}
                     >
                       <X className="h-4 w-4" aria-hidden="true" />

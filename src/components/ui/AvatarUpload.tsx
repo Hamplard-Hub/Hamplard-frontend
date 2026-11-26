@@ -498,9 +498,9 @@ export function AvatarUpload({ currentAvatarUrl, userName, onSaved }: Props) {
           type="button"
           onClick={() => { setSaved(false); inputRef.current?.click(); }}
           aria-label="Change profile photo"
-          className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-hamplard-primary text-white shadow ring-2 ring-white transition hover:bg-hamplard-mid"
+          className="absolute bottom-0 right-0 flex h-11 w-11 items-center justify-center rounded-full bg-hamplard-primary text-white shadow ring-2 ring-white transition hover:bg-hamplard-mid"
         >
-          <Camera className="h-3.5 w-3.5" />
+          <Camera className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
 
         <input
@@ -567,7 +567,7 @@ export function AvatarUpload({ currentAvatarUrl, userName, onSaved }: Props) {
               onClick={handleCancelCrop}
               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 transition"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
               Cancel
             </button>
             <button
@@ -624,7 +624,7 @@ export function AvatarUpload({ currentAvatarUrl, userName, onSaved }: Props) {
               disabled={uploading}
               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-ink-500 hover:text-ink-800 hover:bg-ink-50 transition disabled:opacity-40"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
               Discard
             </button>
             <button

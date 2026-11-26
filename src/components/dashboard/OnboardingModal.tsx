@@ -143,7 +143,7 @@ export function OnboardingModal({ onClose }: OnboardingModalProps) {
           className="absolute right-4 top-4 p-1 hover:bg-ink-100 rounded-lg transition-colors"
           aria-label="Close onboarding"
         >
-          <X className="w-5 h-5 text-ink-500" />
+          <X className="w-5 h-5 text-ink-500" aria-hidden="true" />
         </button>
 
         {/* Content */}

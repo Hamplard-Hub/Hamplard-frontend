@@ -97,16 +97,16 @@ export function AutoplayCountdown({
             className="flex items-center gap-1.5 rounded-full bg-saffron-500 hover:bg-saffron-400 active:bg-saffron-600 text-white text-xs font-medium px-3 py-1.5 transition-colors"
             aria-label="Play next lecture now"
           >
-            <SkipForward className="w-3.5 h-3.5" />
+            <SkipForward className="w-3.5 h-3.5" aria-hidden="true" />
             Play
           </button>
           {/* Cancel */}
           <button
             onClick={onCancel}
-            className="p-1.5 rounded-full text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-white/60 transition-colors hover:bg-white/10 hover:text-white"
             aria-label="Cancel autoplay"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       </div>

@@ -136,21 +136,21 @@ export function CookieConsentBanner() {
             <button
               type="button"
               onClick={handleAcceptAll}
-              className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#26215C] transition hover:bg-[#EEEDFE]"
+              className="min-h-11 rounded-full bg-white px-4 text-sm font-semibold text-[#26215C] transition hover:bg-[#EEEDFE]"
             >
               Accept All
             </button>
             <button
               type="button"
               onClick={handleRejectNonEssential}
-              className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
+              className="min-h-11 rounded-full border border-white/20 bg-white/10 px-4 text-sm font-semibold text-white transition hover:bg-white/15"
             >
               Reject Non-Essential
             </button>
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
-              className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
+              className="min-h-11 rounded-full border border-white/20 bg-white/10 px-4 text-sm font-semibold text-white transition hover:bg-white/15"
             >
               Manage Preferences
             </button>
@@ -176,7 +176,7 @@ export function CookieConsentBanner() {
               <button
                 type="button"
                 aria-label="Close cookie preferences"
-                className="rounded-full p-2 text-[#5A5578] transition hover:bg-[#F4F2FF]"
+                className="flex h-11 w-11 items-center justify-center rounded-full text-[#5A5578] transition hover:bg-[#F4F2FF]"
                 onClick={() => setIsModalOpen(false)}
               >
                 <X className="h-5 w-5" aria-hidden="true" />
@@ -197,7 +197,7 @@ export function CookieConsentBanner() {
                 const isDisabled = option.key === 'necessary';
 
                 return (
-                  <label
+                  <div
                     key={option.key}
                     className="flex items-start justify-between gap-4 rounded-2xl border border-[#D5D2F6] bg-[#FAF9FF] p-4"
                   >
@@ -216,19 +216,20 @@ export function CookieConsentBanner() {
                     <button
                       type="button"
                       role="switch"
+                      aria-label={option.title}
                       aria-checked={checked}
                       disabled={isDisabled}
                       onClick={() => {
                         if (isDisabled) return;
                         setPreferences((current) => ({ ...current, [option.key]: !current[option.key] }));
                       }}
-                      className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${checked ? 'bg-[#26215C]' : 'bg-[#CFCBFF]'} ${isDisabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
+                      className={`relative inline-flex min-h-11 w-12 items-center rounded-full transition ${checked ? 'bg-[#26215C]' : 'bg-[#CFCBFF]'} ${isDisabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
                     >
                       <span
                         className={`inline-block h-5 w-5 rounded-full bg-white shadow transition ${checked ? 'translate-x-6' : 'translate-x-1'}`}
                       />
                     </button>
-                  </label>
+                  </div>
                 );
               })}
             </div>
@@ -237,14 +238,14 @@ export function CookieConsentBanner() {
               <button
                 type="button"
                 onClick={handleRejectNonEssential}
-                className="rounded-full border border-[#D5D2F6] px-4 py-2 text-sm font-semibold text-[#26215C] transition hover:bg-[#F4F2FF]"
+                className="min-h-11 rounded-full border border-[#D5D2F6] px-4 text-sm font-semibold text-[#26215C] transition hover:bg-[#F4F2FF]"
               >
                 Reject Non-Essential
               </button>
               <button
                 type="button"
                 onClick={handleSavePreferences}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#26215C] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#3A3480]"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#26215C] px-4 text-sm font-semibold text-white transition hover:bg-[#3A3480]"
               >
                 <Check className="h-4 w-4" aria-hidden="true" />
                 Save Preferences

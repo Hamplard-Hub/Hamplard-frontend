@@ -82,7 +82,7 @@ export function VideoControls({
         step={0.5}
         value={currentTime}
         onChange={(e) => onSeek(parseFloat(e.target.value))}
-        className="w-full h-1 accent-saffron-500 cursor-pointer"
+        className="w-full min-h-11 accent-saffron-500 cursor-pointer"
         aria-label="Seek"
       />
 
@@ -91,24 +91,24 @@ export function VideoControls({
         {/* Play / Pause */}
         <button
           onClick={onPlayPause}
-          className="text-white hover:text-saffron-300 transition-colors p-1"
+          className="inline-flex h-11 w-11 items-center justify-center text-white transition-colors hover:text-saffron-300"
           aria-label={playing ? 'Pause' : 'Play'}
         >
           {playing
-            ? <Pause className="w-4 h-4 fill-current" />
-            : <Play  className="w-4 h-4 fill-current" />
+            ? <Pause className="w-4 h-4 fill-current" aria-hidden="true" />
+            : <Play  className="w-4 h-4 fill-current" aria-hidden="true" />
           }
         </button>
 
         {/* Volume */}
         <button
           onClick={onMute}
-          className="text-white hover:text-saffron-300 transition-colors p-1"
+          className="inline-flex h-11 w-11 items-center justify-center text-white transition-colors hover:text-saffron-300"
           aria-label={muted ? 'Unmute' : 'Mute'}
         >
           {muted || volume === 0
-            ? <VolumeX className="w-4 h-4" />
-            : <Volume2 className="w-4 h-4" />
+            ? <VolumeX className="w-4 h-4" aria-hidden="true" />
+            : <Volume2 className="w-4 h-4" aria-hidden="true" />
           }
         </button>
         <input
@@ -118,7 +118,7 @@ export function VideoControls({
           step={0.05}
           value={muted ? 0 : volume}
           onChange={(e) => onVolume(parseFloat(e.target.value))}
-          className="hidden md:block w-16 h-1 accent-saffron-500 cursor-pointer"
+          className="hidden md:block w-16 min-h-11 accent-saffron-500 cursor-pointer"
           aria-label="Volume"
         />
 
@@ -133,6 +133,7 @@ export function VideoControls({
         <select
           value={speed}
           onChange={(e) => onSpeed(parseFloat(e.target.value))}
+          className="block min-h-11 bg-transparent text-white text-xs cursor-pointer outline-none border border-white/20 rounded px-2 hover:border-white/50 transition-colors"
           className="block bg-transparent text-white text-xs cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/70 border border-white/20 rounded px-1 py-0.5 hover:border-white/50 transition-colors"
           aria-label="Playback speed"
         >
@@ -149,7 +150,7 @@ export function VideoControls({
             <button
               onClick={() => setQualityOpen((o) => !o)}
               className={cn(
-                'flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded border transition-colors',
+                'flex min-h-11 items-center gap-1 text-[10px] font-medium px-2 rounded border transition-colors',
                 qualityOpen
                   ? 'border-saffron-400 text-saffron-300 bg-saffron-500/20'
                   : 'border-white/20 text-white/80 hover:text-white hover:border-white/40',
@@ -159,7 +160,7 @@ export function VideoControls({
               aria-haspopup="listbox"
               title="Video quality"
             >
-              <Settings className="w-3.5 h-3.5" />
+              <Settings className="w-3.5 h-3.5" aria-hidden="true" />
               {/* Show label only when a non-auto quality is active */}
               <span>{quality === 'auto' ? 'Quality' : quality}</span>
             </button>
@@ -181,7 +182,7 @@ export function VideoControls({
                           setQualityOpen(false);
                         }}
                         className={cn(
-                          'w-full flex items-center justify-between px-3 py-1.5 text-xs transition-colors',
+                          'w-full min-h-11 flex items-center justify-between px-3 text-xs transition-colors',
                           isSelected
                             ? 'text-saffron-300 font-semibold bg-saffron-500/10'
                             : 'text-white/80 hover:text-white hover:bg-white/10',
@@ -207,7 +208,7 @@ export function VideoControls({
             onClick={onSubtitles}
             title={subtitlesOn ? 'Hide captions' : 'Show captions'}
             className={cn(
-              'rounded p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-saffron-300',
+              'inline-flex h-11 w-11 items-center justify-center rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-saffron-300',
               subtitlesOn
                 ? 'bg-saffron-500/25 text-saffron-200'
                 : 'text-white hover:text-saffron-300',
@@ -224,7 +225,7 @@ export function VideoControls({
         <button
           onClick={() => onAutoplayChange(!autoplay)}
           className={cn(
-            'flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border transition-colors',
+            'flex min-h-11 items-center gap-1 text-[10px] font-medium px-2 rounded-full border transition-colors',
             autoplay
               ? 'border-saffron-400 text-saffron-300 bg-saffron-500/20 hover:bg-saffron-500/30'
               : 'border-white/20 text-white/60 hover:text-white hover:border-white/40',
@@ -254,12 +255,12 @@ export function VideoControls({
         {/* Fullscreen */}
         <button
           onClick={onFullscreen}
-          className="text-white hover:text-saffron-300 transition-colors p-1"
+          className="inline-flex h-11 w-11 items-center justify-center text-white transition-colors hover:text-saffron-300"
           aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
         >
           {isFullscreen
-            ? <Minimize className="w-4 h-4" />
-            : <Maximize className="w-4 h-4" />
+            ? <Minimize className="w-4 h-4" aria-hidden="true" />
+            : <Maximize className="w-4 h-4" aria-hidden="true" />
           }
         </button>
       </div>

@@ -63,7 +63,7 @@ export function CompareBar() {
                     aria-label={`Remove ${course.title} from comparison`}
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-ink-200 transition-colors"
                   >
-                    <X className="w-3.5 h-3.5 text-ink-500" />
+                    <X className="w-3.5 h-3.5 text-ink-500" aria-hidden="true" />
                   </button>
                 </div>
               ))}

@@ -685,7 +685,9 @@ export function Header() {
           aria-controls="mobile-nav-drawer"
           aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
         >
-          {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          {mobileOpen
+            ? <X className="h-6 w-6" aria-hidden="true" />
+            : <Menu className="h-6 w-6" aria-hidden="true" />}
         </button>
       </div>
 
@@ -718,7 +720,7 @@ export function Header() {
             className="rounded-lg p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
             aria-label="Close menu"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
         <div className="space-y-1 px-4 pb-6 pt-4">
