@@ -33,6 +33,7 @@ export function GiftCheckoutForm({
       deliveryDate: todayStr,
     },
     mode: 'onBlur',
+    shouldFocusError: true,
   });
 
   return (
@@ -84,6 +85,15 @@ export function GiftCheckoutForm({
             Delivery date <span className="text-red-500">*</span>
           </span>
         </label>
+        <input
+          id="deliveryDate"
+          type="date"
+          min={todayStr}
+          aria-invalid={!!errors.deliveryDate}
+          aria-describedby={errors.deliveryDate ? 'deliveryDate-error deliveryDate-hint' : 'deliveryDate-hint'}
+          className={cn(
+            'input',
+            errors.deliveryDate && 'border-red-400 bg-red-50/40 focus:border-red-400',
         <Controller
           name="deliveryDate"
           control={control}
@@ -109,7 +119,7 @@ export function GiftCheckoutForm({
             {errors.deliveryDate.message}
           </p>
         )}
-        <p className="mt-1 text-xs text-ink-400">
+        <p id="deliveryDate-hint" className="mt-1 text-xs text-ink-400">
           The recipient will receive their gift link on this date.
         </p>
       </div>

@@ -9,3 +9,4 @@ export {
   FilterSidebarSkeleton,
   ResultsGridSkeleton,
 } from './SearchResultsLoadingState';
+export { CommandPalette } from './CommandPalette';
