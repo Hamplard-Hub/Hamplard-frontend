@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import { useEffect, useState } from 'react';
 import { Loader2, Trophy } from 'lucide-react';
@@ -180,9 +181,11 @@ function PodiumCard({
       </span>
 
       {entry.avatarUrl ? (
-        <img
+        <Image
           src={entry.avatarUrl}
           alt={entry.name ?? 'Student'}
+          width={featured ? 48 : 40}
+          height={featured ? 48 : 40}
           className={cn(
             'rounded-full object-cover',
             featured ? 'h-12 w-12' : 'h-10 w-10',

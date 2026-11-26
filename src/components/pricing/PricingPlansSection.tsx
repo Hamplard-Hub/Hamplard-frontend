@@ -244,7 +244,7 @@ export function PricingPlansSection({
                               : 'bg-[#F4F2FF] text-[#7F77DD]',
                           )}
                         >
-                          <X className="h-3.5 w-3.5" />
+                          <X className="h-3.5 w-3.5" aria-hidden="true" />
                         </span>
                       )}
                       <span className={plan.featured ? 'text-[#F4F2FF]' : 'text-[#5A5578]'}>

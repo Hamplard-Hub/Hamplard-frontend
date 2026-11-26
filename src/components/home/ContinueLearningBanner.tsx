@@ -1,4 +1,5 @@
 "use client";
+import Image from 'next/image';
 
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/lib/hooks/use-auth-store";
@@ -60,9 +61,11 @@ export default function ContinueLearningBanner() {
         </button>
 
         {course.thumbnailUrl && (
-          <img
+          <Image
             src={course.thumbnailUrl}
             alt={course.title}
+            width={144}
+            height={96}
             className="h-24 w-36 rounded-lg object-cover"
           />
         )}

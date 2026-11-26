@@ -261,7 +261,7 @@ export default function InstructorAnnouncementsPage() {
                 <>
                   <select
                     {...register("courseId")}
-                    className="w-full rounded-xl border border-ink-200 bg-white px-3 py-3 text-sm text-ink-900 outline-none"
+                    className="w-full rounded-xl border border-ink-200 bg-white px-3 py-3 text-sm text-ink-900 outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary"
                   >
                     <option value="">Select a course</option>
                     {courses.map((course) => (
@@ -285,7 +285,7 @@ export default function InstructorAnnouncementsPage() {
               <input
                 {...register("subject")}
                 placeholder="Lesson reminder, schedule change, new resource..."
-                className="w-full rounded-xl border border-ink-200 bg-white px-3 py-3 text-sm text-ink-900 outline-none"
+                className="w-full rounded-xl border border-ink-200 bg-white px-3 py-3 text-sm text-ink-900 outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary"
               />
               {errors.subject && (
                 <p className="mt-1 text-xs text-red-600">
@@ -301,7 +301,7 @@ export default function InstructorAnnouncementsPage() {
                 {...register("message")}
                 rows={7}
                 placeholder="Write a clear announcement for your students..."
-                className="w-full rounded-xl border border-ink-200 bg-white px-3 py-3 text-sm text-ink-900 outline-none"
+                className="w-full rounded-xl border border-ink-200 bg-white px-3 py-3 text-sm text-ink-900 outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary"
               />
               {errors.message && (
                 <p className="mt-1 text-xs text-red-600">
@@ -319,7 +319,7 @@ export default function InstructorAnnouncementsPage() {
                 value={scheduledFor}
                 min={toDateTimeInput(new Date().toISOString())}
                 onChange={(event) => setScheduledFor(event.target.value)}
-                className="w-full rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 outline-none"
+                className="w-full rounded-lg border border-ink-200 bg-white px-3 py-2 text-sm text-ink-900 outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary"
               />
               <p className="mt-1 text-xs text-ink-500">
                 Choose a future time, then select Schedule.

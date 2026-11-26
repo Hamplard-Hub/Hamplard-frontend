@@ -170,7 +170,7 @@ export function BadgeCard({ badge, onSelect, className = '' }: BadgeCardProps) {
               className="absolute top-4 right-4 p-1.5 rounded-full text-ink-400 hover:text-ink-700 hover:bg-ink-100 transition-colors"
               aria-label="Close badge modal"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
 
             {/* Emblem in Modal */}

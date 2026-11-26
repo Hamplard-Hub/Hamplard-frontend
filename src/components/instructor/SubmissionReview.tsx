@@ -205,7 +205,7 @@ export function SubmissionReview({ submission, onReviewed }: SubmissionReviewPro
               <Check className="h-4 w-4" /> Approve
             </button>
             <button type="button" onClick={() => review(false)} disabled={saving} className="inline-flex items-center gap-2 rounded-lg border border-rose-200 px-4 py-2.5 text-sm font-semibold text-rose-700 transition hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50">
-              <XCircle className="h-4 w-4" /> Request revision
+              <XCircle className="h-4 w-4" aria-hidden="true" /> Request revision
             </button>
           </div>
         ) : (
@@ -218,7 +218,7 @@ export function SubmissionReview({ submission, onReviewed }: SubmissionReviewPro
       {lightboxUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" role="dialog" aria-modal="true" aria-label="Submission image">
           <button type="button" onClick={() => setLightboxUrl(null)} className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20" aria-label="Close image">
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
           <Image src={lightboxUrl} alt="Student submission enlarged" width={1600} height={1200} unoptimized className="max-h-[90vh] max-w-[95vw] object-contain" />
         </div>

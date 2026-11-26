@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CourseCard } from '@/components/courses/CourseCard';
 import { CourseCardSkeleton } from '@/components/skeletons';
@@ -47,15 +47,25 @@ export function CourseCarousel({
   const [canScrollNext, setCanScrollNext] = useState(false);
   const [activeDot, setActiveDot] = useState(0);
 
-  // Autoplay state: paused on hover, and permanently stopped after manual interaction.
+  // Autoplay pauses on hover, reduced motion, or direct interaction until resumed.
   const [isHovering, setIsHovering] = useState(false);
   const [userInteracted, setUserInteracted] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [isPausedByUser, setIsPausedByUser] = useState(false);
 
   // Touch swipe tracking
   const touchStartXRef = useRef<number | null>(null);
   const touchStartYRef = useRef<number | null>(null);
 
   const itemCount = loading ? skeletonCount : courses.length;
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
+    updatePreference();
+    mediaQuery.addEventListener('change', updatePreference);
+    return () => mediaQuery.removeEventListener('change', updatePreference);
+  }, []);
 
   const updateScrollState = useCallback(() => {
     const el = scrollerRef.current;
@@ -93,21 +103,21 @@ export function CourseCarousel({
     scrollerRef.current?.scrollTo({ left: 0 });
   }, [loading, courses]);
 
-  function scrollByCard(direction: 1 | -1) {
+  const scrollByCard = useCallback((direction: 1 | -1) => {
     const el = scrollerRef.current;
     if (!el) return;
     const step = (firstItemRef.current?.offsetWidth ?? el.clientWidth) + GAP_PX;
-    el.scrollBy({ left: step * direction, behavior: 'smooth' });
-  }
+    el.scrollBy({ left: step * direction, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+  }, [prefersReducedMotion]);
 
-  function scrollToDot(index: number) {
+  const scrollToDot = useCallback((index: number) => {
     const el = scrollerRef.current;
     if (!el) return;
     const step = (firstItemRef.current?.offsetWidth ?? el.clientWidth) + GAP_PX;
-    el.scrollTo({ left: step * index, behavior: 'smooth' });
-  }
+    el.scrollTo({ left: step * index, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+  }, [prefersReducedMotion]);
 
-  // Manual interaction (arrow click, dot click, swipe) permanently stops autoplay.
+  // Manual interaction stops autoplay until the user explicitly resumes it.
   const markUserInteracted = useCallback(() => {
     setUserInteracted(true);
   }, []);
@@ -117,7 +127,7 @@ export function CourseCarousel({
       markUserInteracted();
       scrollByCard(direction);
     },
-    [markUserInteracted],
+    [markUserInteracted, scrollByCard],
   );
 
   const handleDotClick = useCallback(
@@ -125,12 +135,31 @@ export function CourseCarousel({
       markUserInteracted();
       scrollToDot(index);
     },
-    [markUserInteracted],
+    [markUserInteracted, scrollToDot],
   );
+
+  const handleScrollerKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        handleArrowClick(event.key === 'ArrowLeft' ? -1 : 1);
+      }
+    },
+    [handleArrowClick],
+  );
+
+  const handleAutoplayToggle = useCallback(() => {
+    if (isPausedByUser || userInteracted) {
+      setIsPausedByUser(false);
+      setUserInteracted(false);
+    } else {
+      setIsPausedByUser(true);
+    }
+  }, [isPausedByUser, userInteracted]);
 
   // Autoplay: advance one card at a time, looping back to the start.
   useEffect(() => {
-    if (!autoplay || loading || userInteracted || isHovering) return;
+    if (!autoplay || loading || userInteracted || isPausedByUser || isHovering || prefersReducedMotion) return;
     if (courses.length <= 1) return;
 
     const id = window.setInterval(() => {
@@ -146,7 +175,7 @@ export function CourseCarousel({
     }, autoplayInterval);
 
     return () => window.clearInterval(id);
-  }, [autoplay, autoplayInterval, loading, userInteracted, isHovering, courses.length]);
+  }, [autoplay, autoplayInterval, loading, userInteracted, isPausedByUser, isHovering, prefersReducedMotion, courses.length]);
 
   // Touch swipe handlers — horizontal swipes navigate, vertical swipes scroll the page.
   function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) {
@@ -175,22 +204,59 @@ export function CourseCarousel({
 
   const showArrows = !loading && courses.length > 0 && (canScrollPrev || canScrollNext);
   const showDots = !loading && courses.length > 1;
+  const autoplayPaused = isPausedByUser || userInteracted;
 
   return (
-    <section className="relative" aria-label={title}>
+    <section
+      className="relative"
+      aria-roledescription="carousel"
+      aria-label={title}
+      onFocusCapture={(event) => {
+        if (
+          event.target instanceof HTMLElement &&
+          event.target.hasAttribute('data-carousel-rotation-control')
+        ) {
+          return;
+        }
+        setUserInteracted(true);
+      }}
+    >
       {/* Header */}
       <div className="flex items-end justify-between gap-4 mb-4">
         <div>
           <h2 className="section-heading">{title}</h2>
           {subtitle && <p className="text-sm text-ink-400 mt-1">{subtitle}</p>}
         </div>
-        <Link
-          href={seeAllHref}
-          className="shrink-0 inline-flex items-center gap-1 text-sm font-medium text-hamplard-primary hover:text-hamplard-deep transition-colors"
-        >
-          See all
-          <ChevronRight className="w-4 h-4" aria-hidden="true" />
-        </Link>
+        <div className="flex shrink-0 items-center gap-2">
+          {autoplay && courses.length > 1 && !loading && (
+            <button
+              type="button"
+              data-carousel-rotation-control
+              onClick={handleAutoplayToggle}
+              disabled={prefersReducedMotion}
+              aria-label={
+                prefersReducedMotion
+                  ? 'Automatic slide rotation is disabled by your reduced motion preference'
+                  : autoplayPaused
+                    ? 'Resume automatic slide rotation'
+                    : 'Pause automatic slide rotation'
+              }
+              aria-pressed={autoplayPaused}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-ink-200 text-ink-600 hover:bg-hamplard-lilac focus:outline-none focus:ring-2 focus:ring-hamplard-primary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {autoplayPaused
+                ? <Play className="h-4 w-4" aria-hidden="true" />
+                : <Pause className="h-4 w-4" aria-hidden="true" />}
+            </button>
+          )}
+          <Link
+            href={seeAllHref}
+            className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-hamplard-primary transition-colors hover:text-hamplard-deep"
+          >
+            See all
+            <ChevronRight className="w-4 h-4" aria-hidden="true" />
+          </Link>
+        </div>
       </div>
 
       {/* Carousel */}
@@ -209,12 +275,12 @@ export function CourseCarousel({
               aria-label={`Scroll ${title} left`}
               className={cn(
                 'hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10',
-                'w-10 h-10 items-center justify-center rounded-full bg-white shadow-md border border-ink-100',
+                'w-11 h-11 items-center justify-center rounded-full bg-white shadow-md border border-ink-100',
                 'transition-opacity hover:bg-hamplard-lilac focus:outline-none focus:ring-2 focus:ring-hamplard-primary',
                 !canScrollPrev && 'opacity-0 pointer-events-none',
               )}
             >
-              <ChevronLeft className="w-5 h-5 text-hamplard-deep" />
+              <ChevronLeft className="w-5 h-5 text-hamplard-deep" aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -223,12 +289,12 @@ export function CourseCarousel({
               aria-label={`Scroll ${title} right`}
               className={cn(
                 'hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10',
-                'w-10 h-10 items-center justify-center rounded-full bg-white shadow-md border border-ink-100',
+                'w-11 h-11 items-center justify-center rounded-full bg-white shadow-md border border-ink-100',
                 'transition-opacity hover:bg-hamplard-lilac focus:outline-none focus:ring-2 focus:ring-hamplard-primary',
                 !canScrollNext && 'opacity-0 pointer-events-none',
               )}
             >
-              <ChevronRight className="w-5 h-5 text-hamplard-deep" />
+              <ChevronRight className="w-5 h-5 text-hamplard-deep" aria-hidden="true" />
             </button>
           </>
         )}
@@ -241,9 +307,16 @@ export function CourseCarousel({
         ) : (
           <div
             ref={scrollerRef}
+            role="group"
+            aria-label={`${title} carousel slides`}
+            tabIndex={0}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            className="flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth pb-1 -mx-1 px-1"
+            onKeyDown={handleScrollerKeyDown}
+            className={cn(
+              'flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory pb-1 -mx-1 px-1',
+              !prefersReducedMotion && 'scroll-smooth',
+            )}
           >
             {loading
               ? Array.from({ length: skeletonCount }).map((_, i) => (
@@ -259,6 +332,9 @@ export function CourseCarousel({
                   <div
                     key={course.id}
                     ref={i === 0 ? firstItemRef : undefined}
+                    role="group"
+                    aria-roledescription="slide"
+                    aria-label={`Slide ${i + 1} of ${courses.length}: ${course.title}`}
                     className={cn(CARD_WIDTH_CLASS, 'shrink-0 snap-start')}
                   >
                     <CourseCard course={course} />
@@ -269,20 +345,24 @@ export function CourseCarousel({
 
         {/* Mobile dots */}
         {showDots && (
-          <div className="flex md:hidden items-center justify-center gap-1.5 mt-4" role="tablist" aria-label={`${title} slides`}>
+          <div className="flex md:hidden items-center justify-center gap-2 mt-4" role="group" aria-label={`${title} slide navigation`}>
             {courses.map((course, i) => (
               <button
                 key={course.id}
                 type="button"
-                role="tab"
-                aria-selected={i === activeDot}
-                aria-label={`Go to slide ${i + 1}`}
+                aria-current={i === activeDot ? 'true' : undefined}
+                aria-label={`Go to slide ${i + 1} of ${courses.length}`}
                 onClick={() => handleDotClick(i)}
-                className={cn(
-                  'h-1.5 rounded-full transition-all duration-200',
-                  i === activeDot ? 'w-5 bg-hamplard-primary' : 'w-1.5 bg-ink-200',
-                )}
-              />
+                className="flex h-11 w-11 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-hamplard-primary"
+              >
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'h-1.5 rounded-full transition-all duration-200',
+                    i === activeDot ? 'w-5 bg-hamplard-primary' : 'w-1.5 bg-ink-200',
+                  )}
+                />
+              </button>
             ))}
           </div>
         )}

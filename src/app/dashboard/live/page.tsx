@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
@@ -380,9 +381,11 @@ export default function LiveSessionsPage() {
                       <div className="pt-2 border-t border-ink-100 flex flex-col gap-2.5 text-sm text-ink-700">
                         <div className="flex items-center gap-2.5">
                           {session.instructorAvatar ? (
-                            <img
+                            <Image
                               src={session.instructorAvatar}
                               alt={session.instructorName}
+                              width={28}
+                              height={28}
                               className="w-7 h-7 rounded-full object-cover border border-ink-200"
                             />
                           ) : (
@@ -492,10 +495,12 @@ export default function LiveSessionsPage() {
                   {/* Thumbnail with duration badge and play icon */}
                   <div className="relative aspect-video w-full bg-ink-900 overflow-hidden">
                     {recording.thumbnailUrl ? (
-                      <img
+                      <Image
                         src={recording.thumbnailUrl}
                         alt={recording.title}
-                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-ink-800 to-ink-950 text-saffron-400 text-3xl font-bold">
@@ -526,9 +531,11 @@ export default function LiveSessionsPage() {
                     <div className="pt-3 border-t border-ink-100 flex items-center justify-between text-xs text-ink-500">
                       <div className="flex items-center gap-2">
                         {recording.instructorAvatar ? (
-                          <img
+                          <Image
                             src={recording.instructorAvatar}
                             alt={recording.instructorName}
+                            width={20}
+                            height={20}
                             className="w-5 h-5 rounded-full object-cover"
                           />
                         ) : (

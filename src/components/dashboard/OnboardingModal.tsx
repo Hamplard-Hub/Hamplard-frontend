@@ -5,6 +5,7 @@ import { ChevronRight, ChevronLeft, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
+import { useReducedMotion } from '@/lib/hooks/use-reduced-motion';
 
 const ONBOARDING_KEY = 'hamplard_onboarding_completed';
 
@@ -58,6 +59,7 @@ export function OnboardingModal({ onClose }: OnboardingModalProps) {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [learningGoal, setLearningGoal] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const { prefersReducedMotion, mounted } = useReducedMotion();
 
   // Check if onboarding has been completed
   useEffect(() => {
@@ -87,7 +89,12 @@ export function OnboardingModal({ onClose }: OnboardingModalProps) {
 
   const handleComplete = () => {
     localStorage.setItem(ONBOARDING_KEY, 'true');
-    // Fire confetti
+    if (mounted && prefersReducedMotion) {
+      setShowModal(false);
+      onClose?.();
+      return;
+    }
+    // Fire confetti only when the user has not asked for reduced motion.
     fireConfetti();
     setTimeout(() => {
       setShowModal(false);
@@ -104,6 +111,7 @@ export function OnboardingModal({ onClose }: OnboardingModalProps) {
   };
 
   const fireConfetti = () => {
+    if (mounted && prefersReducedMotion) return;
     const duration = 3000;
     const end = Date.now() + duration;
 
@@ -135,7 +143,7 @@ export function OnboardingModal({ onClose }: OnboardingModalProps) {
           className="absolute right-4 top-4 p-1 hover:bg-ink-100 rounded-lg transition-colors"
           aria-label="Close onboarding"
         >
-          <X className="w-5 h-5 text-ink-500" />
+          <X className="w-5 h-5 text-ink-500" aria-hidden="true" />
         </button>
 
         {/* Content */}
@@ -220,7 +228,7 @@ export function OnboardingModal({ onClose }: OnboardingModalProps) {
           {/* Step 4: Completion */}
           {currentStep === 4 && (
             <div className="text-center space-y-6">
-              <div className="text-6xl mb-4 animate-bounce">🎉</div>
+              <div className={cn('text-6xl mb-4', !prefersReducedMotion && 'animate-bounce')}>🎉</div>
               <h2 className="font-display text-3xl font-bold text-ink-900">
                 You're All Set!
               </h2>
