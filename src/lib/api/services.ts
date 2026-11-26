@@ -1,3 +1,4 @@
+import { apiClient } from './client';
 import { apiClient } from "./client";
 import { getApiUrl } from "./config";
 import type {
@@ -27,11 +28,16 @@ import type {
   PaginatedResponse,
   Review,
   SavedPaymentMethod,
-  ShowcaseComment,
+  CourseModule,
   ShowcaseProject,
+  ShowcaseComment,
   StudentDetail,
   StudentEnrollmentRow,
   SubmitShowcasePayload,
+  Instructor,
+  InstructorProfile,
+  InstructorSort,
+  Review,
   User,
 } from '@/types';
 import {
