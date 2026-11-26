@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useParams, useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
   CheckCircle2, Circle, ChevronDown, ChevronRight,
@@ -34,6 +34,13 @@ const WORDS_PER_MINUTE = 200;
 // SidebarTab type
 type SidebarTab = 'lessons' | 'notes' | 'qa';
 
+const SIDEBAR_TABS: SidebarTab[] = ['lessons', 'notes', 'qa'];
+const SIDEBAR_TAB_LABELS: Record<SidebarTab, string> = {
+  lessons: 'Lessons',
+  notes: 'Notes',
+  qa: 'Q&A',
+};
+
 // Fallback questions shown when a QUIZ lesson has no quiz data
 const DEFAULT_QUIZ_QUESTIONS: QuizQuestion[] = [];
 
@@ -55,9 +62,6 @@ export default function LearnPage() {
   // Captured once so the initial load does not re-run on every lesson change
   const initialLessonRef = useRef<string | null>(lessonParam);
   const toast = useToast();
-  // requestedLessonId reserved for future deep-link support
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _requestedLessonId = searchParams.get("lesson");
 
   const [course, setCourse] = useState<Course | null>(null);
   const [enrollment, setEnrollment] = useState<Enrollment | null>(null);
@@ -68,6 +72,33 @@ export default function LearnPage() {
   const [marking, setMarking] = useState(false);
   const [markError, setMarkError] = useState<string | null>(null);
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>("lessons");
+  const sidebarTabRefs = useRef<Partial<Record<SidebarTab, HTMLButtonElement | null>>>({});
+
+  // WAI-ARIA tabs pattern: arrow keys move between tabs (with wrap-around),
+  // Home/End jump to the first/last tab. Selection follows focus.
+  const handleSidebarTabKeyDown = useCallback(
+    (e: ReactKeyboardEvent<HTMLButtonElement>, current: SidebarTab) => {
+      const index = SIDEBAR_TABS.indexOf(current);
+      let nextIndex: number | null = null;
+
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        nextIndex = (index + 1) % SIDEBAR_TABS.length;
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        nextIndex = (index - 1 + SIDEBAR_TABS.length) % SIDEBAR_TABS.length;
+      } else if (e.key === 'Home') {
+        nextIndex = 0;
+      } else if (e.key === 'End') {
+        nextIndex = SIDEBAR_TABS.length - 1;
+      }
+
+      if (nextIndex === null) return;
+      e.preventDefault();
+      const next = SIDEBAR_TABS[nextIndex];
+      setSidebarTab(next);
+      sidebarTabRefs.current[next]?.focus();
+    },
+    [],
+  );
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -502,26 +533,49 @@ export default function LearnPage() {
         </div>
 
         {/* Sidebar tab switcher */}
-        <div className="flex border-b border-ink-100 text-xs font-medium">
-          {(['lessons', 'notes', 'qa'] as SidebarTab[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setSidebarTab(tab)}
-              className={cn(
-                'flex-1 py-2 capitalize transition-colors',
-                sidebarTab === tab
-                  ? 'text-saffron-700 border-b-2 border-saffron-500'
-                  : 'text-ink-400 hover:text-ink-700',
-              )}
-            >
-              {tab}
-            </button>
-          ))}
+        <div
+          role="tablist"
+          aria-label="Course sidebar"
+          aria-orientation="horizontal"
+          className="flex border-b border-ink-100 text-xs font-medium"
+        >
+          {SIDEBAR_TABS.map((tab) => {
+            const selected = sidebarTab === tab;
+            return (
+              <button
+                key={tab}
+                ref={(el) => {
+                  sidebarTabRefs.current[tab] = el;
+                }}
+                type="button"
+                role="tab"
+                id={`sidebar-tab-${tab}`}
+                aria-selected={selected}
+                aria-controls={`sidebar-panel-${tab}`}
+                tabIndex={selected ? 0 : -1}
+                onClick={() => setSidebarTab(tab)}
+                onKeyDown={(e) => handleSidebarTabKeyDown(e, tab)}
+                className={cn(
+                  'flex-1 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-saffron-500',
+                  selected
+                    ? 'text-saffron-700 border-b-2 border-saffron-500'
+                    : 'text-ink-400 hover:text-ink-700',
+                )}
+              >
+                {SIDEBAR_TAB_LABELS[tab]}
+              </button>
+            );
+          })}
         </div>
 
         {/* Modules + lessons */}
         {sidebarTab === "lessons" && (
-          <div className="flex-1">
+          <div
+            role="tabpanel"
+            id="sidebar-panel-lessons"
+            aria-labelledby="sidebar-tab-lessons"
+            className="flex-1"
+          >
             {course.modules?.map((module, mIdx) => {
               const lockInfo = getModuleLockInfo(module, mIdx, course.modules ?? [], completedIds);
               const isLocked = lockInfo.isLocked;
@@ -624,20 +678,33 @@ export default function LearnPage() {
           </div>
         )}
 
-        {sidebarTab === "notes" && activeLesson && (
-          <div className="flex-1 overflow-hidden">
-            <NotesPanel
-              courseId={id}
-              lectureId={activeLesson.id}
-              videoRef={videoRef}
-              courseTitle={course.title}
-              lectureTitle={activeLesson.title}
-            />
+        {sidebarTab === "notes" && (
+          <div
+            role="tabpanel"
+            id="sidebar-panel-notes"
+            aria-labelledby="sidebar-tab-notes"
+            className="flex-1 overflow-hidden"
+          >
+            {activeLesson && (
+              <NotesPanel
+                courseId={id}
+                lectureId={activeLesson.id}
+                videoRef={videoRef}
+                courseTitle={course.title}
+                lectureTitle={activeLesson.title}
+              />
+            )}
           </div>
         )}
 
         {sidebarTab === "qa" && (
-          <div className="flex-1 flex items-center justify-center text-ink-400 px-4">
+          <div
+            role="tabpanel"
+            id="sidebar-panel-qa"
+            aria-labelledby="sidebar-tab-qa"
+            tabIndex={0}
+            className="flex-1 flex items-center justify-center text-ink-400 px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-saffron-500"
+          >
             <div className="text-center">
               <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-40" />
               <p className="text-xs">Q&amp;A coming soon</p>
@@ -945,3 +1012,454 @@ export default function LearnPage() {
     </div>
   );
 }
+
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+
+export function usePersistentState<T>(
+  key: string,
+  defaultValue: T
+): [T, (value: T | ((previous: T) => T)) => void, boolean] {
+  const [value, setValue] = useState<T>(defaultValue);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Read localStorage only after mounting.
+  useEffect(() => {
+    try {
+      const storedValue = localStorage.getItem(key);
+
+      if (storedValue !== null) {
+        setValue(JSON.parse(storedValue) as T);
+      }
+    } catch (error) {
+      console.error(
+        `Unable to read persistent state for "${key}":`,
+        error
+      );
+    } finally {
+      setIsHydrated(true);
+    }
+  }, [key]);
+
+  // Update React state and persist the new value.
+  const updateValue = useCallback(
+    (nextValue: T | ((previous: T) => T)) => {
+      setValue((previous) => {
+        const resolvedValue =
+          typeof nextValue === "function"
+            ? (nextValue as (previous: T) => T)(previous)
+            : nextValue;
+
+        try {
+          localStorage.setItem(
+            key,
+            JSON.stringify(resolvedValue)
+          );
+        } catch (error) {
+          console.error(
+            `Unable to save persistent state for "${key}":`,
+            error
+          );
+        }
+
+        return resolvedValue;
+      });
+    },
+    [key]
+  );
+
+  return [value, updateValue, isHydrated];
+}
+
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+
+export function usePersistentState<T>(
+  key: string,
+  defaultValue: T
+): [T, (value: T | ((previous: T) => T)) => void, boolean] {
+  const [value, setValue] = useState<T>(defaultValue);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Read localStorage only after mounting.
+  useEffect(() => {
+    try {
+      const storedValue = localStorage.getItem(key);
+
+      if (storedValue !== null) {
+        setValue(JSON.parse(storedValue) as T);
+      }
+    } catch (error) {
+      console.error(
+        `Unable to read persistent state for "${key}":`,
+        error
+      );
+    } finally {
+      setIsHydrated(true);
+    }
+  }, [key]);
+
+  // Update React state and persist the new value.
+  const updateValue = useCallback(
+    (nextValue: T | ((previous: T) => T)) => {
+      setValue((previous) => {
+        const resolvedValue =
+          typeof nextValue === "function"
+            ? (nextValue as (previous: T) => T)(previous)
+            : nextValue;
+
+        try {
+          localStorage.setItem(
+            key,
+            JSON.stringify(resolvedValue)
+          );
+        } catch (error) {
+          console.error(
+            `Unable to save persistent state for "${key}":`,
+            error
+          );
+        }
+
+        return resolvedValue;
+      });
+    },
+    [key]
+  );
+
+  return [value, updateValue, isHydrated];
+}
+const [autoplay, setAutoplay] = useState(
+  () =>
+    typeof window === "undefined"
+      ? true
+      : localStorage.getItem("autoplay") !== "false"
+);
+const [focusMode, setFocusMode] = useState(
+  () =>
+    typeof window === "undefined"
+      ? false
+      : localStorage.getItem("focusMode") === "true"
+);
+
+import { renderHook, act, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
+import { usePersistentState } from "./usePersistentState";
+
+describe("usePersistentState", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("starts with the default value", () => {
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    expect(result.current[0]).toBe(false);
+  });
+
+  it("loads the stored preference after mounting", async () => {
+    localStorage.setItem("focusMode", "true");
+
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    await waitFor(() => {
+      expect(result.current[0]).toBe(true);
+    });
+  });
+
+  it("persists updated preferences", async () => {
+    const { result } = renderHook(() =>
+      usePersistentState("autoplay", true)
+    );
+
+    act(() => {
+      result.current[1](false);
+    });
+
+    expect(result.current[0]).toBe(false);
+    expect(localStorage.getItem("autoplay")).toBe("false");
+  });
+
+  it("supports functional updates", async () => {
+    const { result } = renderHook(() =>
+      usePersistentState("counter", 0)
+    );
+
+    act(() => {
+      result.current[1]((previous) => previous + 1);
+    });
+
+    expect(result.current[0]).toBe(1);
+    expect(localStorage.getItem("counter")).toBe("1");
+  });
+
+  it("handles invalid stored JSON safely", async () => {
+    localStorage.setItem("focusMode", "invalid-json");
+
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    await waitFor(() => {
+      expect(result.current[2]).toBe(true);
+    });
+
+    expect(result.current[0]).toBe(false);
+  });
+});
+
+import { renderHook, act, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
+import { usePersistentState } from "./usePersistentState";
+
+describe("usePersistentState", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("starts with the default value", () => {
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    expect(result.current[0]).toBe(false);
+  });
+
+  it("loads the stored preference after mounting", async () => {
+    localStorage.setItem("focusMode", "true");
+
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    await waitFor(() => {
+      expect(result.current[0]).toBe(true);
+    });
+  });
+
+  it("persists updated preferences", async () => {
+    const { result } = renderHook(() =>
+      usePersistentState("autoplay", true)
+    );
+
+    act(() => {
+      result.current[1](false);
+    });
+
+    expect(result.current[0]).toBe(false);
+    expect(localStorage.getItem("autoplay")).toBe("false");
+  });
+
+  it("supports functional updates", async () => {
+    const { result } = renderHook(() =>
+      usePersistentState("counter", 0)
+    );
+
+    act(() => {
+      result.current[1]((previous) => previous + 1);
+    });
+
+    expect(result.current[0]).toBe(1);
+    expect(localStorage.getItem("counter")).toBe("1");
+  });
+
+  it("handles invalid stored JSON safely", async () => {
+    localStorage.setItem("focusMode", "invalid-json");
+
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    await waitFor(() => {
+      expect(result.current[2]).toBe(true);
+    });
+
+    expect(result.current[0]).toBe(false);
+  });
+});
+
+import { renderHook, act, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
+import { usePersistentState } from "./usePersistentState";
+
+describe("usePersistentState", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("starts with the default value", () => {
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    expect(result.current[0]).toBe(false);
+  });
+
+  it("loads the stored preference after mounting", async () => {
+    localStorage.setItem("focusMode", "true");
+
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    await waitFor(() => {
+      expect(result.current[0]).toBe(true);
+    });
+  });
+
+  it("persists updated preferences", async () => {
+    const { result } = renderHook(() =>
+      usePersistentState("autoplay", true)
+    );
+
+    act(() => {
+      result.current[1](false);
+    });
+
+    expect(result.current[0]).toBe(false);
+    expect(localStorage.getItem("autoplay")).toBe("false");
+  });
+
+  it("supports functional updates", async () => {
+    const { result } = renderHook(() =>
+      usePersistentState("counter", 0)
+    );
+
+    act(() => {
+      result.current[1]((previous) => previous + 1);
+    });
+
+    expect(result.current[0]).toBe(1);
+    expect(localStorage.getItem("counter")).toBe("1");
+  });
+
+  it("handles invalid stored JSON safely", async () => {
+    localStorage.setItem("focusMode", "invalid-json");
+
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    await waitFor(() => {
+      expect(result.current[2]).toBe(true);
+    });
+
+    expect(result.current[0]).toBe(false);
+  });
+});
+
+import { renderHook, act, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
+import { usePersistentState } from "./usePersistentState";
+
+describe("usePersistentState", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("starts with the default value", () => {
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    expect(result.current[0]).toBe(false);
+  });
+
+  it("loads the stored preference after mounting", async () => {
+    localStorage.setItem("focusMode", "true");
+
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    await waitFor(() => {
+      expect(result.current[0]).toBe(true);
+    });
+  });
+
+  it("persists updated preferences", async () => {
+    const { result } = renderHook(() =>
+      usePersistentState("autoplay", true)
+    );
+
+    act(() => {
+      result.current[1](false);
+    });
+
+    expect(result.current[0]).toBe(false);
+    expect(localStorage.getItem("autoplay")).toBe("false");
+  });
+
+  it("supports functional updates", async () => {
+    const { result } = renderHook(() =>
+      usePersistentState("counter", 0)
+    );
+
+    act(() => {
+      result.current[1]((previous) => previous + 1);
+    });
+
+    expect(result.current[0]).toBe(1);
+    expect(localStorage.getItem("counter")).toBe("1");
+  });
+
+  it("handles invalid stored JSON safely", async () => {
+    localStorage.setItem("focusMode", "invalid-json");
+
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    await waitFor(() => {
+      expect(result.current[2]).toBe(true);
+    });
+
+    expect(result.current[0]).toBe(false);
+  });
+});
+import { isAxiosError } from "axios";
+
+// Inside your LearnPage component
+
+const handleMarkComplete = async (lessonId: string) => {
+  try {
+    await lessonsApi.markComplete(lessonId);
+
+    // Successful completion
+    // Keep your existing success-state and lesson-progress logic here.
+    
+  } catch (err: unknown) {
+    // Only queue requests that failed without receiving an HTTP response.
+    if (isAxiosError(err) && !err.response) {
+      try {
+        await queueProgressUpdate(lessonId);
+
+        setError(
+          "Could not reach the server. Your progress has been saved offline and will sync when you're back online."
+        );
+      } catch {
+        setError(
+          "Could not reach the server, and your progress could not be saved offline."
+        );
+      }
+
+      return;
+    }
+
+    // HTTP errors must never be queued.
+    const serverMessage = isAxiosError(err)
+      ? err.response?.data?.message
+      : undefined;
+
+    setError(
+      typeof serverMessage === "string"
+        ? serverMessage
+        : "Unable to mark this lesson as complete. Please try again."
+    );
+  }
+};

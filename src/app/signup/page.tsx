@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Facebook, Mail } from 'lucide-react';
+import { FieldError, FormField, Input } from '@/components/ui/form';
 
 type SignupValues = {
   name: string;
@@ -14,6 +15,15 @@ type SignupValues = {
 };
 
 type SignupErrors = Partial<Record<keyof SignupValues, string>>;
+
+// Field order used to focus the first invalid field and to order the summary.
+const FIELD_ORDER: Array<{ name: keyof SignupValues; label: string }> = [
+  { name: 'name', label: 'Full name' },
+  { name: 'email', label: 'Email' },
+  { name: 'password', label: 'Password' },
+  { name: 'confirmPassword', label: 'Confirm Password' },
+  { name: 'acceptTerms', label: 'Terms' },
+];
 
 export default function SignupPage() {
   const router = useRouter();
@@ -26,6 +36,7 @@ export default function SignupPage() {
   });
   const [errors, setErrors] = useState<SignupErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   const hasErrors = useMemo(() => Object.values(errors).some(Boolean), [errors]);
 
@@ -54,13 +65,22 @@ export default function SignupPage() {
     }
 
     setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+    return nextErrors;
+  };
+
+  const focusField = (name: keyof SignupValues) => {
+    document.getElementById(name)?.focus();
   };
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const isValid = validate(values);
-    if (!isValid) return;
+    setSubmitAttempted(true);
+    const nextErrors = validate(values);
+    const firstInvalid = FIELD_ORDER.find(({ name }) => nextErrors[name]);
+    if (firstInvalid) {
+      focusField(firstInvalid.name);
+      return;
+    }
     setIsSubmitting(true);
     
     try {
@@ -91,85 +111,123 @@ export default function SignupPage() {
             </p>
 
             <form className="space-y-4" onSubmit={onSubmit} noValidate>
+              {submitAttempted && hasErrors && (
+                <div
+                  role="alert"
+                  aria-labelledby="signup-error-summary-title"
+                  className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"
+                >
+                  <p id="signup-error-summary-title" className="font-semibold">
+                    Please fix the highlighted fields and try again.
+                  </p>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                    {FIELD_ORDER.filter(({ name }) => errors[name]).map(({ name }) => (
+                      <li key={name}>
+                        <a
+                          href={`#${name}`}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            focusField(name);
+                          }}
+                          className="underline hover:text-red-800"
+                        >
+                          {errors[name]}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-[#26215C]" htmlFor="name">
                   Full name
                 </label>
                 <input
                   id="name"
+              <FormField id="name" label="Full name" error={errors.name}>
+                <Input
                   type="text"
                   value={values.name}
                   onChange={(event) => setValues((prev) => ({ ...prev, name: event.target.value }))}
                   onBlur={() => validate(values)}
-                  className={`w-full rounded-xl border px-4 py-2.5 text-sm text-[#26215C] outline-none transition ${
-                    errors.name ? 'border-red-400 bg-red-50/40' : 'border-[#D3D0F2] focus:border-[#7F77DD]'
-                  }`}
                   placeholder="Your full name"
                   aria-invalid={!!errors.name}
+                  aria-describedby={errors.name ? 'name-error' : undefined}
                 />
-                {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name}</p>}
+                {errors.name && (
+                  <p id="name-error" className="mt-1 text-xs text-red-600">
+                    {errors.name}
+                  </p>
+                )}
               </div>
+                />
+              </FormField>
 
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-[#26215C]" htmlFor="email">
-                  Email
-                </label>
-                <input
-                  id="email"
+              <FormField id="email" label="Email" error={errors.email}>
+                <Input
                   type="email"
                   value={values.email}
                   onChange={(event) => setValues((prev) => ({ ...prev, email: event.target.value }))}
                   onBlur={() => validate(values)}
-                  className={`w-full rounded-xl border px-4 py-2.5 text-sm text-[#26215C] outline-none transition ${
-                    errors.email ? 'border-red-400 bg-red-50/40' : 'border-[#D3D0F2] focus:border-[#7F77DD]'
-                  }`}
                   placeholder="you@example.com"
                   aria-invalid={!!errors.email}
+                  aria-describedby={errors.email ? 'email-error' : undefined}
                 />
-                {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
+                {errors.email && (
+                  <p id="email-error" className="mt-1 text-xs text-red-600">
+                    {errors.email}
+                  </p>
+                )}
               </div>
+                />
+              </FormField>
 
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-[#26215C]" htmlFor="password">
-                  Password
-                </label>
-                <input
-                  id="password"
+              <FormField id="password" label="Password" error={errors.password}>
+                <Input
                   type="password"
                   value={values.password}
                   onChange={(event) => setValues((prev) => ({ ...prev, password: event.target.value }))}
                   onBlur={() => validate(values)}
-                  className={`w-full rounded-xl border px-4 py-2.5 text-sm text-[#26215C] outline-none transition ${
-                    errors.password ? 'border-red-400 bg-red-50/40' : 'border-[#D3D0F2] focus:border-[#7F77DD]'
-                  }`}
                   placeholder="Create a password"
                   aria-invalid={!!errors.password}
+                  aria-describedby={errors.password ? 'password-error' : undefined}
                 />
-                {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
+                {errors.password && (
+                  <p id="password-error" className="mt-1 text-xs text-red-600">
+                    {errors.password}
+                  </p>
+                )}
               </div>
+                />
+              </FormField>
 
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-[#26215C]" htmlFor="confirmPassword">
-                  Confirm Password
-                </label>
-                <input
-                  id="confirmPassword"
+              <FormField id="confirmPassword" label="Confirm Password" error={errors.confirmPassword}>
+                <Input
                   type="password"
                   value={values.confirmPassword}
                   onChange={(event) => setValues((prev) => ({ ...prev, confirmPassword: event.target.value }))}
                   onBlur={() => validate(values)}
-                  className={`w-full rounded-xl border px-4 py-2.5 text-sm text-[#26215C] outline-none transition ${
-                    errors.confirmPassword ? 'border-red-400 bg-red-50/40' : 'border-[#D3D0F2] focus:border-[#7F77DD]'
-                  }`}
                   placeholder="Confirm your password"
                   aria-invalid={!!errors.confirmPassword}
+                  aria-describedby={errors.confirmPassword ? 'confirmPassword-error' : undefined}
                 />
-                {errors.confirmPassword && <p className="mt-1 text-xs text-red-600">{errors.confirmPassword}</p>}
+                {errors.confirmPassword && (
+                  <p id="confirmPassword-error" className="mt-1 text-xs text-red-600">
+                    {errors.confirmPassword}
+                  </p>
+                )}
               </div>
+                />
+              </FormField>
 
               <label className="inline-flex items-start gap-2 text-sm text-[#26215C]">
                 <input
+                  id="acceptTerms"
                   type="checkbox"
+                  aria-invalid={!!errors.acceptTerms}
+                  aria-invalid={errors.acceptTerms ? true : undefined}
+                  aria-describedby={errors.acceptTerms ? 'acceptTerms-error' : undefined}
                   checked={values.acceptTerms}
                   onChange={(event) => setValues((prev) => ({ ...prev, acceptTerms: event.target.checked }))}
                   className="mt-0.5 h-4 w-4 rounded border-[#B3ADDF] text-[#7F77DD] focus:ring-[#7F77DD]"
@@ -182,7 +240,14 @@ export default function SignupPage() {
                   .
                 </span>
               </label>
-              {errors.acceptTerms && <p className="text-xs text-red-600">{errors.acceptTerms}</p>}
+              {errors.acceptTerms && (
+                <p id="acceptTerms-error" className="text-xs text-red-600">
+                  {errors.acceptTerms}
+                </p>
+              )}
+              <FieldError id="acceptTerms-error" className="mt-0">
+                {errors.acceptTerms}
+              </FieldError>
 
               <button
                 type="submit"
@@ -210,12 +275,6 @@ export default function SignupPage() {
                 </button>
               </div>
             </form>
-
-            {hasErrors && (
-              <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
-                Please fix the highlighted fields and try again.
-              </p>
-            )}
 
             <p className="mt-6 text-sm text-[#554F99]">
               Already have an account?{' '}

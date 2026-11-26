@@ -1,10 +1,12 @@
 'use client';
+import Image from 'next/image';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShoppingBag, X, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { useCartStore } from '@/lib/hooks/use-cart-store';
+import { useRestoreFocus } from '@/lib/hooks/use-restore-focus';
 import { promoCodesApi } from '@/lib/api/services';
 import { Button } from '@/components/ui/Button';
 import { formatUsdc } from '@/lib/utils';
@@ -85,7 +87,7 @@ function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-ink-100 px-4 py-4">
         <div className="flex items-center gap-2">
-          <ShoppingBag className="w-5 h-5 text-hamplard-primary" />
+          <ShoppingBag className="w-5 h-5 text-hamplard-primary" aria-hidden="true" />
           <h2 className="text-lg font-semibold text-ink-900">Shopping Cart</h2>
           {itemCount > 0 && (
             <span className="bg-hamplard-primary text-white text-xs font-semibold px-2 py-0.5 rounded-full">
@@ -96,10 +98,10 @@ function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
         {onClose && (
           <button
             onClick={onClose}
-            className="p-1 hover:bg-ink-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-hamplard-primary"
+            className="flex h-11 w-11 items-center justify-center rounded-lg transition-colors hover:bg-ink-50 focus:outline-none focus:ring-2 focus:ring-hamplard-primary"
             aria-label="Close cart"
           >
-            <X className="w-5 h-5 text-ink-500" />
+            <X className="w-5 h-5 text-ink-500" aria-hidden="true" />
           </button>
         )}
       </div>
@@ -108,7 +110,7 @@ function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
       <div className="flex-1 overflow-y-auto">
         {itemCount === 0 ? (
           <div className="flex flex-col items-center justify-center h-full py-12 px-4">
-            <ShoppingBag className="w-12 h-12 text-ink-200 mb-3" />
+            <ShoppingBag className="w-12 h-12 text-ink-200 mb-3" aria-hidden="true" />
             <p className="text-center text-ink-600 font-medium mb-1">Your cart is empty</p>
             <p className="text-center text-sm text-ink-400 mb-4">
               Browse our courses and add them to get started
@@ -128,14 +130,16 @@ function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
               >
                 {/* Thumbnail */}
                 {item.course.thumbnailUrl ? (
-                  <img
+                  <Image
                     src={item.course.thumbnailUrl}
                     alt={`${item.course.title} course thumbnail`}
+                    width={64}
+                    height={64}
                     className="w-16 h-16 object-cover rounded-md flex-shrink-0"
                   />
                 ) : (
                   <div className="w-16 h-16 bg-gradient-to-br from-saffron-100 to-saffron-200 rounded-md flex items-center justify-center flex-shrink-0">
-                    <span className="text-lg">📚</span>
+                    <span className="text-lg" aria-hidden="true">📚</span>
                   </div>
                 )}
 
@@ -158,10 +162,10 @@ function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
                 {/* Remove Button */}
                 <button
                   onClick={() => removeItem(item.courseId)}
-                  className="p-1 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0 text-red-600 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
                   aria-label={`Remove ${item.course.title} from cart`}
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
             ))}
@@ -194,10 +198,11 @@ function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
                 <button
                   onClick={handleApplyPromo}
                   disabled={isValidatingPromo || !promoCode.trim()}
-                  className="px-3 py-2 text-sm font-medium bg-hamplard-primary text-white rounded-lg hover:bg-hamplard-mid disabled:bg-ink-200 disabled:cursor-not-allowed transition-colors"
+                  aria-label={isValidatingPromo ? 'Applying promo code' : 'Apply promo code'}
+                  className="min-h-11 px-3 text-sm font-medium bg-hamplard-primary text-white rounded-lg hover:bg-hamplard-mid disabled:bg-ink-200 disabled:cursor-not-allowed transition-colors"
                 >
                   {isValidatingPromo ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                   ) : (
                     'Apply'
                   )}
@@ -205,7 +210,7 @@ function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
               </div>
               {promoError && (
                 <p className="text-xs text-rose-600 mt-2 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
+                  <AlertCircle className="w-3 h-3" aria-hidden="true" />
                   {promoError}
                 </p>
               )}
@@ -222,10 +227,10 @@ function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
               </div>
               <button
                 onClick={handleRemovePromo}
-                className="p-1 hover:bg-emerald-100 rounded transition-colors"
+                className="flex h-11 w-11 items-center justify-center rounded transition-colors hover:bg-emerald-100"
                 aria-label="Remove promo code"
               >
-                <X className="w-4 h-4 text-emerald-700" />
+                <X className="w-4 h-4 text-emerald-700" aria-hidden="true" />
               </button>
             </div>
           )}
@@ -262,15 +267,31 @@ function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
               size="lg"
               onClick={handleCheckout}
               disabled={isCheckingOut}
-              icon={<ArrowRight className="w-4 h-4" />}
+              aria-label={isCheckingOut ? 'Processing checkout' : undefined}
+              icon={<ArrowRight className="w-4 h-4" aria-hidden="true" />}
               iconPosition="right"
             >
-              {isCheckingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Proceed to Checkout'}
+              {isCheckingOut
+                ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                : 'Proceed to Checkout'}
             </Button>
+            <Link href="/checkout">
+              <Button
+                fullWidth
+                variant="primary"
+                size="lg"
+                onClick={handleCheckout}
+                disabled={isCheckingOut}
+                icon={<ArrowRight className="w-4 h-4" />}
+                iconPosition="right"
+              >
+                {isCheckingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Proceed to Checkout'}
+              </Button>
+            </Link>
 
             <button
               onClick={clearCart}
-              className="w-full mt-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="mt-2 min-h-11 w-full rounded-lg px-4 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
             >
               Clear Cart
             </button>
@@ -284,6 +305,8 @@ function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
 // ── Exported component (error boundary wrapper) ───────────────────────────
 
 export function ShoppingCart(props: ShoppingCartProps) {
+  useRestoreFocus((props.isOpen ?? true) && Boolean(props.onClose));
+
   return (
     <CheckoutErrorBoundary>
       <ShoppingCartContent {...props} />

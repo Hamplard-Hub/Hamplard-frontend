@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
@@ -69,9 +70,11 @@ export function MessageThread({
 
           {/* Instructor Avatar */}
           {conversation.participantAvatar ? (
-            <img
+            <Image
               src={conversation.participantAvatar}
               alt={conversation.participantName}
+              width={40}
+              height={40}
               className="w-10 h-10 rounded-full object-cover border border-ink-200 shrink-0"
             />
           ) : (
@@ -167,9 +170,12 @@ export function MessageThread({
                               rel="noopener noreferrer"
                               className="block overflow-hidden rounded-xl border border-black/10"
                             >
-                              <img
+                              <Image
                                 src={att.url}
                                 alt={att.name}
+                                width={600}
+                                height={240}
+                                unoptimized
                                 className="w-full max-h-60 object-cover hover:scale-102 transition-transform duration-200"
                               />
                             </a>

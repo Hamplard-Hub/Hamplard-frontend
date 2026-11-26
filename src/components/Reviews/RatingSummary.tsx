@@ -170,6 +170,7 @@ export function RatingSummary({
                       )}
                       style={{ width: `${reviewPct}%` }}
                       role="progressbar"
+                      aria-label={`${stars} star reviews`}
                       aria-valuenow={reviewPct}
                       aria-valuemin={0}
                       aria-valuemax={100}
@@ -203,7 +204,7 @@ export function RatingSummary({
           <button
             type="button"
             onClick={() => onStarFilter(null)}
-            className="ml-auto text-xs text-hamplard-primary hover:text-hamplard-mid hover:underline underline-offset-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary rounded"
+            className="ml-auto inline-flex min-h-11 items-center px-2 text-xs text-hamplard-primary transition-colors hover:text-hamplard-mid hover:underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary rounded"
           >
             Clear filter
           </button>

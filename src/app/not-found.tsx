@@ -35,7 +35,7 @@ export default function NotFound() {
       </div>
 
       <Link href="/">
-        <button className="px-6 py-3 bg-[#7F77DD] text-white font-semibold rounded-lg shadow-md hover:bg-[#6b62cb] transition-all transform hover:-translate-y-0.5 focus:outline-none">
+        <button className="px-6 py-3 bg-[#7F77DD] text-white font-semibold rounded-lg shadow-md hover:bg-[#6b62cb] transition-all transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7F77DD] focus-visible:ring-offset-2">
           Back to Home
         </button>
       </Link>

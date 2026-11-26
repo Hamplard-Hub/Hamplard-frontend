@@ -401,6 +401,7 @@ export function MenuList({
       role="menu"
       aria-label={label}
       id={`${labelId}-content`}
+      tabIndex={-1}
       className={cn(
         "z-50 min-w-[12rem] overflow-hidden rounded-lg border border-ink-200 bg-white p-1 shadow-lg",
         "animate-in fade-in zoom-in-95 duration-150",
@@ -446,7 +447,7 @@ export function MenuItem({
       disabled={disabled}
       onClick={handleClick}
       className={cn(
-        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm",
+        "flex min-h-11 w-full items-center gap-2 rounded-md px-2 text-sm",
         "text-left transition-colors duration-150",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary focus-visible:ring-inset",
         disabled && "cursor-not-allowed opacity-50",
@@ -456,12 +457,12 @@ export function MenuItem({
         className
       )}
     >
-      {icon && <span className="flex-shrink-0">{icon}</span>}
+      {icon && <span aria-hidden="true" className="flex-shrink-0">{icon}</span>}
       <span className="flex-1 truncate">{children}</span>
       {shortcut && (
         <span className="text-xs text-ink-400">{shortcut}</span>
       )}
-      {endIcon && <span className="flex-shrink-0">{endIcon}</span>}
+      {endIcon && <span aria-hidden="true" className="flex-shrink-0">{endIcon}</span>}
     </button>
   );
 }
@@ -493,7 +494,7 @@ export function MenuCheckboxItem({
       disabled={disabled}
       onClick={handleClick}
       className={cn(
-        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm",
+        "flex min-h-11 w-full items-center gap-2 rounded-md px-2 text-sm",
         "text-left transition-colors duration-150",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary focus-visible:ring-inset",
         disabled && "cursor-not-allowed opacity-50",
@@ -502,9 +503,9 @@ export function MenuCheckboxItem({
       )}
     >
       <span className="flex h-4 w-4 items-center justify-center">
-        {checked && <Check className="h-3 w-3" />}
+        {checked && <Check className="h-3 w-3" aria-hidden="true" />}
       </span>
-      {icon && <span className="flex-shrink-0">{icon}</span>}
+      {icon && <span aria-hidden="true" className="flex-shrink-0">{icon}</span>}
       <span className="flex-1">{children}</span>
     </button>
   );
@@ -561,7 +562,7 @@ export function MenuRadioItem({
       disabled={disabled}
       onClick={handleClick}
       className={cn(
-        "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm",
+        "flex min-h-11 w-full items-center gap-2 rounded-md px-2 text-sm",
         "text-left transition-colors duration-150",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary focus-visible:ring-inset",
         disabled && "cursor-not-allowed opacity-50",
@@ -656,7 +657,7 @@ export function MenuSubTrigger({
     <button
       role="menuitem"
       className={cn(
-        "flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm",
+        "flex min-h-11 w-full items-center justify-between gap-2 rounded-md px-2 text-sm",
         "text-left text-ink-900 transition-colors duration-150",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary focus-visible:ring-inset",
         "hover:bg-ink-100",
@@ -664,7 +665,7 @@ export function MenuSubTrigger({
       )}
     >
       {children}
-      <ChevronRight className="h-4 w-4" />
+      <ChevronRight className="h-4 w-4" aria-hidden="true" />
     </button>
   );
 }

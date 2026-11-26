@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
@@ -12,7 +13,7 @@ import {
 } from 'lucide-react';
 import { getInstructorForMetadata } from '@/lib/api/server';
 import { buildMetadata, siteConfig } from '@/lib/seo';
-import { buildInstructorJsonLd } from '@/lib/structured-data';
+import { buildInstructorJsonLd, serializeJsonLd } from '@/lib/structured-data';
 import { CourseCard } from '@/components/courses/CourseCard';
 import { ReviewCard } from '@/components/Reviews/ReviewCard';
 import { Breadcrumb } from '@/components/ui/Breadcrumb';
@@ -79,9 +80,11 @@ function InstructorHeader({ instructor }: { instructor: Awaited<ReturnType<typeo
         {/* ── Avatar ── */}
         <div className="-mt-12 mb-4">
           {instructor.avatarUrl ? (
-            <img
+            <Image
               src={instructor.avatarUrl}
               alt={`${instructor.name} avatar`}
+              width={96}
+              height={96}
               className="w-24 h-24 rounded-full object-cover ring-4 ring-white shadow-md"
             />
           ) : (
@@ -209,7 +212,7 @@ export default async function InstructorProfilePage({ params }: PageProps) {
     <div className="min-h-screen bg-ink-50">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildInstructorJsonLd(instructor)) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(buildInstructorJsonLd(instructor)) }}
       />
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 space-y-8">

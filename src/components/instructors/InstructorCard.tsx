@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import Link from 'next/link';
 import { BookOpen, Star, Users } from 'lucide-react';
@@ -64,11 +65,12 @@ export function InstructorCard({ instructor }: InstructorCardProps) {
       <article className="card h-full p-5 transition-all duration-200 group-hover:shadow-lifted group-hover:-translate-y-0.5">
         <div className="flex items-start gap-4">
           {avatarUrl ? (
-            <img
+            <Image
               src={avatarUrl}
               alt={`${name} avatar`}
+              width={56}
+              height={56}
               className="w-14 h-14 rounded-full object-cover shrink-0"
-              loading="lazy"
             />
           ) : (
             <span

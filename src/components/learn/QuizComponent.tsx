@@ -4,11 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   Check,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Filter,
   RotateCcw,
   X,
+  XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { shuffleQuestions } from "@/lib/quiz";
@@ -239,9 +241,19 @@ export function QuizComponent({
           {percentage}%
         </div>
 
-        <h2 className="mt-4 text-xl font-semibold text-ink-900">
-          {passed ? "Congratulations!" : "Keep trying"}
-        </h2>
+        <div className="mt-4 flex items-center gap-2">
+          {passed ? (
+            <CheckCircle2 className="h-5 w-5 text-emerald-700" aria-hidden="true" />
+          ) : (
+            <XCircle className="h-5 w-5 text-rose-700" aria-hidden="true" />
+          )}
+          <h2 className="text-xl font-semibold text-ink-900">
+            {passed ? "Congratulations!" : "Keep trying"}
+          </h2>
+        </div>
+        <p className="mt-1 text-sm font-medium text-ink-700">
+          {passed ? "Passed" : "Not passed"}
+        </p>
         <p className="mt-1 text-sm text-ink-500">
           You scored {score} out of {total} ({percentage}%)
           {passed
@@ -360,9 +372,9 @@ export function QuizComponent({
               >
                 <div className="mb-2 flex items-start gap-2">
                   {isCorrect ? (
-                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" />
+                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" aria-hidden="true" />
                   ) : (
-                    <X className="mt-0.5 h-4 w-4 flex-shrink-0 text-rose-600" />
+                    <X className="mt-0.5 h-4 w-4 flex-shrink-0 text-rose-600" aria-hidden="true" />
                   )}
                   <p className="text-sm font-medium text-ink-900 dark:text-ink-100">
                     <span className="mr-1 text-ink-400">Q{idx + 1}.</span>
@@ -400,12 +412,15 @@ export function QuizComponent({
                             !wasSelected && !isOptCorrect && "text-ink-500 dark:text-ink-400",
                           )}
                         >
-                          {isOptCorrect && <Check className="h-3 w-3 flex-shrink-0 text-emerald-600" />}
-                          {wasSelected && !isOptCorrect && <X className="h-3 w-3 flex-shrink-0 text-rose-500" />}
+                          {isOptCorrect && <Check className="h-3 w-3 flex-shrink-0 text-emerald-600" aria-hidden="true" />}
+                          {wasSelected && !isOptCorrect && <X className="h-3 w-3 flex-shrink-0 text-rose-500" aria-hidden="true" />}
                           {!isOptCorrect && !wasSelected && <span className="h-3 w-3 flex-shrink-0" />}
                           {opt.text}
+                          {isOptCorrect && !wasSelected && (
+                            <span className="ml-1 text-emerald-700">(correct answer)</span>
+                          )}
                           {wasSelected && isOptCorrect && (
-                            <span className="ml-1 text-emerald-600">(your answer ✓)</span>
+                            <span className="ml-1 text-emerald-700">(your correct answer)</span>
                           )}
                           {wasSelected && !isOptCorrect && (
                             <span className="ml-1 text-rose-500">(your answer)</span>
@@ -558,10 +573,10 @@ export function QuizComponent({
                   {option.text}
                 </span>
                 {showCorrect && (
-                  <Check className="h-4 w-4 flex-shrink-0 text-emerald-600" />
+                  <Check className="h-4 w-4 flex-shrink-0 text-emerald-600" aria-hidden="true" />
                 )}
                 {showIncorrect && (
-                  <X className="h-4 w-4 flex-shrink-0 text-rose-600" />
+                  <X className="h-4 w-4 flex-shrink-0 text-rose-600" aria-hidden="true" />
                 )}
               </label>
             );
@@ -583,9 +598,9 @@ export function QuizComponent({
         >
           <div className="flex items-center gap-2">
             {correct ? (
-              <Check className="h-5 w-5 text-emerald-600" />
+              <Check className="h-5 w-5 text-emerald-600" aria-hidden="true" />
             ) : (
-              <X className="h-5 w-5 text-rose-600" />
+              <X className="h-5 w-5 text-rose-600" aria-hidden="true" />
             )}
             <span
               className={cn(

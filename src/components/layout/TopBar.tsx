@@ -69,7 +69,9 @@ export function TopBar() {
           className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-white hover:bg-[#3C3489] lg:hidden"
           onClick={() => setMobileOpen((prev) => !prev)}
         >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          {mobileOpen
+            ? <X className="h-5 w-5" aria-hidden="true" />
+            : <Menu className="h-5 w-5" aria-hidden="true" />}
         </button>
 
         <Link href="/" className="shrink-0 font-display text-xl font-semibold tracking-tight text-white">
@@ -112,7 +114,7 @@ export function TopBar() {
 
         <form
           onSubmit={handleSearch}
-          className="mx-auto hidden w-full max-w-2xl items-center rounded-full border border-[#3C3489] bg-white px-4 py-2 lg:flex"
+          className="mx-auto hidden w-full max-w-2xl items-center rounded-full border border-[#3C3489] bg-white px-4 py-2 focus-within:ring-2 focus-within:ring-[#7F77DD]/40 lg:flex"
         >
           <Search className="h-4 w-4 text-[#3C3489]" />
           <input
@@ -172,7 +174,7 @@ export function TopBar() {
 
       {mobileOpen && (
         <div className="border-t border-[#3C3489] bg-[#26215C] px-4 pb-4 pt-3 lg:hidden">
-          <form onSubmit={handleSearch} className="mb-3 flex items-center rounded-full border border-[#3C3489] bg-white px-4 py-2">
+          <form onSubmit={handleSearch} className="mb-3 flex items-center rounded-full border border-[#3C3489] bg-white px-4 py-2 focus-within:ring-2 focus-within:ring-[#7F77DD]/40">
             <Search className="h-4 w-4 text-[#3C3489]" />
             <input
               value={query}

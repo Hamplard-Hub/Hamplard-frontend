@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import React, { useState, useMemo } from 'react';
 import { Search, MessageSquare, BookOpen, User } from 'lucide-react';
@@ -71,7 +72,7 @@ export function ConversationList({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search instructors or courses..."
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-ink-50 border border-ink-200 rounded-xl focus:outline-none focus:border-hamplard-primary focus:bg-white transition-colors"
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-ink-50 border border-ink-200 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary focus:border-hamplard-primary focus:bg-white transition-colors"
           />
         </div>
       </div>
@@ -95,7 +96,7 @@ export function ConversationList({
                 onClick={() => onSelect(conv.id)}
                 role="listitem"
                 aria-selected={isSelected}
-                className={`w-full p-3 sm:p-4 text-left flex items-start gap-3 transition-colors focus:outline-none ${
+                className={`w-full p-3 sm:p-4 text-left flex items-start gap-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-hamplard-primary ${
                   isSelected
                     ? 'bg-saffron-50/70'
                     : 'hover:bg-ink-50/80'
@@ -104,9 +105,11 @@ export function ConversationList({
                 {/* Avatar with indicator */}
                 <div className="relative shrink-0">
                   {conv.participantAvatar ? (
-                    <img
+                    <Image
                       src={conv.participantAvatar}
                       alt={conv.participantName}
+                      width={44}
+                      height={44}
                       className="w-11 h-11 rounded-full object-cover border border-ink-200"
                     />
                   ) : (

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { getCourseForMetadata } from '@/lib/api/server';
 import { buildMetadata, siteConfig } from '@/lib/seo';
-import { buildCourseJsonLd } from '@/lib/structured-data';
+import { buildCourseJsonLd, serializeJsonLd } from '@/lib/structured-data';
 
 /**
  * The course detail page is a client component, so its per-course metadata and
@@ -47,7 +47,7 @@ export default async function CourseDetailLayout({ children, params }: CourseLay
       {course ? (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(buildCourseJsonLd(course)) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(buildCourseJsonLd(course)) }}
         />
       ) : null}
       {children}

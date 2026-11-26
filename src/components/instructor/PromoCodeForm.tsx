@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { promoCodeSchema, type PromoCodeFormValues } from '@/lib/validations/promo-code';
 import { promoCodesApi } from '@/lib/api/services';
 import { Button } from '@/components/ui/Button';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { cn } from '@/lib/utils';
 
 /** A promo code as returned by `promoCodesApi.getMy`. */
@@ -173,16 +174,25 @@ export function PromoCodeForm({ onSuccess, onError }: PromoCodeFormProps) {
           <label htmlFor="expiryDate" className="label">
             Expiry Date
           </label>
-          <input
-            id="expiryDate"
-            type="date"
-            className={cn(
-              'input w-full',
-              errors.expiryDate && 'border-rose-500 focus:ring-rose-500',
+          <Controller
+            name="expiryDate"
+            control={control}
+            render={({ field }) => (
+              <DatePicker
+                id="expiryDate"
+                name={field.name}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                aria-invalid={errors.expiryDate ? 'true' : 'false'}
+                aria-describedby={errors.expiryDate ? 'expiryDate-error' : undefined}
+                calendarLabel="Choose expiry date"
+                className={cn(
+                  'w-full',
+                  errors.expiryDate && 'border-rose-500 focus:ring-rose-500',
+                )}
+              />
             )}
-            {...register('expiryDate')}
-            aria-invalid={errors.expiryDate ? 'true' : 'false'}
-            aria-describedby={errors.expiryDate ? 'expiryDate-error' : undefined}
           />
           {errors.expiryDate && (
             <p id="expiryDate-error" className="mt-1 text-xs text-rose-600">

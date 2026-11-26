@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { apiClient } from "./client";
 import { getApiUrl } from "./config";
 import type {
   Achievement,
@@ -9,9 +10,13 @@ import type {
   Certificate,
   Conversation,
   Course,
+  CourseModule,
   DirectMessage,
   Enrollment,
   Gift,
+  Instructor,
+  InstructorProfile,
+  InstructorSort,
   LeaderboardPeriod,
   LeaderboardResponse,
   Lesson,
@@ -21,6 +26,7 @@ import type {
   MessageAttachment,
   Notification,
   PaginatedResponse,
+  Review,
   SavedPaymentMethod,
   CourseModule,
   ShowcaseProject,
@@ -528,6 +534,11 @@ export const assignmentsApi = {
     return data.data;
   },
 
+  listForCurrentStudent: async (): Promise<any[]> => {
+    const { data } = await apiClient.get('/assignments/student/my');
+    return data.data;
+  },
+
   submit: async (
     assignmentId: string,
     submissionUrl: string,
@@ -553,6 +564,41 @@ export const assignmentsApi = {
 
   getPending: async () => {
     const { data } = await apiClient.get("/assignments/instructor/pending");
+    return data.data;
+  },
+};
+
+// ----------------------------------------------------------
+// Payouts
+// ----------------------------------------------------------
+export const payoutsApi = {
+  getStats: async (): Promise<{
+    available: number;
+    pending: number;
+    lifetime: number;
+  }> => {
+    const { data } = await apiClient.get<ApiResponse<{
+      available: number;
+      pending: number;
+      lifetime: number;
+    }>>('/payouts/stats');
+    return data.data;
+  },
+
+  list: async (): Promise<Array<{
+    id: string;
+    date: string;
+    amount: number;
+    method: string;
+    status: 'PAID' | 'PENDING' | 'PROCESSING';
+  }>> => {
+    const { data } = await apiClient.get<ApiResponse<Array<{
+      id: string;
+      date: string;
+      amount: number;
+      method: string;
+      status: 'PAID' | 'PENDING' | 'PROCESSING';
+    }>>>('/payouts/history');
     return data.data;
   },
 };
@@ -849,17 +895,11 @@ export const usersApi = {
     return data.data;
   },
   requestDataExport: async (): Promise<{ message: string; downloadUrl?: string }> => {
-    try {
-      const { data } = await apiClient.post<ApiResponse<{ message: string; downloadUrl?: string }>>(
-        '/users/me/export-data',
-      );
-      return data.data;
-    } catch {
-      // Fallback response when endpoint is mock / offline
-      return {
-        message: "Your data export is being prepared, you'll receive an email when ready",
-      };
-    }
+    // No blanket catch - let errors propagate to the UI (#551)
+    const { data } = await apiClient.post<ApiResponse<{ message: string; downloadUrl?: string }>>(
+      '/users/me/export-data',
+    );
+    return data.data;
   },
 };
 
