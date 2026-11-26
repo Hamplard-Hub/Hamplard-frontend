@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Facebook, Mail } from 'lucide-react';
+import { FieldError, FormField, Input } from '@/components/ui/form';
 
 type SignupValues = {
   name: string;
@@ -91,85 +92,51 @@ export default function SignupPage() {
             </p>
 
             <form className="space-y-4" onSubmit={onSubmit} noValidate>
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-[#26215C]" htmlFor="name">
-                  Full name
-                </label>
-                <input
-                  id="name"
+              <FormField id="name" label="Full name" error={errors.name}>
+                <Input
                   type="text"
                   value={values.name}
                   onChange={(event) => setValues((prev) => ({ ...prev, name: event.target.value }))}
                   onBlur={() => validate(values)}
-                  className={`w-full rounded-xl border px-4 py-2.5 text-sm text-[#26215C] outline-none transition ${
-                    errors.name ? 'border-red-400 bg-red-50/40' : 'border-[#D3D0F2] focus:border-[#7F77DD]'
-                  }`}
                   placeholder="Your full name"
-                  aria-invalid={!!errors.name}
                 />
-                {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name}</p>}
-              </div>
+              </FormField>
 
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-[#26215C]" htmlFor="email">
-                  Email
-                </label>
-                <input
-                  id="email"
+              <FormField id="email" label="Email" error={errors.email}>
+                <Input
                   type="email"
                   value={values.email}
                   onChange={(event) => setValues((prev) => ({ ...prev, email: event.target.value }))}
                   onBlur={() => validate(values)}
-                  className={`w-full rounded-xl border px-4 py-2.5 text-sm text-[#26215C] outline-none transition ${
-                    errors.email ? 'border-red-400 bg-red-50/40' : 'border-[#D3D0F2] focus:border-[#7F77DD]'
-                  }`}
                   placeholder="you@example.com"
-                  aria-invalid={!!errors.email}
                 />
-                {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
-              </div>
+              </FormField>
 
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-[#26215C]" htmlFor="password">
-                  Password
-                </label>
-                <input
-                  id="password"
+              <FormField id="password" label="Password" error={errors.password}>
+                <Input
                   type="password"
                   value={values.password}
                   onChange={(event) => setValues((prev) => ({ ...prev, password: event.target.value }))}
                   onBlur={() => validate(values)}
-                  className={`w-full rounded-xl border px-4 py-2.5 text-sm text-[#26215C] outline-none transition ${
-                    errors.password ? 'border-red-400 bg-red-50/40' : 'border-[#D3D0F2] focus:border-[#7F77DD]'
-                  }`}
                   placeholder="Create a password"
-                  aria-invalid={!!errors.password}
                 />
-                {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
-              </div>
+              </FormField>
 
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-[#26215C]" htmlFor="confirmPassword">
-                  Confirm Password
-                </label>
-                <input
-                  id="confirmPassword"
+              <FormField id="confirmPassword" label="Confirm Password" error={errors.confirmPassword}>
+                <Input
                   type="password"
                   value={values.confirmPassword}
                   onChange={(event) => setValues((prev) => ({ ...prev, confirmPassword: event.target.value }))}
                   onBlur={() => validate(values)}
-                  className={`w-full rounded-xl border px-4 py-2.5 text-sm text-[#26215C] outline-none transition ${
-                    errors.confirmPassword ? 'border-red-400 bg-red-50/40' : 'border-[#D3D0F2] focus:border-[#7F77DD]'
-                  }`}
                   placeholder="Confirm your password"
-                  aria-invalid={!!errors.confirmPassword}
                 />
-                {errors.confirmPassword && <p className="mt-1 text-xs text-red-600">{errors.confirmPassword}</p>}
-              </div>
+              </FormField>
 
               <label className="inline-flex items-start gap-2 text-sm text-[#26215C]">
                 <input
                   type="checkbox"
+                  aria-invalid={errors.acceptTerms ? true : undefined}
+                  aria-describedby={errors.acceptTerms ? 'acceptTerms-error' : undefined}
                   checked={values.acceptTerms}
                   onChange={(event) => setValues((prev) => ({ ...prev, acceptTerms: event.target.checked }))}
                   className="mt-0.5 h-4 w-4 rounded border-[#B3ADDF] text-[#7F77DD] focus:ring-[#7F77DD]"
@@ -182,7 +149,9 @@ export default function SignupPage() {
                   .
                 </span>
               </label>
-              {errors.acceptTerms && <p className="text-xs text-red-600">{errors.acceptTerms}</p>}
+              <FieldError id="acceptTerms-error" className="mt-0">
+                {errors.acceptTerms}
+              </FieldError>
 
               <button
                 type="submit"

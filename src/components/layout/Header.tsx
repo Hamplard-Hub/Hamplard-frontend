@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
@@ -431,9 +432,11 @@ export function Header() {
                           className="group block overflow-hidden rounded-md bg-white shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary"
                         >
                           {activeFeaturedCourse.thumbnailUrl ? (
-                            <img
+                            <Image
                               src={activeFeaturedCourse.thumbnailUrl}
                               alt=""
+                              width={320}
+                              height={180}
                               className="aspect-video w-full object-cover"
                             />
                           ) : (
@@ -586,9 +589,11 @@ export function Header() {
                       aria-label="Loading user"
                     />
                   ) : user?.avatarUrl ? (
-                    <img
+                    <Image
                       src={user.avatarUrl}
                       alt={`${user?.name ?? 'User'} avatar`}
+                      width={32}
+                      height={32}
                       className="h-8 w-8 rounded-full object-cover ring-2 ring-white/20"
                     />
                   ) : (
@@ -810,9 +815,11 @@ export function Header() {
                   className="mt-2 flex items-center gap-3 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary"
                 >
                   {activeFeaturedCourse?.thumbnailUrl ? (
-                    <img
+                    <Image
                       src={activeFeaturedCourse.thumbnailUrl}
                       alt=""
+                      width={80}
+                      height={56}
                       className="h-14 w-20 flex-shrink-0 rounded object-cover"
                     />
                   ) : (

@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import React, { useState } from 'react';
 import {
@@ -101,10 +102,13 @@ export function ProjectModal({
 
           {/* Left Column: Full Project Image */}
           <div className="relative flex-1 bg-ink-950 flex items-center justify-center min-h-[320px] lg:min-h-[560px]">
-            <img
+            <Image
               src={project.imageUrl}
               alt={project.title}
-              className="max-h-[85vh] w-full object-contain"
+              width={1200}
+              height={900}
+              unoptimized
+              className="max-h-[85vh] h-auto w-full object-contain"
             />
           </div>
 
@@ -116,9 +120,11 @@ export function ProjectModal({
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   {project.studentAvatar ? (
-                    <img
+                    <Image
                       src={project.studentAvatar}
                       alt={project.studentName}
+                      width={40}
+                      height={40}
                       className="h-10 w-10 rounded-full object-cover border border-saffron-200"
                     />
                   ) : (

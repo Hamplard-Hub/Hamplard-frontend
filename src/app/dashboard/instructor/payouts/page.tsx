@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { DollarSign, Clock, TrendingUp, CreditCard, Wallet, CheckCircle } from 'lucide-react';
+import { DollarSign, Clock, TrendingUp, CreditCard, Wallet, CheckCircle, AlertCircle } from 'lucide-react';
 import { formatUsdc } from '@/lib/utils';
+import { payoutsApi } from '@/lib/api/services';
 
 interface PayoutRecord {
   id: string;
@@ -17,18 +18,6 @@ interface PayoutStats {
   pending: number;
   lifetime: number;
 }
-
-const MOCK_STATS: PayoutStats = {
-  available: 125000,
-  pending: 43000,
-  lifetime: 890000,
-};
-
-const MOCK_HISTORY: PayoutRecord[] = [
-  { id: 'pay_001', date: '2024-12-01', amount: 75000, method: 'Stellar (XLM)', status: 'PAID' },
-  { id: 'pay_002', date: '2024-11-01', amount: 60000, method: 'Bank Transfer', status: 'PAID' },
-  { id: 'pay_003', date: '2024-10-01', amount: 55000, method: 'Stellar (XLM)', status: 'PAID' },
-];
 
 const statusClass: Record<PayoutRecord['status'], string> = {
   PAID: 'bg-green-100 text-green-700',
@@ -48,6 +37,7 @@ export default function InstructorPayoutsPage() {
   const [stats, setStats] = useState<PayoutStats | null>(null);
   const [history, setHistory] = useState<PayoutRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [payoutMethod, setPayoutMethod] = useState<'stellar' | 'bank' | null>(null);
   const [stellarAddress, setStellarAddress] = useState('');
   const [bankDetails, setBankDetails] = useState('');
@@ -55,12 +45,24 @@ export default function InstructorPayoutsPage() {
   const [requestSent, setRequestSent] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setStats(MOCK_STATS);
-      setHistory(MOCK_HISTORY);
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
+    const fetchPayoutData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const [statsData, historyData] = await Promise.all([
+          payoutsApi.getStats(),
+          payoutsApi.list(),
+        ]);
+        setStats(statsData);
+        setHistory(historyData);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load payout data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPayoutData();
   }, []);
 
   const handleSaveMethod = () => {
@@ -70,6 +72,21 @@ export default function InstructorPayoutsPage() {
   const handleRequestPayout = () => {
     setRequestSent(true);
   };
+
+  if (error) {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="section-heading">Payouts</h1>
+        </div>
+        <div className="card p-10 text-center">
+          <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
+          <p className="text-sm font-medium text-red-700 mb-2">Failed to load payout data</p>
+          <p className="text-xs text-ink-500">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

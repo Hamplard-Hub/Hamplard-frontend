@@ -85,13 +85,16 @@ apiClient.interceptors.response.use(
       }
     }
 
+    // Invalid credentials from a login request are form errors, not expired sessions.
+    const isLoginRequest = /^\/auth\/(?:email\/)?login(?:[/?#]|$)/.test(config?.url ?? '');
+
     // Redirect to login on 401 (only after retries are exhausted / not retryable)
-    if (err.response?.status === 401 && typeof window !== 'undefined') {
-      const currentPath = window.location.pathname;
+    if (err.response?.status === 401 && !isLoginRequest && typeof window !== 'undefined') {
+      const currentPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
       // Clear the full session via the store so the cookie is also removed.
       useAuthStore.getState().logout();
       // Avoid a redirect loop when already on /login.
-      if (currentPath !== '/login') {
+      if (window.location.pathname !== '/login') {
         const url = new URL('/login', window.location.href);
         // Only allow same-origin callback paths to prevent open-redirect.
         if (currentPath.startsWith('/')) {

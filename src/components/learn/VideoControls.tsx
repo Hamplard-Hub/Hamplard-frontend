@@ -134,6 +134,7 @@ export function VideoControls({
           value={speed}
           onChange={(e) => onSpeed(parseFloat(e.target.value))}
           className="block min-h-11 bg-transparent text-white text-xs cursor-pointer outline-none border border-white/20 rounded px-2 hover:border-white/50 transition-colors"
+          className="block bg-transparent text-white text-xs cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/70 border border-white/20 rounded px-1 py-0.5 hover:border-white/50 transition-colors"
           aria-label="Playback speed"
         >
           {SPEEDS.map((s) => (

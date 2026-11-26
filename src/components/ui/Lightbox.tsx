@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
@@ -239,11 +240,13 @@ export function Lightbox({
             transformOrigin: 'center center',
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={currentImage.src}
             alt={currentImage.alt || currentImage.title || `Gallery image ${currentIndex + 1}`}
-            className="max-h-[75vh] max-w-[90vw] object-contain rounded-lg shadow-2xl transition-all"
+            width={1200}
+            height={800}
+            unoptimized
+            className="max-h-[75vh] max-w-[90vw] h-auto w-auto object-contain rounded-lg shadow-2xl transition-all"
             draggable={false}
           />
         </div>
@@ -288,10 +291,12 @@ export function Lightbox({
                 )}
                 aria-label={`Jump to image ${idx + 1}`}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src={img.src}
                   alt={img.alt || `Thumbnail ${idx + 1}`}
+                  width={48}
+                  height={48}
+                  unoptimized
                   className="h-full w-full object-cover"
                 />
               </button>
@@ -328,12 +333,12 @@ export function StepImageGallery({ images, className = '' }: StepGalleryProps) {
             className="group relative aspect-video rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             aria-label={`View full-size image: ${img.title || `Image ${idx + 1}`}`}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={img.src}
               alt={img.alt || img.title || `Gallery preview ${idx + 1}`}
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-              loading="lazy"
+              fill
+              sizes="(max-width: 640px) 50vw, 33vw"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
               <span className="p-2 rounded-full bg-black/60 text-white backdrop-blur-sm shadow-sm">

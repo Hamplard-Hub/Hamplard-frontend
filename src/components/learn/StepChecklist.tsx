@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Check, Clock, Play, ListChecks, Maximize2 } from 'lucide-react';
@@ -260,9 +261,11 @@ export function StepChecklist({
                     className="group relative mt-2.5 overflow-hidden rounded-lg border border-ink-100 max-w-xs block text-left focus:outline-none focus:ring-2 focus:ring-hamplard-primary"
                     aria-label={`Enlarge image for ${step.title}`}
                   >
-                    <img
+                    <Image
                       src={step.imageUrl}
                       alt={step.title}
+                      width={400}
+                      height={192}
                       className="w-full h-auto object-cover max-h-48 transition-transform duration-200 group-hover:scale-105"
                       loading="lazy"
                     />

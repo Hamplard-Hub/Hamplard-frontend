@@ -39,3 +39,5 @@ export { ProgressRing } from './ProgressRing';
 export type { ProgressRingProps } from './ProgressRing';
 export { EmptyState } from './EmptyState';
 export type { EmptyStateProps } from './EmptyState';
+export { Drawer } from './Drawer';
+export type { DrawerProps, DrawerSide } from './Drawer';

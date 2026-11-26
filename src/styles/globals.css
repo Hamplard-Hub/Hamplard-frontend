@@ -71,6 +71,20 @@
     letter-spacing: var(--type-h6-letter-spacing);
     font-weight: var(--type-h6-font-weight);
   }
+
+  /*
+   * Global keyboard focus indicator. Applies to every focusable element that
+   * does not opt out with an `outline-none` utility; elements that do opt out
+   * must supply their own `focus-visible:ring-*` replacement.
+   */
+  :focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+  /* Mouse/touch focus should not draw the keyboard ring. */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
 }
 
 @layer components {
@@ -78,6 +92,10 @@
     @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm transition-all duration-150 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98];
     border-radius: var(--radius-xl);
     font-weight: var(--font-weight-medium);
+  }
+  /* `.btn` removes the outline, so every variant gets a focus ring instead. */
+  .btn:focus-visible {
+    box-shadow: var(--shadow-focus);
   }
   .btn-primary {
     @apply btn;

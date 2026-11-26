@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import React from 'react';
 import { Heart, MessageCircle, Flag } from 'lucide-react';
@@ -25,11 +26,12 @@ export function ProjectCard({
     >
       {/* Image Container with overlays */}
       <div className="relative overflow-hidden bg-ink-100 aspect-[4/3]">
-        <img
+        <Image
           src={project.imageUrl}
           alt={project.title}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-          loading="lazy"
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
 
         {/* Hover overlay with action buttons */}
@@ -60,9 +62,11 @@ export function ProjectCard({
         <div className="flex items-center justify-between pt-2 border-t border-ink-100 text-xs">
           <div className="flex items-center gap-2">
             {project.studentAvatar ? (
-              <img
+              <Image
                 src={project.studentAvatar}
                 alt={project.studentName}
+                width={24}
+                height={24}
                 className="h-6 w-6 rounded-full object-cover"
               />
             ) : (

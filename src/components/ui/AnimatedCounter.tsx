@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useReducedMotion } from "@/lib/hooks/use-reduced-motion";
 
 export interface AnimatedCounterProps {
   value: number;
@@ -17,26 +18,27 @@ export function AnimatedCounter({
   duration = 2000,
   className,
 }: AnimatedCounterProps) {
-  const [display, setDisplay] = useState(0);
+  const { prefersReducedMotion, mounted } = useReducedMotion();
+  const [display, setDisplay] = useState(prefersReducedMotion ? value : 0);
   const ref = useRef<HTMLSpanElement>(null);
   const hasRun = useRef(false);
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    if (prefersReducedMotion) {
+      setDisplay(value);
+      return;
+    }
+  }, [prefersReducedMotion, value]);
 
-    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || prefersReducedMotion) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting || hasRun.current) return;
         hasRun.current = true;
         observer.disconnect();
-
-        if (prefersReduced) {
-          setDisplay(value);
-          return;
-        }
 
         const start = performance.now();
         const tick = (now: number) => {
@@ -54,7 +56,7 @@ export function AnimatedCounter({
 
     observer.observe(el);
     return () => observer.disconnect();
-  }, [value, duration]);
+  }, [value, duration, prefersReducedMotion, mounted]);
 
   return (
     <span ref={ref} className={className}>

@@ -4,11 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   Check,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Filter,
   RotateCcw,
   X,
+  XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { shuffleQuestions } from "@/lib/quiz";
@@ -239,9 +241,19 @@ export function QuizComponent({
           {percentage}%
         </div>
 
-        <h2 className="mt-4 text-xl font-semibold text-ink-900">
-          {passed ? "Congratulations!" : "Keep trying"}
-        </h2>
+        <div className="mt-4 flex items-center gap-2">
+          {passed ? (
+            <CheckCircle2 className="h-5 w-5 text-emerald-700" aria-hidden="true" />
+          ) : (
+            <XCircle className="h-5 w-5 text-rose-700" aria-hidden="true" />
+          )}
+          <h2 className="text-xl font-semibold text-ink-900">
+            {passed ? "Congratulations!" : "Keep trying"}
+          </h2>
+        </div>
+        <p className="mt-1 text-sm font-medium text-ink-700">
+          {passed ? "Passed" : "Not passed"}
+        </p>
         <p className="mt-1 text-sm text-ink-500">
           You scored {score} out of {total} ({percentage}%)
           {passed
@@ -404,8 +416,11 @@ export function QuizComponent({
                           {wasSelected && !isOptCorrect && <X className="h-3 w-3 flex-shrink-0 text-rose-500" aria-hidden="true" />}
                           {!isOptCorrect && !wasSelected && <span className="h-3 w-3 flex-shrink-0" />}
                           {opt.text}
+                          {isOptCorrect && !wasSelected && (
+                            <span className="ml-1 text-emerald-700">(correct answer)</span>
+                          )}
                           {wasSelected && isOptCorrect && (
-                            <span className="ml-1 text-emerald-600">(your answer ✓)</span>
+                            <span className="ml-1 text-emerald-700">(your correct answer)</span>
                           )}
                           {wasSelected && !isOptCorrect && (
                             <span className="ml-1 text-rose-500">(your answer)</span>

@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import React, { useState } from 'react';
 import { Upload, X, Sparkles, Image as ImageIcon, Loader2 } from 'lucide-react';
@@ -174,9 +175,12 @@ export function SubmitShowcaseModal({
           {/* Preview Image */}
           {imageUrl && (
             <div className="overflow-hidden rounded-2xl border border-ink-100 aspect-video bg-ink-50">
-              <img
+              <Image
                 src={imageUrl}
                 alt="Preview"
+                width={640}
+                height={360}
+                unoptimized
                 className="h-full w-full object-cover"
                 onError={() => {
                   toast.error({ title: 'Invalid image URL', description: 'Could not load image preview.' });

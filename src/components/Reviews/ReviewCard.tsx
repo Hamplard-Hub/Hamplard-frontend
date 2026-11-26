@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import { useState } from 'react';
 import { Star, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
@@ -150,9 +151,11 @@ export function ReviewCard({ review, defaultExpanded = false, className }: Revie
       {/* ── Header: avatar + name + stars + date ── */}
       <div className="flex items-start gap-3">
         {review.authorAvatarUrl ? (
-          <img
+          <Image
             src={review.authorAvatarUrl}
             alt={`${review.authorName} avatar`}
+            width={36}
+            height={36}
             className="w-9 h-9 rounded-full object-cover shrink-0"
           />
         ) : (
@@ -210,9 +213,11 @@ export function ReviewCard({ review, defaultExpanded = false, className }: Revie
           {/* Reply header */}
           <div className="flex items-start gap-2.5">
             {review.instructorReply!.avatarUrl ? (
-              <img
+              <Image
                 src={review.instructorReply!.avatarUrl}
                 alt={`${review.instructorReply!.name} avatar`}
+                width={28}
+                height={28}
                 className="w-7 h-7 rounded-full object-cover shrink-0"
               />
             ) : (

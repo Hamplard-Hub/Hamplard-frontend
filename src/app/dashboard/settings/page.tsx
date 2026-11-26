@@ -10,6 +10,8 @@ import {
   Trash2,
   CreditCard,
   ChevronRight,
+  CheckCircle2,
+  XCircle,
   Zap,
   Download,
 } from 'lucide-react';
@@ -328,11 +330,16 @@ export default function SettingsPage() {
             <Shield className="w-5 h-5 text-saffron-600" />
             <h2 className="text-lg font-semibold text-ink-900">Two-Factor Authentication</h2>
           </div>
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
             twoFactorEnabled
               ? 'bg-emerald-100 text-emerald-700'
               : 'bg-amber-100 text-amber-700'
           }`}>
+            {twoFactorEnabled ? (
+              <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
+            ) : (
+              <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
+            )}
             {twoFactorEnabled ? 'Enabled' : 'Disabled'}
           </span>
         </div>
