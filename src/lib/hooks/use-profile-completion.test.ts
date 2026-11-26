@@ -133,12 +133,12 @@ describe('useProfileCompletion', () => {
       expect(result.current.totalCount).toBe(5);
     });
 
-    it('payout method links to settings page', () => {
+    it('payout method links to payouts page', () => {
       const user = mockUser({ role: 'INSTRUCTOR' });
       const { result } = renderHook(() => useProfileCompletion(user, 'INSTRUCTOR'));
 
       const payoutItem = result.current.items.find((i) => i.key === 'payout');
-      expect(payoutItem?.href).toBe('/dashboard/settings');
+      expect(payoutItem?.href).toBe('/dashboard/instructor/payouts');
     });
 
     it('returns 100% when all items including payout are set', () => {

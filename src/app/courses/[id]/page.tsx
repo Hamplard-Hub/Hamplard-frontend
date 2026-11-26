@@ -10,6 +10,11 @@ import { CurriculumAccordion } from '@/components/courses/CurriculumAccordion';
 // Metadata and JSON-LD are handled by the server layout at
 // src/app/courses/[id]/layout.tsx — no need to duplicate them here.
 
+// ── ISR Configuration ──────────────────────────────────────────────────────
+// Revalidate course pages every 5 minutes (300 seconds)
+// This balances fresh content with reduced API load
+export const revalidate = 300;
+
 interface Props {
   params: {
     id: string;

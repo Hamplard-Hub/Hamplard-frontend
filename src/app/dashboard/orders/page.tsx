@@ -156,3 +156,35 @@ export default function OrdersPage() {
     </div>
   );
 }
+
+export interface OrderItem {
+  id: string;
+  name: string;
+  quantity: number;
+  price: number;
+  image?: string;
+}
+
+export interface Order {
+  id: string;
+  orderNumber: string;
+  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  total: number;
+  currency: string;
+  createdAt: string;
+  items: OrderItem[];
+}
+
+export interface OrdersResponse {
+  data: Order[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface OrdersParams {
+  page?: number;
+  limit?: number;
+  status?: string;
+}

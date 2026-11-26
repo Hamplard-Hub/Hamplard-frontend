@@ -183,7 +183,7 @@ export function TwoFactorSetup() {
                 setCode(e.target.value.replace(/\D/g, '').slice(0, 6));
                 if (codeError) setCodeError('');
               }}
-              className={`w-full rounded-xl border px-4 py-3 text-center text-2xl font-semibold tracking-widest outline-none transition ${
+              className={`w-full rounded-xl border px-4 py-3 text-center text-2xl font-semibold tracking-widest outline-none focus-visible:ring-2 focus-visible:ring-[#7F77DD]/40 transition ${
                 codeError
                   ? 'border-red-400 bg-red-50/40'
                   : 'border-[#D3D0F2] focus:border-[#7F77DD]'

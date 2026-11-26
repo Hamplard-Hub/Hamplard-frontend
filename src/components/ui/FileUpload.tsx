@@ -69,6 +69,12 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1024 ** i).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
 function matchesAccept(file: File, accept?: string[]): boolean {
   if (!accept || accept.length === 0) return true;
   return accept.some((pattern) => {
@@ -350,10 +356,10 @@ export function FileUpload({
     };
   }, []);
   function handleRetry(item: UploadItem) {
+    const updatedItem = { ...item, status: 'uploading' as ItemStatus, progress: 0, errorMessage: undefined };
     updateItem(item.id, { status: 'uploading', progress: 0, errorMessage: undefined });
     onUploadStart?.();
-    startUpload({ ...item, status: 'uploading', progress: 0 });
-    startUpload({ ...item, status: 'uploading', progress: 0, errorMessage: undefined });
+    startUpload(updatedItem);
   }
 
   function handleCancel(item: UploadItem) {
@@ -409,14 +415,16 @@ export function FileUpload({
         className={cn(
           'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 text-center transition-colors',
           dragActive
-            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'
-            : 'border-slate-300 hover:border-indigo-400 dark:border-slate-700',
+            ? 'border-hamplard-primary bg-hamplard-lilac'
+            : 'border-ink-200 bg-ink-50 hover:border-hamplard-primary/50 dark:border-slate-700',
         )}
       >
-        <UploadCloud className="h-8 w-8 text-indigo-500" aria-hidden="true" />
-        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{label}</span>
+        <UploadCloud className="h-8 w-8 text-hamplard-primary" aria-hidden="true" />
+        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+          Drag & drop or click to upload
+        </span>
         <span className="text-xs text-slate-500 dark:text-slate-400">
-          {hint ?? `Drag & drop or click to browse · ${describeAccept(accept)} · up to ${formatBytes(maxSizeBytes)}`}
+          {hint ?? `${describeAccept(accept)} · up to ${formatBytes(maxSizeBytes)}`}
         </span>
         <input
           id={inputId}
@@ -471,7 +479,7 @@ export function FileUpload({
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     {formatBytes(item.file.size)}
-                    {item.videoDuration != null && ` · ${item.videoDuration}s`}
+                    {item.videoDuration != null && ` · ${formatDuration(item.videoDuration)}`}
                   </p>
 
                   <p className={cn(
@@ -512,6 +520,11 @@ export function FileUpload({
                       />
                     </div>
                   )}
+                  {item.status === 'uploading' && (
+                    <p className="mt-1 text-xs text-slate-500">
+                      {item.progress}%
+                    </p>
+                  )}
 
                   {item.status === 'error' && item.errorMessage && (
                     <p className="mt-1 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
@@ -523,7 +536,7 @@ export function FileUpload({
 
                 <div className="flex shrink-0 items-center gap-1">
                   {item.status === 'success' && (
-                    <CheckCircle2 className="h-5 w-5 text-emerald-500" aria-hidden="true" />
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500" aria-label="Upload complete" />
                   )}
                   {item.status === 'error' && item.retryable && (
                     <button

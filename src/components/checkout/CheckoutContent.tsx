@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { PaymentForm } from '@/components/checkout/PaymentForm';
-import { StripeProvider } from '@/components/checkout/StripeProvider';
+import { StripeProviderDynamic } from '@/components/checkout/StripeProviderDynamic';
 import { StepProgress, type CheckoutStep } from '@/components/checkout/StepProgress';
 import { OrderReview } from '@/components/checkout/OrderReview';
 import { ConfirmationStep } from '@/components/checkout/ConfirmationStep';
@@ -71,7 +71,7 @@ export function CheckoutContent() {
         <div className="flex items-center justify-start">
           <button
             onClick={handlePreviousStep}
-            className="inline-flex items-center gap-1.5 text-sm text-ink-600 hover:text-ink-900 transition-colors focus:outline-none focus:underline"
+            className="inline-flex items-center gap-1.5 text-sm text-ink-600 hover:text-ink-900 rounded transition-colors focus:outline-none focus:underline focus-visible:ring-2 focus-visible:ring-hamplard-primary"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to order review
@@ -105,13 +105,13 @@ export function CheckoutContent() {
               </div>
             )}
 
-            <StripeProvider>
+            <StripeProviderDynamic>
               <PaymentForm
                 amount={totalCents}
                 onSuccess={handlePaymentSuccess}
                 className="mt-6"
               />
-            </StripeProvider>
+            </StripeProviderDynamic>
           </section>
 
           {/* Order summary sidebar */}

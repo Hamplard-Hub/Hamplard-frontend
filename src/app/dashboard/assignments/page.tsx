@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ClipboardList, CheckCircle, Clock, Star } from 'lucide-react';
+import { ClipboardList, CheckCircle, Clock, Star, AlertCircle } from 'lucide-react';
+import { assignmentsApi } from '@/lib/api/services';
 
 type AssignmentStatus = 'todo' | 'submitted' | 'reviewed';
 
@@ -16,53 +17,6 @@ interface Assignment {
   status: AssignmentStatus;
   grade?: number;
 }
-
-const MOCK_ASSIGNMENTS: Assignment[] = [
-  {
-    id: 'asn_001',
-    title: 'Price your first product',
-    course: 'Cake Pricing Mastery',
-    courseId: 'course_001',
-    lessonId: 'lesson_003',
-    dueDate: '2025-01-15',
-    status: 'todo',
-  },
-  {
-    id: 'asn_002',
-    title: 'Design a basic pattern',
-    course: 'Introduction to Tailoring',
-    courseId: 'course_003',
-    lessonId: 'lesson_005',
-    dueDate: '2025-01-20',
-    status: 'todo',
-  },
-  {
-    id: 'asn_003',
-    title: 'Create a social media post',
-    course: 'Social Media for Artisans',
-    courseId: 'course_005',
-    lessonId: 'lesson_002',
-    status: 'submitted',
-  },
-  {
-    id: 'asn_004',
-    title: 'Write your business elevator pitch',
-    course: 'Business Basics for Artisans',
-    courseId: 'course_002',
-    lessonId: 'lesson_007',
-    status: 'reviewed',
-    grade: 92,
-  },
-  {
-    id: 'asn_005',
-    title: 'Draft your first invoice',
-    course: 'Business Basics for Artisans',
-    courseId: 'course_002',
-    lessonId: 'lesson_010',
-    status: 'reviewed',
-    grade: 88,
-  },
-];
 
 const TABS: Array<{ key: AssignmentStatus; label: string; icon: typeof ClipboardList }> = [
   { key: 'todo', label: 'To do', icon: Clock },
@@ -82,16 +36,42 @@ export default function AssignmentsPage() {
   const [activeTab, setActiveTab] = useState<AssignmentStatus>('todo');
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setAssignments(MOCK_ASSIGNMENTS);
-      setLoading(false);
-    }, 400);
-    return () => clearTimeout(timer);
+    const fetchAssignments = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await assignmentsApi.listForCurrentStudent();
+        setAssignments(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load assignments');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAssignments();
   }, []);
 
   const filtered = assignments.filter((a) => a.status === activeTab);
+
+  if (error) {
+    return (
+      <div>
+        <div className="flex items-center gap-3 mb-6">
+          <ClipboardList className="w-6 h-6 text-saffron-600" />
+          <h1 className="section-heading">Assignments</h1>
+        </div>
+        <div className="card p-10 text-center">
+          <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
+          <p className="text-sm font-medium text-red-700 mb-2">Failed to load assignments</p>
+          <p className="text-xs text-ink-500">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

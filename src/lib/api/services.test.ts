@@ -297,4 +297,352 @@ describe('Payment Methods API', () => {
       ).rejects.toThrow();
     });
   });
+export interface Course {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  level: string;
+  price: number;
+  currency: string;
+  image?: string;
+  instructor?: string;
+  duration?: string;
+}
+
+export interface CoursesParams {
+  search?: string;
+  category?: string;
+  level?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  page?: number;
+  limit?: number;
+}
+
+export interface CoursesResponse {
+  data: Course[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 });
+
+import { apiClient } from "@/lib/api/client";
+import type {
+  CoursesParams,
+  CoursesResponse,
+} from "@/types/course";
+
+export const coursesApi = {
+  async getCourses(
+    params: CoursesParams = {}
+  ): Promise<CoursesResponse> {
+    const response = await apiClient.get("/courses", {
+      params: {
+        search: params.search,
+        category: params.category,
+        level: params.level,
+        minPrice: params.minPrice,
+        maxPrice: params.maxPrice,
+        page: params.page ?? 1,
+        limit: params.limit ?? 12,
+      },
+    });
+
+    return response.data;
+  },
+
+  async getCourseById(id: string) {
+    const response = await apiClient.get(`/courses/${id}`);
+
+    return response.data;
+  },
+};
+
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+} from "vitest";
+
+import { coursesApi } from "./courses";
+import { apiClient } from "./client";
+
+vi.mock("./client", () => ({
+  apiClient: {
+    get: vi.fn(),
+  },
+}));
+
+describe("coursesApi", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("fetches courses with default pagination", async () => {
+    const mockResponse = {
+      data: [],
+      total: 0,
+      page: 1,
+      limit: 12,
+      totalPages: 0,
+    };
+
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: mockResponse,
+    });
+
+    const result = await coursesApi.getCourses();
+
+    expect(apiClient.get).toHaveBeenCalledWith(
+      "/courses",
+      {
+        params: {
+          search: undefined,
+          category: undefined,
+          level: undefined,
+          minPrice: undefined,
+          maxPrice: undefined,
+          page: 1,
+          limit: 12,
+        },
+      }
+    );
+
+    expect(result).toEqual(mockResponse);
+  });
+
+  it("passes search and filter parameters", async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: {
+        data: [],
+        total: 0,
+        page: 1,
+        limit: 12,
+        totalPages: 0,
+      },
+    });
+
+    await coursesApi.getCourses({
+      search: "programming",
+      category: "technology",
+      level: "beginner",
+      minPrice: 100,
+      maxPrice: 500,
+      page: 2,
+      limit: 12,
+    });
+
+    expect(apiClient.get).toHaveBeenCalledWith(
+      "/courses",
+      {
+        params: {
+          search: "programming",
+          category: "technology",
+          level: "beginner",
+          minPrice: 100,
+          maxPrice: 500,
+          page: 2,
+          limit: 12,
+        },
+      }
+    );
+  });
+
+  it("fetches an individual course", async () => {
+    const mockCourse = {
+      id: "course-1",
+      title: "Introduction to Programming",
+    };
+
+    vi.mocked(apiClient.get).mockResolvedValue({
+      data: mockCourse,
+    });
+
+    const result = await coursesApi.getCourseById("course-1");
+
+    expect(apiClient.get).toHaveBeenCalledWith(
+      "/courses/course-1"
+    );
+
+    expect(result).toEqual(mockCourse);
+  });
+
+  it("propagates API errors", async () => {
+    vi.mocked(apiClient.get).mockRejectedValue(
+      new Error("Failed to fetch courses")
+    );
+
+    await expect(
+      coursesApi.getCourses()
+    ).rejects.toThrow("Failed to fetch courses");
+  });
+});
+
+"use client";
+
+import { useState } from "react";
+import { useCourses } from "@/hooks/use-courses";
+
+export default function SearchPage() {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("");
+  const [level, setLevel] = useState("");
+  const [page, setPage] = useState(1);
+
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useCourses({
+    search,
+    category,
+    level,
+    page,
+    limit: 12,
+  });
+
+  if (isLoading) {
+    return <p>Loading courses...</p>;
+  }
+
+  if (isError) {
+    return (
+      <div>
+        <p>
+          {error instanceof Error
+            ? error.message
+            : "Unable to load courses."}
+        </p>
+
+        <button onClick={() => refetch()}>
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  const courses = data?.data ?? [];
+
+  return (
+    <main className="p-6">
+      <h1 className="text-2xl font-bold mb-6">
+        Explore Courses
+      </h1>
+
+      <input
+        type="search"
+        placeholder="Search courses..."
+        value={search}
+        onChange={(event) => {
+          setSearch(event.target.value);
+          setPage(1);
+        }}
+        className="border rounded p-3 w-full mb-4"
+      />
+
+      <div className="flex gap-3 mb-6">
+        <select
+          value={category}
+          onChange={(event) => {
+            setCategory(event.target.value);
+            setPage(1);
+          }}
+          className="border rounded p-2"
+        >
+          <option value="">All Categories</option>
+          <option value="technology">Technology</option>
+          <option value="business">Business</option>
+          <option value="design">Design</option>
+        </select>
+
+        <select
+          value={level}
+          onChange={(event) => {
+            setLevel(event.target.value);
+            setPage(1);
+          }}
+          className="border rounded p-2"
+        >
+          <option value="">All Levels</option>
+          <option value="beginner">Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+      </div>
+
+      {isFetching && (
+        <p className="text-sm text-gray-500 mb-3">
+          Updating results...
+        </p>
+      )}
+
+      {courses.length === 0 ? (
+        <p>No courses found.</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {courses.map((course) => (
+            <article
+              key={course.id}
+              className="border rounded-xl p-4"
+            >
+              {course.image && (
+                <img
+                  src={course.image}
+                  alt={course.title}
+                  className="w-full h-40 object-cover rounded-lg mb-3"
+                />
+              )}
+
+              <h2 className="font-semibold">
+                {course.title}
+              </h2>
+
+              <p className="text-sm text-gray-600">
+                {course.description}
+              </p>
+
+              <p className="mt-3 font-semibold">
+                {new Intl.NumberFormat("en-NG", {
+                  style: "currency",
+                  currency: course.currency,
+                }).format(course.price)}
+              </p>
+            </article>
+          ))}
+        </div>
+      )}
+
+      {data && data.totalPages > 1 && (
+        <div className="flex gap-4 items-center justify-center mt-8">
+          <button
+            disabled={page <= 1}
+            onClick={() => setPage((current) => current - 1)}
+          >
+            Previous
+          </button>
+
+          <span>
+            Page {page} of {data.totalPages}
+          </span>
+
+          <button
+            disabled={page >= data.totalPages}
+            onClick={() => setPage((current) => current + 1)}
+          >
+            Next
+          </button>
+        </div>
+      )}
+    </main>
+  );
+}
+

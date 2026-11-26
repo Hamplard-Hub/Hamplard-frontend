@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
+    "build:analyze": "ANALYZE=true next build",
     "start": "next start --port 3001",
     "typecheck": "tsc --noEmit",
     "lint": "next lint",
@@ -44,11 +45,12 @@
     "react-hook-form": "^7.83.0",
     "recharts": "^2.12.7",
     "tailwind-merge": "^2.2.0",
-    "zod": "^4.4.3",
+    "zod": "^4.6.7",
     "zustand": "^4.5.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.1",
+    "@next/bundle-analyzer": "^14.2.0",
     "@playwright/test": "^1.62.1",
     "@storybook/addon-links": "^10.5.5",
     "@storybook/nextjs": "^10.5.5",
