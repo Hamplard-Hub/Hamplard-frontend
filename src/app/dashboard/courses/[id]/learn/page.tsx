@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useParams, useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
   CheckCircle2, Circle, ChevronDown, ChevronRight,
@@ -34,6 +34,13 @@ const WORDS_PER_MINUTE = 200;
 // SidebarTab type
 type SidebarTab = 'lessons' | 'notes' | 'qa';
 
+const SIDEBAR_TABS: SidebarTab[] = ['lessons', 'notes', 'qa'];
+const SIDEBAR_TAB_LABELS: Record<SidebarTab, string> = {
+  lessons: 'Lessons',
+  notes: 'Notes',
+  qa: 'Q&A',
+};
+
 // Fallback questions shown when a QUIZ lesson has no quiz data
 const DEFAULT_QUIZ_QUESTIONS: QuizQuestion[] = [];
 
@@ -65,6 +72,33 @@ export default function LearnPage() {
   const [marking, setMarking] = useState(false);
   const [markError, setMarkError] = useState<string | null>(null);
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>("lessons");
+  const sidebarTabRefs = useRef<Partial<Record<SidebarTab, HTMLButtonElement | null>>>({});
+
+  // WAI-ARIA tabs pattern: arrow keys move between tabs (with wrap-around),
+  // Home/End jump to the first/last tab. Selection follows focus.
+  const handleSidebarTabKeyDown = useCallback(
+    (e: ReactKeyboardEvent<HTMLButtonElement>, current: SidebarTab) => {
+      const index = SIDEBAR_TABS.indexOf(current);
+      let nextIndex: number | null = null;
+
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        nextIndex = (index + 1) % SIDEBAR_TABS.length;
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        nextIndex = (index - 1 + SIDEBAR_TABS.length) % SIDEBAR_TABS.length;
+      } else if (e.key === 'Home') {
+        nextIndex = 0;
+      } else if (e.key === 'End') {
+        nextIndex = SIDEBAR_TABS.length - 1;
+      }
+
+      if (nextIndex === null) return;
+      e.preventDefault();
+      const next = SIDEBAR_TABS[nextIndex];
+      setSidebarTab(next);
+      sidebarTabRefs.current[next]?.focus();
+    },
+    [],
+  );
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -499,26 +533,49 @@ export default function LearnPage() {
         </div>
 
         {/* Sidebar tab switcher */}
-        <div className="flex border-b border-ink-100 text-xs font-medium">
-          {(['lessons', 'notes', 'qa'] as SidebarTab[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setSidebarTab(tab)}
-              className={cn(
-                'flex-1 py-2 capitalize transition-colors',
-                sidebarTab === tab
-                  ? 'text-saffron-700 border-b-2 border-saffron-500'
-                  : 'text-ink-400 hover:text-ink-700',
-              )}
-            >
-              {tab}
-            </button>
-          ))}
+        <div
+          role="tablist"
+          aria-label="Course sidebar"
+          aria-orientation="horizontal"
+          className="flex border-b border-ink-100 text-xs font-medium"
+        >
+          {SIDEBAR_TABS.map((tab) => {
+            const selected = sidebarTab === tab;
+            return (
+              <button
+                key={tab}
+                ref={(el) => {
+                  sidebarTabRefs.current[tab] = el;
+                }}
+                type="button"
+                role="tab"
+                id={`sidebar-tab-${tab}`}
+                aria-selected={selected}
+                aria-controls={`sidebar-panel-${tab}`}
+                tabIndex={selected ? 0 : -1}
+                onClick={() => setSidebarTab(tab)}
+                onKeyDown={(e) => handleSidebarTabKeyDown(e, tab)}
+                className={cn(
+                  'flex-1 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-saffron-500',
+                  selected
+                    ? 'text-saffron-700 border-b-2 border-saffron-500'
+                    : 'text-ink-400 hover:text-ink-700',
+                )}
+              >
+                {SIDEBAR_TAB_LABELS[tab]}
+              </button>
+            );
+          })}
         </div>
 
         {/* Modules + lessons */}
         {sidebarTab === "lessons" && (
-          <div className="flex-1">
+          <div
+            role="tabpanel"
+            id="sidebar-panel-lessons"
+            aria-labelledby="sidebar-tab-lessons"
+            className="flex-1"
+          >
             {course.modules?.map((module, mIdx) => {
               const lockInfo = getModuleLockInfo(module, mIdx, course.modules ?? [], completedIds);
               const isLocked = lockInfo.isLocked;
@@ -621,20 +678,33 @@ export default function LearnPage() {
           </div>
         )}
 
-        {sidebarTab === "notes" && activeLesson && (
-          <div className="flex-1 overflow-hidden">
-            <NotesPanel
-              courseId={id}
-              lectureId={activeLesson.id}
-              videoRef={videoRef}
-              courseTitle={course.title}
-              lectureTitle={activeLesson.title}
-            />
+        {sidebarTab === "notes" && (
+          <div
+            role="tabpanel"
+            id="sidebar-panel-notes"
+            aria-labelledby="sidebar-tab-notes"
+            className="flex-1 overflow-hidden"
+          >
+            {activeLesson && (
+              <NotesPanel
+                courseId={id}
+                lectureId={activeLesson.id}
+                videoRef={videoRef}
+                courseTitle={course.title}
+                lectureTitle={activeLesson.title}
+              />
+            )}
           </div>
         )}
 
         {sidebarTab === "qa" && (
-          <div className="flex-1 flex items-center justify-center text-ink-400 px-4">
+          <div
+            role="tabpanel"
+            id="sidebar-panel-qa"
+            aria-labelledby="sidebar-tab-qa"
+            tabIndex={0}
+            className="flex-1 flex items-center justify-center text-ink-400 px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-saffron-500"
+          >
             <div className="text-center">
               <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-40" />
               <p className="text-xs">Q&amp;A coming soon</p>
