@@ -349,10 +349,10 @@ export function FileUpload({
     };
   }, []);
   function handleRetry(item: UploadItem) {
+    const updatedItem = { ...item, status: 'uploading' as ItemStatus, progress: 0, errorMessage: undefined };
     updateItem(item.id, { status: 'uploading', progress: 0, errorMessage: undefined });
     onUploadStart?.();
-    startUpload({ ...item, status: 'uploading', progress: 0 });
-    startUpload({ ...item, status: 'uploading', progress: 0, errorMessage: undefined });
+    startUpload(updatedItem);
   }
 
   function handleCancel(item: UploadItem) {

@@ -257,17 +257,19 @@ function ShoppingCartContent({ isOpen = true, onClose }: ShoppingCartProps) {
             </div>
 
             {/* Single checkout button */}
-            <Button
-              fullWidth
-              variant="primary"
-              size="lg"
-              onClick={handleCheckout}
-              disabled={isCheckingOut}
-              icon={<ArrowRight className="w-4 h-4" />}
-              iconPosition="right"
-            >
-              {isCheckingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Proceed to Checkout'}
-            </Button>
+            <Link href="/checkout">
+              <Button
+                fullWidth
+                variant="primary"
+                size="lg"
+                onClick={handleCheckout}
+                disabled={isCheckingOut}
+                icon={<ArrowRight className="w-4 h-4" />}
+                iconPosition="right"
+              >
+                {isCheckingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Proceed to Checkout'}
+              </Button>
+            </Link>
 
             <button
               onClick={clearCart}
