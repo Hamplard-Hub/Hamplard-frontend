@@ -2,15 +2,19 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Mail, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Mail, Clock, CheckCircle2 } from 'lucide-react';
 import { TopBar } from '@/components/layout/TopBar';
 import { useToastContext } from '@/components/ui/ToastProvider';
+import { FormField, Input, Select, Textarea } from '@/components/ui/form';
 import { contactApi } from '@/lib/api/services';
 import { contactFormSchema, type ContactFormData } from '@/lib/validations/contact';
 
 type FormErrors = Partial<Record<keyof ContactFormData, string>>;
 
 const subjects = ['General', 'Billing', 'Technical', 'Instructor', 'Report'] as const;
+
+// Field order used to focus the first invalid field on submit.
+const FIELD_ORDER: Array<keyof ContactFormData> = ['name', 'email', 'subject', 'message'];
 
 export default function ContactPage() {
   const [values, setValues] = useState<ContactFormData>({
@@ -24,18 +28,18 @@ export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const toast = useToastContext();
 
-  const validate = (data: ContactFormData): boolean => {
+  const validate = (data: ContactFormData): FormErrors => {
     try {
       contactFormSchema.parse(data);
       setErrors({});
-      return true;
+      return {};
     } catch (err: any) {
       const nextErrors: FormErrors = {};
       err.errors?.forEach((error: any) => {
         nextErrors[error.path[0] as keyof ContactFormData] = error.message;
       });
       setErrors(nextErrors);
-      return false;
+      return nextErrors;
     }
   };
 
@@ -57,7 +61,12 @@ export default function ContactPage() {
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!validate(values)) return;
+    const nextErrors = validate(values);
+    const firstInvalid = FIELD_ORDER.find((field) => nextErrors[field]);
+    if (firstInvalid) {
+      document.getElementById(firstInvalid)?.focus();
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -128,75 +137,58 @@ export default function ContactPage() {
             ) : (
               <form className="space-y-6" onSubmit={onSubmit} noValidate>
                 {/* Name Field */}
-                <div>
-                  <label className="block text-sm font-medium text-[#26215C]" htmlFor="name">
-                    Full Name
-                  </label>
-                  <input
-                    id="name"
+                <FormField id="name" label="Full Name" error={errors.name} showErrorIcon labelClassName="mb-0">
+                  <Input
                     type="text"
                     value={values.name}
                     onChange={(e) => handleChange('name', e.target.value)}
-                    className={`mt-2 w-full rounded-xl border px-4 py-3 text-sm text-[#26215C] outline-none transition ${
-                      errors.name
-                        ? 'border-red-400 bg-red-50/40 focus:border-red-500'
-                        : 'border-[#D3D0F2] focus:border-[#7F77DD]'
-                    }`}
+                    className="mt-2 py-3"
                     placeholder="John Doe"
                     disabled={isSubmitting}
                     aria-invalid={!!errors.name}
+                    aria-describedby={errors.name ? 'name-error' : undefined}
                   />
                   {errors.name && (
-                    <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-                      <AlertCircle className="h-3 w-3" />
+                    <p id="name-error" className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="h-3 w-3" aria-hidden="true" />
                       {errors.name}
                     </p>
                   )}
                 </div>
+                  />
+                </FormField>
 
                 {/* Email Field */}
-                <div>
-                  <label className="block text-sm font-medium text-[#26215C]" htmlFor="email">
-                    Email Address
-                  </label>
-                  <input
-                    id="email"
+                <FormField id="email" label="Email Address" error={errors.email} showErrorIcon labelClassName="mb-0">
+                  <Input
                     type="email"
                     value={values.email}
                     onChange={(e) => handleChange('email', e.target.value)}
-                    className={`mt-2 w-full rounded-xl border px-4 py-3 text-sm text-[#26215C] outline-none transition ${
-                      errors.email
-                        ? 'border-red-400 bg-red-50/40 focus:border-red-500'
-                        : 'border-[#D3D0F2] focus:border-[#7F77DD]'
-                    }`}
+                    className="mt-2 py-3"
                     placeholder="you@example.com"
                     disabled={isSubmitting}
                     aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? 'email-error' : undefined}
                   />
                   {errors.email && (
-                    <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-                      <AlertCircle className="h-3 w-3" />
+                    <p id="email-error" className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="h-3 w-3" aria-hidden="true" />
                       {errors.email}
                     </p>
                   )}
                 </div>
+                  />
+                </FormField>
 
                 {/* Subject Field */}
-                <div>
-                  <label className="block text-sm font-medium text-[#26215C]" htmlFor="subject">
-                    Subject
-                  </label>
-                  <select
-                    id="subject"
+                <FormField id="subject" label="Subject" error={errors.subject} showErrorIcon labelClassName="mb-0">
+                  <Select
                     value={values.subject}
                     onChange={(e) => handleChange('subject', e.target.value)}
-                    className={`mt-2 w-full rounded-xl border px-4 py-3 text-sm text-[#26215C] outline-none transition ${
-                      errors.subject
-                        ? 'border-red-400 bg-red-50/40 focus:border-red-500'
-                        : 'border-[#D3D0F2] focus:border-[#7F77DD]'
-                    }`}
+                    className="mt-2 py-3"
                     disabled={isSubmitting}
                     aria-invalid={!!errors.subject}
+                    aria-describedby={errors.subject ? 'subject-error' : undefined}
                   >
                     {subjects.map((subject) => (
                       <option key={subject} value={subject}>
@@ -205,38 +197,35 @@ export default function ContactPage() {
                     ))}
                   </select>
                   {errors.subject && (
-                    <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-                      <AlertCircle className="h-3 w-3" />
+                    <p id="subject-error" className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="h-3 w-3" aria-hidden="true" />
                       {errors.subject}
                     </p>
                   )}
                 </div>
+                  </Select>
+                </FormField>
 
                 {/* Message Field */}
-                <div>
-                  <label className="block text-sm font-medium text-[#26215C]" htmlFor="message">
-                    Message
-                  </label>
-                  <textarea
-                    id="message"
+                <FormField id="message" label="Message" error={errors.message} showErrorIcon labelClassName="mb-0">
+                  <Textarea
                     value={values.message}
                     onChange={(e) => handleChange('message', e.target.value)}
-                    className={`mt-2 min-h-32 w-full rounded-xl border px-4 py-3 text-sm text-[#26215C] outline-none transition resize-none ${
-                      errors.message
-                        ? 'border-red-400 bg-red-50/40 focus:border-red-500'
-                        : 'border-[#D3D0F2] focus:border-[#7F77DD]'
-                    }`}
+                    className="mt-2 min-h-32 resize-none py-3"
                     placeholder="Tell us how we can help you..."
                     disabled={isSubmitting}
                     aria-invalid={!!errors.message}
+                    aria-describedby={errors.message ? 'message-error' : undefined}
                   />
                   {errors.message && (
-                    <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-                      <AlertCircle className="h-3 w-3" />
+                    <p id="message-error" className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="h-3 w-3" aria-hidden="true" />
                       {errors.message}
                     </p>
                   )}
                 </div>
+                  />
+                </FormField>
 
                 {/* Submit Button */}
                 <button

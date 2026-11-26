@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { X, Volume2, VolumeX, Play } from 'lucide-react';
@@ -222,10 +223,12 @@ export function CoursePreviewModal({
             {autoplayBlocked && (
               <div className="absolute inset-0 flex items-center justify-center bg-black">
                 {posterUrl ? (
-                  <img
+                  <Image
                     src={posterUrl}
                     alt={`${courseTitle} preview thumbnail`}
-                    className="absolute inset-0 w-full h-full object-cover opacity-70"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover opacity-70"
                   />
                 ) : null}
                 <button

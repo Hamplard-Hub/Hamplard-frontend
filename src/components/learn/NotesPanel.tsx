@@ -178,14 +178,14 @@ export default function NotesPanel({
             <div ref={exportMenuRef} className="relative">
               <button
                 onClick={() => setExportMenuOpen((o) => !o)}
-                className="flex items-center gap-1 text-xs font-medium text-ink-500 hover:text-ink-700 transition-colors"
+                className="flex min-h-11 items-center gap-1 px-2 text-xs font-medium text-ink-500 transition-colors hover:text-ink-700"
                 aria-haspopup="menu"
                 aria-expanded={exportMenuOpen}
                 title="Export notes"
               >
-                <Download className="w-3.5 h-3.5" />
+                <Download className="w-3.5 h-3.5" aria-hidden="true" />
                 Export
-                <ChevronDown className="w-3 h-3" />
+                <ChevronDown className="w-3 h-3" aria-hidden="true" />
               </button>
               {exportMenuOpen && (
                 <div
@@ -195,17 +195,17 @@ export default function NotesPanel({
                   <button
                     role="menuitem"
                     onClick={handleExportMarkdown}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-ink-700 hover:bg-ink-50 text-left"
+                    className="min-h-11 w-full flex items-center gap-2 px-3 text-xs text-ink-700 hover:bg-ink-50 text-left"
                   >
-                    <FileText className="w-3.5 h-3.5 text-ink-400" />
+                    <FileText className="w-3.5 h-3.5 text-ink-400" aria-hidden="true" />
                     Markdown (.md)
                   </button>
                   <button
                     role="menuitem"
                     onClick={handleExportPdf}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs text-ink-700 hover:bg-ink-50 text-left"
+                    className="min-h-11 w-full flex items-center gap-2 px-3 text-xs text-ink-700 hover:bg-ink-50 text-left"
                   >
-                    <FileDown className="w-3.5 h-3.5 text-ink-400" />
+                    <FileDown className="w-3.5 h-3.5 text-ink-400" aria-hidden="true" />
                     PDF
                   </button>
                 </div>
@@ -236,9 +236,9 @@ export default function NotesPanel({
               disabled={!text.trim() || isSaving}
               className="flex items-center gap-1 text-xs font-medium text-white bg-saffron-500
                          hover:bg-saffron-600 disabled:opacity-40 disabled:cursor-not-allowed
-                         px-3 py-1.5 rounded-lg transition-colors"
+                         min-h-11 px-3 rounded-lg transition-colors"
             >
-              <Plus className="w-3 h-3" />
+              <Plus className="w-3 h-3" aria-hidden="true" />
               Save note
             </button>
           </div>
@@ -260,21 +260,24 @@ export default function NotesPanel({
                   <button
                     onClick={() => handleTimestampClick(note.timestamp)}
                     className="inline-flex items-center gap-1 text-xs font-medium text-saffron-600
-                               bg-saffron-50 hover:bg-saffron-100 px-2 py-0.5 rounded-md
+                               bg-saffron-50 hover:bg-saffron-100 min-h-11 px-3 rounded-md
                                transition-colors flex-shrink-0 mt-0.5"
                     title="Click to seek video to this timestamp"
                   >
-                    <Clock className="w-3 h-3" />
+                    <Clock className="w-3 h-3" aria-hidden="true" />
                     {formatDuration(note.timestamp)}
                   </button>
 
                   <button
                     onClick={() => handleDelete(note.id)}
-                    className="opacity-0 group-hover:opacity-100 text-ink-400 hover:text-red-500
-                               transition-all p-0.5 flex-shrink-0"
+                    className="flex h-11 w-11 flex-shrink-0 items-center justify-center text-ink-400 transition-all
+                               hover:text-red-500 focus-visible:rounded-md focus-visible:outline-none
+                               focus-visible:ring-2 focus-visible:ring-hamplard-primary sm:opacity-0
+                               sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                     title="Delete note"
+                    aria-label="Delete note"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                   </button>
                 </div>
                 <p className="text-xs text-ink-700 mt-1.5 leading-relaxed whitespace-pre-wrap break-words">

@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -213,7 +214,7 @@ export default function CreateCoursePage() {
             }`}>
               {thumbnailUrl ? (
                 <div>
-                  <img src={thumbnailUrl} alt="Thumbnail" className="h-24 mx-auto rounded-lg object-cover mb-2" />
+                  <Image src={thumbnailUrl} alt="Thumbnail" width={160} height={96} unoptimized className="h-24 mx-auto rounded-lg object-cover mb-2" />
                   <p className="text-xs text-leaf-600 font-medium">Thumbnail uploaded ✓</p>
                 </div>
               ) : (

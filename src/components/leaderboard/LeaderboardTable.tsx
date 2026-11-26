@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import { cn } from '@/lib/utils';
 import type { LeaderboardEntry } from '@/types';
@@ -40,9 +41,11 @@ function Avatar({ name, avatarUrl }: { name: string | null; avatarUrl: string | 
 
   if (avatarUrl) {
     return (
-      <img
+      <Image
         src={avatarUrl}
         alt={name ?? 'Student avatar'}
+        width={32}
+        height={32}
         className="h-8 w-8 rounded-full object-cover"
       />
     );

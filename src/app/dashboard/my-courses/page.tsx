@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -93,11 +94,12 @@ function EnrolledCourseCard({ enrollment }: EnrolledCourseCardProps) {
       {/* Thumbnail */}
       <div className="relative aspect-video bg-gradient-to-br from-saffron-100 to-saffron-200 overflow-hidden">
         {course.thumbnailUrl ? (
-          <img
+          <Image
             src={course.thumbnailUrl}
             alt={course.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            loading="lazy"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">

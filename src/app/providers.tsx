@@ -5,6 +5,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { CookieConsentBanner } from '@/components/ui/CookieConsentBanner';
 import { ToastProvider } from '@/components/ui/ToastProvider';
 import { NetworkStatusBanner } from '@/components/ui/NetworkStatusBanner';
+import { CommandPalette } from '@/components/search/CommandPalette';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { createQueryClient } from '@/lib/query-client';
 import {
@@ -65,6 +66,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <NetworkStatusBanner />
         {children}
         <CookieConsentBanner />
+        <CommandPalette />
       </ToastProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>

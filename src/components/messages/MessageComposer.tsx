@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import React, { useState, useRef } from 'react';
 import { Send, Image as ImageIcon, X, Paperclip } from 'lucide-react';
@@ -77,9 +78,12 @@ export function MessageComposer({ onSendMessage, disabled = false }: MessageComp
               className="relative group flex items-center gap-2 p-1.5 pr-2 bg-ink-50 border border-ink-200 rounded-lg text-xs text-ink-700"
             >
               {att.type.startsWith('image/') ? (
-                <img
+                <Image
                   src={att.url}
                   alt={att.name}
+                  width={40}
+                  height={40}
+                  unoptimized
                   className="w-10 h-10 object-cover rounded-md"
                 />
               ) : (
@@ -92,7 +96,7 @@ export function MessageComposer({ onSendMessage, disabled = false }: MessageComp
                 className="p-1 rounded-full hover:bg-ink-200 text-ink-400 hover:text-ink-700 transition-colors"
                 aria-label={`Remove attachment ${att.name}`}
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3.5 h-3.5" aria-hidden="true" />
               </button>
             </div>
           ))}

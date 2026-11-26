@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Calendar, ChevronDown } from 'lucide-react';
 import { format, parseISO, startOfMonth, subMonths } from 'date-fns';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { cn } from '@/lib/utils';
 
 export type RevenuePreset = '3m' | '6m' | '12m' | 'custom';
@@ -121,27 +122,27 @@ export function RevenueDateRangePicker({ value, onChange }: RevenueDateRangePick
             aria-label="Select custom date range"
             className="absolute right-0 mt-2 z-20 w-72 bg-white border border-ink-100 rounded-xl shadow-lg p-4 space-y-3"
           >
-            <label className="block">
+            <div className="block">
               <span className="block text-xs font-medium text-ink-600 mb-1">From</span>
-              <input
-                type="date"
+              <DatePicker
                 value={draftFrom}
                 max={draftTo || today}
-                onChange={(e) => setDraftFrom(e.target.value)}
-                className="w-full text-sm border border-ink-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-hamplard-primary"
+                onChange={setDraftFrom}
+                calendarLabel="Choose start date"
+                className="w-full text-sm border-ink-200 rounded-lg focus:ring-hamplard-primary"
               />
-            </label>
-            <label className="block">
+            </div>
+            <div className="block">
               <span className="block text-xs font-medium text-ink-600 mb-1">To</span>
-              <input
-                type="date"
+              <DatePicker
                 value={draftTo}
                 min={draftFrom}
                 max={today}
-                onChange={(e) => setDraftTo(e.target.value)}
-                className="w-full text-sm border border-ink-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-hamplard-primary"
+                onChange={setDraftTo}
+                calendarLabel="Choose end date"
+                className="w-full text-sm border-ink-200 rounded-lg focus:ring-hamplard-primary"
               />
-            </label>
+            </div>
             {draftFrom && draftTo && draftFrom > draftTo && (
               <p className="text-xs text-red-500">Start date must be before end date.</p>
             )}

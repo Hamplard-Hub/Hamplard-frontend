@@ -134,7 +134,7 @@ export default function ProfilePage() {
             <div className="space-y-4">
               <label className="block">
                 <span className="text-xs font-medium text-ink-500">Name</span>
-                <div className="mt-1 flex items-center gap-2 rounded-xl border border-ink-100 bg-white px-3 py-2">
+                <div className="mt-1 flex items-center gap-2 rounded-xl border border-ink-100 bg-white px-3 py-2 focus-within:ring-2 focus-within:ring-hamplard-primary">
                   <Pencil className="w-3.5 h-3.5 text-ink-400" />
                   <input
                     value={name}
@@ -147,7 +147,7 @@ export default function ProfilePage() {
 
               <label className="block">
                 <span className="text-xs font-medium text-ink-500">Email</span>
-                <div className="mt-1 flex items-center gap-2 rounded-xl border border-ink-100 bg-white px-3 py-2">
+                <div className="mt-1 flex items-center gap-2 rounded-xl border border-ink-100 bg-white px-3 py-2 focus-within:ring-2 focus-within:ring-hamplard-primary">
                   <Mail className="w-3.5 h-3.5 text-ink-400" />
                   <input
                     value={email}
@@ -167,7 +167,7 @@ export default function ProfilePage() {
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
                   rows={4}
-                  className="mt-1 w-full rounded-xl border border-ink-100 bg-white px-3 py-2 text-sm text-ink-900 outline-none"
+                  className="mt-1 w-full rounded-xl border border-ink-100 bg-white px-3 py-2 text-sm text-ink-900 outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary"
                   placeholder="Tell students about your skills…"
                 />
               </label>

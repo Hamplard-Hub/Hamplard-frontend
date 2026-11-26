@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import { useState } from 'react';
 import { ArrowBigUp, MessageSquare, ChevronDown, ChevronUp, Loader2, Send } from 'lucide-react';
@@ -101,9 +102,11 @@ export function QuestionCard({
       {/* ── Header ── */}
       <div className="flex items-start gap-3">
         {question.authorAvatarUrl ? (
-          <img
+          <Image
             src={question.authorAvatarUrl}
             alt={question.authorName}
+            width={36}
+            height={36}
             className="w-9 h-9 rounded-full object-cover shrink-0"
           />
         ) : (
@@ -185,9 +188,11 @@ export function QuestionCard({
                   )}
                 >
                   {reply.authorAvatarUrl ? (
-                    <img
+                    <Image
                       src={reply.authorAvatarUrl}
                       alt={reply.authorName}
+                      width={28}
+                      height={28}
                       className="w-7 h-7 rounded-full object-cover shrink-0"
                     />
                   ) : (

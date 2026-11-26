@@ -1,6 +1,14 @@
 /** @type {import('next').NextConfig} */
 
 // ---------------------------------------------------------------------------
+// Bundle Analyzer
+// ---------------------------------------------------------------------------
+
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
+// ---------------------------------------------------------------------------
 // Security-header helpers
 // ---------------------------------------------------------------------------
 
@@ -84,7 +92,15 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error'] } : false,
   },
   images: {
-    domains: ['localhost', 'hamplard.com'],
+    remotePatterns: [
+      { protocol: 'http', hostname: 'localhost' },
+      { protocol: 'https', hostname: 'localhost' },
+      { protocol: 'https', hostname: 'hamplard.com' },
+      { protocol: 'https', hostname: '**.hamplard.com' },
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: 'i.pravatar.cc' },
+      { protocol: 'https', hostname: 'commondatastorage.googleapis.com' },
+    ],
   },
 
   async redirects() {
@@ -119,4 +135,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig);

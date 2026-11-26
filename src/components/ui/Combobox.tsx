@@ -493,7 +493,7 @@ export function Combobox({
                     tabIndex={-1}
                     aria-label="Clear selection"
                   >
-                    <X className="h-4 w-4 text-ink-500" />
+                    <X className="h-4 w-4 text-ink-500" aria-hidden="true" />
                   </button>
                 )}
 

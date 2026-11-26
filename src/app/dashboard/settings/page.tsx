@@ -10,10 +10,13 @@ import {
   Trash2,
   CreditCard,
   ChevronRight,
+  CheckCircle2,
+  XCircle,
   Zap,
   Download,
 } from 'lucide-react';
 import { Breadcrumb } from '@/components/ui';
+import { Switch } from '@/components/ui/Switch';
 import DeleteAccountModal from '@/components/auth/DeleteAccountModal';
 import { TwoFactorSetup } from '@/components/auth/TwoFactorSetup';
 import { twoFactorApi, usersApi } from '@/lib/api/services';
@@ -163,31 +166,19 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-4">
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={emailUpdates}
-                onChange={(e) => setEmailUpdates(e.target.checked)}
-                className="mt-1"
-              />
-              <span>
-                <p className="text-sm font-medium text-ink-900">Email updates</p>
-                <p className="text-xs text-ink-500">Product news and announcements.</p>
-              </span>
-            </label>
+            <Switch
+              checked={emailUpdates}
+              onCheckedChange={setEmailUpdates}
+              label="Email updates"
+              description="Product news and announcements."
+            />
 
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={courseUpdates}
-                onChange={(e) => setCourseUpdates(e.target.checked)}
-                className="mt-1"
-              />
-              <span>
-                <p className="text-sm font-medium text-ink-900">Course updates</p>
-                <p className="text-xs text-ink-500">New lessons and reminders.</p>
-              </span>
-            </label>
+            <Switch
+              checked={courseUpdates}
+              onCheckedChange={setCourseUpdates}
+              label="Course updates"
+              description="New lessons and reminders."
+            />
 
             <Link href="/dashboard/settings/notifications" className="inline-flex items-center gap-2 text-sm font-medium text-saffron-700 hover:text-saffron-800">
               Manage notification channels
@@ -204,18 +195,12 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-4">
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={securityAlerts}
-                onChange={(e) => setSecurityAlerts(e.target.checked)}
-                className="mt-1"
-              />
-              <span>
-                <p className="text-sm font-medium text-ink-900">Security alerts</p>
-                <p className="text-xs text-ink-500">Sign-in and account change alerts.</p>
-              </span>
-            </label>
+            <Switch
+              checked={securityAlerts}
+              onCheckedChange={setSecurityAlerts}
+              label="Security alerts"
+              description="Sign-in and account change alerts."
+            />
 
             <div className="rounded-xl border border-ink-100 bg-ink-50 p-3">
               <p className="text-xs text-ink-500">
@@ -242,18 +227,12 @@ export default function SettingsPage() {
             <h2 className="font-semibold text-ink-900">Accessibility</h2>
           </div>
 
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={localReducedMotion}
-              onChange={(e) => handleReducedMotionChange(e.target.checked)}
-              className="mt-1"
-            />
-            <span>
-              <p className="text-sm font-medium text-ink-900">Reduce motion</p>
-              <p className="text-xs text-ink-500">Minimise animations and transitions.</p>
-            </span>
-          </label>
+          <Switch
+            checked={localReducedMotion}
+            onCheckedChange={handleReducedMotionChange}
+            label="Reduce motion"
+            description="Minimise animations and transitions."
+          />
         </section>
 
         {/* Low-Bandwidth Mode Section */}
@@ -269,20 +248,12 @@ export default function SettingsPage() {
             </div>
           )}
 
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={lowBandwidth}
-              onChange={(e) => toggleLowBandwidth(e.target.checked)}
-              className="mt-1"
-            />
-            <span>
-              <p className="text-sm font-medium text-ink-900">Low-bandwidth mode</p>
-              <p className="text-xs text-ink-500">
-                Defaults video to 360p, enables audio-only option, and defers non-essential images.
-              </p>
-            </span>
-          </label>
+          <Switch
+            checked={lowBandwidth}
+            onCheckedChange={toggleLowBandwidth}
+            label="Low-bandwidth mode"
+            description="Defaults video to 360p, enables audio-only option, and defers non-essential images."
+          />
         </section>
 
         {/* Data Export Section */}
@@ -328,11 +299,16 @@ export default function SettingsPage() {
             <Shield className="w-5 h-5 text-saffron-600" />
             <h2 className="text-lg font-semibold text-ink-900">Two-Factor Authentication</h2>
           </div>
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
             twoFactorEnabled
               ? 'bg-emerald-100 text-emerald-700'
               : 'bg-amber-100 text-amber-700'
           }`}>
+            {twoFactorEnabled ? (
+              <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
+            ) : (
+              <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
+            )}
             {twoFactorEnabled ? 'Enabled' : 'Disabled'}
           </span>
         </div>

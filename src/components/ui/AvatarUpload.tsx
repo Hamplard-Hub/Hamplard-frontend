@@ -1,4 +1,5 @@
 'use client';
+import NextImage from 'next/image';
 
 /**
  * AvatarUpload
@@ -487,7 +488,7 @@ export function AvatarUpload({ currentAvatarUrl, userName, onSaved }: Props) {
       <div className="relative">
         <div className="h-24 w-24 rounded-full overflow-hidden ring-4 ring-white shadow-md bg-hamplard-lilac flex items-center justify-center">
           {displayUrl ? (
-            <img src={displayUrl} alt="Avatar preview" className="h-full w-full object-cover" />
+            <NextImage src={displayUrl} alt="Avatar preview" width={96} height={96} unoptimized className="h-full w-full object-cover" />
           ) : (
             <span className="text-3xl font-bold text-hamplard-primary">{initials}</span>
           )}
@@ -497,9 +498,9 @@ export function AvatarUpload({ currentAvatarUrl, userName, onSaved }: Props) {
           type="button"
           onClick={() => { setSaved(false); inputRef.current?.click(); }}
           aria-label="Change profile photo"
-          className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-hamplard-primary text-white shadow ring-2 ring-white transition hover:bg-hamplard-mid"
+          className="absolute bottom-0 right-0 flex h-11 w-11 items-center justify-center rounded-full bg-hamplard-primary text-white shadow ring-2 ring-white transition hover:bg-hamplard-mid"
         >
-          <Camera className="h-3.5 w-3.5" />
+          <Camera className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
 
         <input
@@ -566,7 +567,7 @@ export function AvatarUpload({ currentAvatarUrl, userName, onSaved }: Props) {
               onClick={handleCancelCrop}
               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-white/70 hover:text-white hover:bg-white/10 transition"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
               Cancel
             </button>
             <button
@@ -586,9 +587,12 @@ export function AvatarUpload({ currentAvatarUrl, userName, onSaved }: Props) {
         <div className="w-full rounded-xl border border-ink-100 bg-white p-4 shadow-sm">
           <p className="mb-3 text-xs font-semibold text-ink-500 uppercase tracking-wide">Preview</p>
           <div className="flex items-center gap-4">
-            <img
+            <NextImage
               src={previewSrc}
               alt="Cropped preview"
+              width={64}
+              height={64}
+              unoptimized
               className="h-16 w-16 rounded-full object-cover ring-2 ring-hamplard-lilac shrink-0"
             />
             <div className="flex-1 min-w-0">
@@ -620,7 +624,7 @@ export function AvatarUpload({ currentAvatarUrl, userName, onSaved }: Props) {
               disabled={uploading}
               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-ink-500 hover:text-ink-800 hover:bg-ink-50 transition disabled:opacity-40"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
               Discard
             </button>
             <button

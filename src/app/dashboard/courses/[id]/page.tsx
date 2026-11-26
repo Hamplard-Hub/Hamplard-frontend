@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -94,7 +95,7 @@ export default function CourseDetailPage() {
           {/* Thumbnail */}
           <div className="relative aspect-video rounded-2xl overflow-hidden bg-gradient-to-br from-saffron-100 to-saffron-200 mb-5">
             {course.thumbnailUrl ? (
-              <img src={course.thumbnailUrl} alt={course.title} className="w-full h-full object-cover" />
+              <Image src={course.thumbnailUrl} alt={course.title} fill sizes="(max-width: 1024px) 100vw, 66vw" className="object-cover" />
             ) : (
               <div className="flex items-center justify-center h-full text-6xl">
                 {course.category === 'Tailoring' ? '🧵' :

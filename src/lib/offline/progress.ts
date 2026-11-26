@@ -108,3 +108,423 @@ export async function flushPendingProgress(
 export function clearPendingProgress(): void {
   writeQueue([]);
 }
+
+import { isAxiosError } from "axios";
+import { lessonsApi } from "@/lib/api/lessons";
+
+export interface QueuedProgressUpdate {
+  id: string;
+  lessonId: string;
+  createdAt: number;
+}
+
+const STORAGE_KEY = "queued-progress-updates";
+
+function getQueue(): QueuedProgressUpdate[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+
+    if (!stored) {
+      return [];
+    }
+
+    const parsed: unknown = JSON.parse(stored);
+
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveQueue(queue: QueuedProgressUpdate[]): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
+}
+
+export function getQueuedProgressUpdates(): QueuedProgressUpdate[] {
+  return getQueue();
+}
+
+export function queueProgressUpdate(lessonId: string): void {
+  const queue = getQueue();
+
+  // Avoid adding duplicate updates for the same lesson.
+  const alreadyQueued = queue.some(
+    (item) => item.lessonId === lessonId
+  );
+
+  if (alreadyQueued) {
+    return;
+  }
+
+  queue.push({
+    id: `${lessonId}-${Date.now()}`,
+    lessonId,
+    createdAt: Date.now(),
+  });
+
+  saveQueue(queue);
+}
+
+export function removeQueuedProgressUpdate(id: string): void {
+  const queue = getQueue().filter(
+    (item) => item.id !== id
+  );
+
+  saveQueue(queue);
+}
+
+export async function syncQueuedProgressUpdates(): Promise<void> {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    return;
+  }
+
+  const queue = getQueue();
+
+  for (const item of queue) {
+    try {
+      await lessonsApi.markComplete(item.lessonId);
+
+      // Successful sync: remove the queued update.
+      removeQueuedProgressUpdate(item.id);
+    } catch (error: unknown) {
+      if (
+        isAxiosError(error) &&
+        error.response &&
+        error.response.status >= 400 &&
+        error.response.status < 500
+      ) {
+        // Permanent client error: discard this update.
+        removeQueuedProgressUpdate(item.id);
+
+        continue;
+      }
+
+      // Network errors and server errors are retryable.
+      // Keep the queued item and stop this sync attempt.
+      break;
+    }
+  }
+}
+
+import { isAxiosError } from "axios";
+import { lessonsApi } from "@/lib/api/lessons";
+
+export interface QueuedProgressUpdate {
+  id: string;
+  lessonId: string;
+  createdAt: number;
+}
+
+const STORAGE_KEY = "queued-progress-updates";
+
+function getQueue(): QueuedProgressUpdate[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+
+    if (!stored) {
+      return [];
+    }
+
+    const parsed: unknown = JSON.parse(stored);
+
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveQueue(queue: QueuedProgressUpdate[]): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
+}
+
+export function getQueuedProgressUpdates(): QueuedProgressUpdate[] {
+  return getQueue();
+}
+
+export function queueProgressUpdate(lessonId: string): void {
+  const queue = getQueue();
+
+  // Avoid adding duplicate updates for the same lesson.
+  const alreadyQueued = queue.some(
+    (item) => item.lessonId === lessonId
+  );
+
+  if (alreadyQueued) {
+    return;
+  }
+
+  queue.push({
+    id: `${lessonId}-${Date.now()}`,
+    lessonId,
+    createdAt: Date.now(),
+  });
+
+  saveQueue(queue);
+}
+
+export function removeQueuedProgressUpdate(id: string): void {
+  const queue = getQueue().filter(
+    (item) => item.id !== id
+  );
+
+  saveQueue(queue);
+}
+
+export async function syncQueuedProgressUpdates(): Promise<void> {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    return;
+  }
+
+  const queue = getQueue();
+
+  for (const item of queue) {
+    try {
+      await lessonsApi.markComplete(item.lessonId);
+
+      // Successful sync: remove the queued update.
+      removeQueuedProgressUpdate(item.id);
+    } catch (error: unknown) {
+      if (
+        isAxiosError(error) &&
+        error.response &&
+        error.response.status >= 400 &&
+        error.response.status < 500
+      ) {
+        // Permanent client error: discard this update.
+        removeQueuedProgressUpdate(item.id);
+
+        continue;
+      }
+
+      // Network errors and server errors are retryable.
+      // Keep the queued item and stop this sync attempt.
+      break;
+    }
+  }
+}
+
+import { isAxiosError } from "axios";
+import { lessonsApi } from "@/lib/api/lessons";
+
+export interface QueuedProgressUpdate {
+  id: string;
+  lessonId: string;
+  createdAt: number;
+}
+
+const STORAGE_KEY = "queued-progress-updates";
+
+function getQueue(): QueuedProgressUpdate[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+
+    if (!stored) {
+      return [];
+    }
+
+    const parsed: unknown = JSON.parse(stored);
+
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveQueue(queue: QueuedProgressUpdate[]): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
+}
+
+export function getQueuedProgressUpdates(): QueuedProgressUpdate[] {
+  return getQueue();
+}
+
+export function queueProgressUpdate(lessonId: string): void {
+  const queue = getQueue();
+
+  // Avoid adding duplicate updates for the same lesson.
+  const alreadyQueued = queue.some(
+    (item) => item.lessonId === lessonId
+  );
+
+  if (alreadyQueued) {
+    return;
+  }
+
+  queue.push({
+    id: `${lessonId}-${Date.now()}`,
+    lessonId,
+    createdAt: Date.now(),
+  });
+
+  saveQueue(queue);
+}
+
+export function removeQueuedProgressUpdate(id: string): void {
+  const queue = getQueue().filter(
+    (item) => item.id !== id
+  );
+
+  saveQueue(queue);
+}
+
+export async function syncQueuedProgressUpdates(): Promise<void> {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    return;
+  }
+
+  const queue = getQueue();
+
+  for (const item of queue) {
+    try {
+      await lessonsApi.markComplete(item.lessonId);
+
+      // Successful sync: remove the queued update.
+      removeQueuedProgressUpdate(item.id);
+    } catch (error: unknown) {
+      if (
+        isAxiosError(error) &&
+        error.response &&
+        error.response.status >= 400 &&
+        error.response.status < 500
+      ) {
+        // Permanent client error: discard this update.
+        removeQueuedProgressUpdate(item.id);
+
+        continue;
+      }
+
+      // Network errors and server errors are retryable.
+      // Keep the queued item and stop this sync attempt.
+      break;
+    }
+  }
+}
+
+import { isAxiosError } from "axios";
+import { lessonsApi } from "@/lib/api/lessons";
+
+export interface QueuedProgressUpdate {
+  id: string;
+  lessonId: string;
+  createdAt: number;
+}
+
+const STORAGE_KEY = "queued-progress-updates";
+
+function getQueue(): QueuedProgressUpdate[] {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+
+    if (!stored) {
+      return [];
+    }
+
+    const parsed: unknown = JSON.parse(stored);
+
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveQueue(queue: QueuedProgressUpdate[]): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(queue));
+}
+
+export function getQueuedProgressUpdates(): QueuedProgressUpdate[] {
+  return getQueue();
+}
+
+export function queueProgressUpdate(lessonId: string): void {
+  const queue = getQueue();
+
+  // Avoid adding duplicate updates for the same lesson.
+  const alreadyQueued = queue.some(
+    (item) => item.lessonId === lessonId
+  );
+
+  if (alreadyQueued) {
+    return;
+  }
+
+  queue.push({
+    id: `${lessonId}-${Date.now()}`,
+    lessonId,
+    createdAt: Date.now(),
+  });
+
+  saveQueue(queue);
+}
+
+export function removeQueuedProgressUpdate(id: string): void {
+  const queue = getQueue().filter(
+    (item) => item.id !== id
+  );
+
+  saveQueue(queue);
+}
+
+export async function syncQueuedProgressUpdates(): Promise<void> {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    return;
+  }
+
+  const queue = getQueue();
+
+  for (const item of queue) {
+    try {
+      await lessonsApi.markComplete(item.lessonId);
+
+      // Successful sync: remove the queued update.
+      removeQueuedProgressUpdate(item.id);
+    } catch (error: unknown) {
+      if (
+        isAxiosError(error) &&
+        error.response &&
+        error.response.status >= 400 &&
+        error.response.status < 500
+      ) {
+        // Permanent client error: discard this update.
+        removeQueuedProgressUpdate(item.id);
+
+        continue;
+      }
+
+      // Network errors and server errors are retryable.
+      // Keep the queued item and stop this sync attempt.
+      break;
+    }
+  }
+}

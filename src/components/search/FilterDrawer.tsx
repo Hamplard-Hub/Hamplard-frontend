@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
+import React from 'react';
 import { FilterPanel } from './FilterPanel';
 import { Button } from '@/components/ui/Button';
+import { Drawer } from '@/components/ui/Drawer';
 import { useSearchStore } from '@/lib/hooks/use-search-store';
-import { cn } from '@/lib/utils';
 import type { Course } from '@/types';
 
 interface FilterDrawerProps {
@@ -17,35 +16,16 @@ interface FilterDrawerProps {
 }
 
 export function FilterDrawer({ open, onClose, courses, resultCount }: FilterDrawerProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
   const clearFilters = useSearchStore((s) => s.clearFilters);
 
-  // Escape-to-close, focus trap entry, and body-scroll lock while open.
-  useEffect(() => {
-    if (!open) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    panelRef.current?.focus();
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [open, onClose]);
-
   return (
-    <div
-      className={cn(
-        'fixed inset-0 z-50 lg:hidden',
-        open ? 'pointer-events-auto' : 'pointer-events-none',
-      )}
-      aria-hidden={!open}
+    <Drawer
+      open={open}
+      onClose={onClose}
+      side="left"
+      title="Filters"
+      closeLabel="Close filters"
+      className="lg:hidden"
     >
       {/* Backdrop */}
       <div
@@ -76,23 +56,25 @@ export function FilterDrawer({ open, onClose, courses, resultCount }: FilterDraw
             aria-label="Close filters"
             className="rounded-lg p-1.5 text-ink-500 transition-colors hover:bg-ink-50 hover:text-ink-900"
           >
-            <X className="h-5 w-5" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-6">
           <FilterPanel courses={courses} />
         </div>
-
-        <div className="flex items-center gap-3 border-t border-ink-100 px-4 py-4">
-          <Button variant="tertiary" size="md" onClick={clearFilters} className="flex-1">
-            Clear all
-          </Button>
-          <Button variant="primary" size="md" onClick={onClose} className="flex-1">
-            Show {resultCount} result{resultCount !== 1 ? 's' : ''}
-          </Button>
-        </div>
+      <div className="flex-1 overflow-y-auto px-4 py-6">
+        <FilterPanel courses={courses} />
       </div>
-    </div>
+
+      <div className="flex items-center gap-3 border-t border-ink-100 px-4 py-4">
+        <Button variant="tertiary" size="md" onClick={clearFilters} className="flex-1">
+          Clear all
+        </Button>
+        <Button variant="primary" size="md" onClick={onClose} className="flex-1">
+          Show {resultCount} result{resultCount !== 1 ? 's' : ''}
+        </Button>
+      </div>
+    </Drawer>
   );
 }

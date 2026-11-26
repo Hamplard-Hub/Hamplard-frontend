@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import React, { useState, useMemo } from 'react';
 import { Search, BookOpen, Sparkles, Filter } from 'lucide-react';
@@ -196,12 +197,13 @@ export function GlossaryPanel({ glossary, onSelectTerm, className }: GlossaryPan
 
                       {/* Optional Image */}
                       {item.imageUrl && (
-                        <div className="mt-3 overflow-hidden rounded-xl border border-ink-100 bg-ink-50 aspect-video">
-                          <img
+                        <div className="relative mt-3 overflow-hidden rounded-xl border border-ink-100 bg-ink-50 aspect-video">
+                          <Image
                             src={item.imageUrl}
                             alt={item.term}
-                            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            loading="lazy"
+                            fill
+                            sizes="(max-width: 640px) 100vw, 33vw"
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         </div>
                       )}

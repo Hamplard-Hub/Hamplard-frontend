@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import { useRef, useState } from 'react';
 import { Star, CheckCircle, Loader2, Pencil, ImagePlus, Video, X } from 'lucide-react';
@@ -120,10 +121,12 @@ function AttachmentPreviews({ attachments, onRemove }: AttachmentPreviewsProps) 
           className="relative group rounded-xl overflow-hidden border border-gray-200 bg-gray-50"
         >
           {att.kind === 'image' ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={att.previewUrl}
               alt={att.file.name}
+              width={120}
+              height={80}
+              unoptimized
               className="w-full h-20 object-cover"
             />
           ) : (

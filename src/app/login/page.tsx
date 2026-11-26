@@ -11,6 +11,7 @@ import { authApi } from '@/lib/api/services';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { getSafeCallbackUrl } from '@/lib/utils/safe-redirect';
 import { loginSchema, type LoginFormValues } from '@/lib/validations/login';
+import { FormField, Input } from '@/components/ui/form';
 
 function GoogleIcon() {
   return (
@@ -54,6 +55,7 @@ function LoginForm() {
       rememberMe: false,
     },
     mode: 'onBlur',
+    shouldFocusError: true,
   });
 
   const onSubmit = async (values: LoginFormValues) => {
@@ -94,16 +96,13 @@ function LoginForm() {
 
       <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
         <fieldset disabled={isSubmitting} className="space-y-4">
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-[#26215C]" htmlFor="email">
-              Email
-            </label>
-            <input
-              id="email"
+          <FormField id="email" label="Email" error={errors.email?.message}>
+            <Input
               type="email"
               autoComplete="email"
               placeholder="you@example.com"
               aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? 'email-error' : undefined}
               className={`w-full rounded-xl border px-4 py-2.5 text-sm text-[#26215C] outline-none transition disabled:cursor-not-allowed disabled:opacity-60 ${
                 errors.email
                   ? 'border-red-400 bg-red-50/40'
@@ -111,40 +110,48 @@ function LoginForm() {
               }`}
               {...register('email')}
             />
-            {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
+            {errors.email && (
+              <p id="email-error" className="mt-1 text-xs text-red-600">
+                {errors.email.message}
+              </p>
+            )}
           </div>
+              {...register('email')}
+            />
+          </FormField>
 
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-[#26215C]" htmlFor="password">
-              Password
-            </label>
+          <FormField id="password" label="Password" error={errors.password?.message}>
             <div className="relative">
-              <input
-                id="password"
+              <Input
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="current-password"
                 placeholder="Enter your password"
                 aria-invalid={!!errors.password}
+                aria-describedby={errors.password ? 'password-error' : undefined}
                 className={`w-full rounded-xl border px-4 py-2.5 pr-11 text-sm text-[#26215C] outline-none transition disabled:cursor-not-allowed disabled:opacity-60 ${
                   errors.password
                     ? 'border-red-400 bg-red-50/40'
                     : 'border-[#D3D0F2] focus:border-[#7F77DD]'
                 }`}
+                className="pr-11"
                 {...register('password')}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6B66A6] hover:text-[#26215C]"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded text-[#6B66A6] hover:text-[#26215C] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7F77DD]"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
             {errors.password && (
-              <p className="mt-1 text-xs text-red-600">{errors.password.message}</p>
+              <p id="password-error" className="mt-1 text-xs text-red-600">
+                {errors.password.message}
+              </p>
             )}
           </div>
+          </FormField>
 
           <div className="flex items-center justify-between gap-3">
             <label className="inline-flex items-center gap-2 text-sm text-[#26215C]">
