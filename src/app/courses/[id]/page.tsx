@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { coursesApi } from '@/lib/api/services';
 import { formatUsdc, courseTotalMins } from '@/lib/utils';
@@ -67,12 +68,14 @@ export default async function CoursePage({ params }: Props) {
 
         <div className="grid gap-10 lg:grid-cols-[1.7fr_0.9fr]">
           <div className="space-y-6">
-            <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-saffron-100 to-saffron-200 aspect-video">
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-saffron-100 to-saffron-200 aspect-video">
               {course.thumbnailUrl ? (
-                <img
+                <Image
                   src={course.thumbnailUrl}
                   alt={course.title}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 70vw"
+                  className="object-cover"
                 />
               ) : (
                 <div className="flex h-full items-center justify-center text-6xl">🎓</div>

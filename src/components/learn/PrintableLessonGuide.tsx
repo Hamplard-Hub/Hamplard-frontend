@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { Course, Lesson } from '@/types';
 
 interface PrintableLessonGuideProps {
@@ -82,9 +83,11 @@ export default function PrintableLessonGuide({
                   <p className="print-guide-step-description">{step.description}</p>
                 ) : null}
                 {step.imageUrl ? (
-                  <img
+                  <Image
                     src={step.imageUrl}
                     alt={step.title}
+                    width={600}
+                    height={338}
                     className="print-guide-step-image"
                   />
                 ) : null}

@@ -1,7 +1,8 @@
 'use client';
+import Image from 'next/image';
 
 import { useCallback, useId, useRef, useState, useEffect } from 'react';
-import { UploadCloud, FileText, X, RotateCcw, CheckCircle2, AlertCircle, Play } from 'lucide-react';
+import { UploadCloud, FileText, X, RotateCcw, CheckCircle2, AlertCircle, Play, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -460,8 +461,7 @@ export function FileUpload({
               >
                 <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-slate-100 dark:bg-slate-800">
                   {item.previewUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.previewUrl} alt={item.file.name} className="h-full w-full object-cover" />
+                    <Image src={item.previewUrl} alt={item.file.name} width={48} height={48} unoptimized className="h-full w-full object-cover" />
                   ) : item.file.type.startsWith('video/') ? (
                     <span className="flex h-full w-full items-center justify-center">
                       <Play className="h-5 w-5 text-indigo-500" aria-hidden="true" />
@@ -480,6 +480,32 @@ export function FileUpload({
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     {formatBytes(item.file.size)}
                     {item.videoDuration != null && ` · ${formatDuration(item.videoDuration)}`}
+                  </p>
+
+                  <p className={cn(
+                    'mt-1 flex items-center gap-1 text-xs font-medium',
+                    item.status === 'success' && 'text-emerald-700 dark:text-emerald-400',
+                    item.status === 'error' && 'text-red-600 dark:text-red-400',
+                    item.status === 'uploading' && 'text-indigo-600 dark:text-indigo-400',
+                  )}>
+                    {item.status === 'uploading' && (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                        Uploading
+                      </>
+                    )}
+                    {item.status === 'success' && (
+                      <>
+                        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                        Uploaded
+                      </>
+                    )}
+                    {item.status === 'error' && (
+                      <>
+                        <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                        Failed
+                      </>
+                    )}
                   </p>
 
                   {item.status === 'uploading' && (

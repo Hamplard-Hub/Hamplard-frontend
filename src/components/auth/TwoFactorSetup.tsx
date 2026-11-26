@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import { useState } from 'react';
 import { Download, Copy, Eye, EyeOff, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -154,9 +155,12 @@ export function TwoFactorSetup() {
 
         <div className="flex justify-center p-6 bg-[#EEEDFE] rounded-[16px]">
           {qrCode && (
-            <img
+            <Image
               src={qrCode}
               alt="2FA QR Code"
+              width={256}
+              height={256}
+              unoptimized
               className="h-64 w-64 rounded-lg"
             />
           )}

@@ -1,1 +1,24 @@
+name: CI
 
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  accessibility:
+    name: Accessibility (vitest-axe + Playwright axe)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Component axe checks
+        run: npm test -- src/test/a11y.test.tsx
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Page axe checks (fails on serious/critical violations)
+        run: npx playwright test e2e/a11y.spec.ts --project=chromium

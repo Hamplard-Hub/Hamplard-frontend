@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
@@ -11,7 +12,7 @@ import type { ApiResponse, Course, QnaQuestion, QnaReply } from '@/types';
 // ── helpers ───────────────────────────────────────────────────────────────
 
 function Avatar({ name, url }: { name: string; url: string | null }) {
-  if (url) return <img src={url} alt={name} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />;
+  if (url) return <Image src={url} alt={name} width={32} height={32} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />;
   const initials = name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase();
   return (
     <span className="w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-semibold flex-shrink-0">

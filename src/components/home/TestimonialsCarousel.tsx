@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Star, Quote } from 'lucide-react';
@@ -82,9 +83,11 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
       {/* Author info */}
       <div className="flex items-center gap-3 pt-4 border-t border-ink-100">
         {testimonial.avatarUrl ? (
-          <img
+          <Image
             src={testimonial.avatarUrl}
             alt={`${testimonial.name} avatar`}
+            width={56}
+            height={56}
             className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover shrink-0"
           />
         ) : (

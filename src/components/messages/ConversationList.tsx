@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import React, { useState, useMemo } from 'react';
 import { Search, MessageSquare, BookOpen, User } from 'lucide-react';
@@ -104,9 +105,11 @@ export function ConversationList({
                 {/* Avatar with indicator */}
                 <div className="relative shrink-0">
                   {conv.participantAvatar ? (
-                    <img
+                    <Image
                       src={conv.participantAvatar}
                       alt={conv.participantName}
+                      width={44}
+                      height={44}
                       className="w-11 h-11 rounded-full object-cover border border-ink-200"
                     />
                   ) : (
