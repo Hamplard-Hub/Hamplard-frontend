@@ -1,7 +1,8 @@
 'use client';
+import Image from 'next/image';
 
 import { useCallback, useId, useRef, useState, useEffect } from 'react';
-import { UploadCloud, FileText, X, RotateCcw, CheckCircle2, AlertCircle, Play } from 'lucide-react';
+import { UploadCloud, FileText, X, RotateCcw, CheckCircle2, AlertCircle, Play, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -66,6 +67,12 @@ function formatBytes(bytes: number): string {
   const units = ['B', 'KB', 'MB', 'GB'];
   const i = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
   return `${(bytes / 1024 ** i).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+}
+
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 function matchesAccept(file: File, accept?: string[]): boolean {
@@ -349,10 +356,10 @@ export function FileUpload({
     };
   }, []);
   function handleRetry(item: UploadItem) {
+    const updatedItem = { ...item, status: 'uploading' as ItemStatus, progress: 0, errorMessage: undefined };
     updateItem(item.id, { status: 'uploading', progress: 0, errorMessage: undefined });
     onUploadStart?.();
-    startUpload({ ...item, status: 'uploading', progress: 0 });
-    startUpload({ ...item, status: 'uploading', progress: 0, errorMessage: undefined });
+    startUpload(updatedItem);
   }
 
   function handleCancel(item: UploadItem) {
@@ -408,14 +415,16 @@ export function FileUpload({
         className={cn(
           'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 text-center transition-colors',
           dragActive
-            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'
-            : 'border-slate-300 hover:border-indigo-400 dark:border-slate-700',
+            ? 'border-hamplard-primary bg-hamplard-lilac'
+            : 'border-ink-200 bg-ink-50 hover:border-hamplard-primary/50 dark:border-slate-700',
         )}
       >
-        <UploadCloud className="h-8 w-8 text-indigo-500" aria-hidden="true" />
-        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">{label}</span>
+        <UploadCloud className="h-8 w-8 text-hamplard-primary" aria-hidden="true" />
+        <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+          Drag & drop or click to upload
+        </span>
         <span className="text-xs text-slate-500 dark:text-slate-400">
-          {hint ?? `Drag & drop or click to browse · ${describeAccept(accept)} · up to ${formatBytes(maxSizeBytes)}`}
+          {hint ?? `${describeAccept(accept)} · up to ${formatBytes(maxSizeBytes)}`}
         </span>
         <input
           id={inputId}
@@ -452,8 +461,7 @@ export function FileUpload({
               >
                 <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-slate-100 dark:bg-slate-800">
                   {item.previewUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.previewUrl} alt={item.file.name} className="h-full w-full object-cover" />
+                    <Image src={item.previewUrl} alt={item.file.name} width={48} height={48} unoptimized className="h-full w-full object-cover" />
                   ) : item.file.type.startsWith('video/') ? (
                     <span className="flex h-full w-full items-center justify-center">
                       <Play className="h-5 w-5 text-indigo-500" aria-hidden="true" />
@@ -471,7 +479,33 @@ export function FileUpload({
                   </p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     {formatBytes(item.file.size)}
-                    {item.videoDuration != null && ` · ${item.videoDuration}s`}
+                    {item.videoDuration != null && ` · ${formatDuration(item.videoDuration)}`}
+                  </p>
+
+                  <p className={cn(
+                    'mt-1 flex items-center gap-1 text-xs font-medium',
+                    item.status === 'success' && 'text-emerald-700 dark:text-emerald-400',
+                    item.status === 'error' && 'text-red-600 dark:text-red-400',
+                    item.status === 'uploading' && 'text-indigo-600 dark:text-indigo-400',
+                  )}>
+                    {item.status === 'uploading' && (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                        Uploading
+                      </>
+                    )}
+                    {item.status === 'success' && (
+                      <>
+                        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                        Uploaded
+                      </>
+                    )}
+                    {item.status === 'error' && (
+                      <>
+                        <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
+                        Failed
+                      </>
+                    )}
                   </p>
 
                   {item.status === 'uploading' && (
@@ -480,11 +514,17 @@ export function FileUpload({
                         className="h-full rounded-full bg-indigo-500 transition-all"
                         style={{ width: `${item.progress}%` }}
                         role="progressbar"
+                        aria-label={`Upload progress for ${item.file.name}`}
                         aria-valuenow={item.progress}
                         aria-valuemin={0}
                         aria-valuemax={100}
                       />
                     </div>
+                  )}
+                  {item.status === 'uploading' && (
+                    <p className="mt-1 text-xs text-slate-500">
+                      {item.progress}%
+                    </p>
                   )}
 
                   {item.status === 'error' && item.errorMessage && (
@@ -497,13 +537,13 @@ export function FileUpload({
 
                 <div className="flex shrink-0 items-center gap-1">
                   {item.status === 'success' && (
-                    <CheckCircle2 className="h-5 w-5 text-emerald-500" aria-hidden="true" />
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500" aria-label="Upload complete" />
                   )}
                   {item.status === 'error' && item.retryable && (
                     <button
                       type="button"
                       onClick={() => handleRetry(item)}
-                      className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      className="flex h-11 w-11 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
                       aria-label={`Retry ${item.file.name}`}
                     >
                       <RotateCcw className="h-4 w-4" aria-hidden="true" />
@@ -513,7 +553,7 @@ export function FileUpload({
                     <button
                       type="button"
                       onClick={() => handleCancel(item)}
-                      className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      className="flex h-11 w-11 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
                       aria-label={`Cancel ${item.file.name}`}
                     >
                       <X className="h-4 w-4" aria-hidden="true" />
@@ -522,7 +562,7 @@ export function FileUpload({
                     <button
                       type="button"
                       onClick={() => removeItem(item.id)}
-                      className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      className="flex h-11 w-11 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
                       aria-label={`Remove ${item.file.name}`}
                     >
                       <X className="h-4 w-4" aria-hidden="true" />

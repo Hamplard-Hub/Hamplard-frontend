@@ -10,6 +10,11 @@ import { CategorySortSelect } from '@/components/category/CategorySortSelect';
 import { cn } from '@/lib/utils';
 import type { Course, Category } from '@/types';
 
+// ── ISR Configuration ──────────────────────────────────────────────────────
+// Revalidate category pages every 5 minutes (300 seconds)
+// This ensures course listings stay fresh while reducing API load
+export const revalidate = 300;
+
 // ── Static params ──────────────────────────────────────────────────────────
 
 export async function generateStaticParams() {

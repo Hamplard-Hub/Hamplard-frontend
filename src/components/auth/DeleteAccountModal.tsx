@@ -117,7 +117,7 @@ export default function DeleteAccountModal({ open, onClose }: DeleteAccountModal
             className="absolute right-4 top-4 rounded-full p-2 text-ink-400 transition-colors hover:bg-ink-50 hover:text-ink-700"
             aria-label="Close"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         )}
 

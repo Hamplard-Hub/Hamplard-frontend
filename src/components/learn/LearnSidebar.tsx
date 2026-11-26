@@ -248,10 +248,10 @@ export function LearnSidebar({
           {isMobile && (
             <button
               onClick={() => setDrawerOpen(false)}
-              className="rounded-lg p-1 text-ink-500 hover:bg-ink-100 hover:text-ink-700"
+              className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-500 hover:bg-ink-100 hover:text-ink-700"
               aria-label="Close sidebar"
             >
-              <X className="h-5 w-5" />
+              <X className="h-5 w-5" aria-hidden="true" />
             </button>
           )}
         </div>
@@ -281,10 +281,10 @@ export function LearnSidebar({
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-ink-500 hover:bg-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary"
+              className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded text-ink-500 hover:bg-ink-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hamplard-primary"
               aria-label="Clear lesson search"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           )}
         </div>

@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -131,9 +132,11 @@ export default function GiftClaimPage() {
             <div className="flex items-center gap-4">
               <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-saffron-100 to-saffron-200">
                 {gift.course.thumbnailUrl ? (
-                  <img
+                  <Image
                     src={gift.course.thumbnailUrl}
                     alt={gift.course.title}
+                    width={56}
+                    height={56}
                     className="h-full w-full object-cover"
                   />
                 ) : (

@@ -5,9 +5,11 @@ import { metadata as checkoutMetadata } from '@/app/checkout/layout';
 import { metadata as cartMetadata } from '@/app/cart/layout';
 import { metadata as resetPasswordMetadata } from '@/app/reset-password/layout';
 import { metadata as giftClaimMetadata } from '@/app/gift/claim/layout';
+import { metadata as dashboardMetadata } from '@/app/dashboard/layout';
 
 describe('SEO & Robots Configuration', () => {
-  it('DISALLOWED_PATHS includes sensitive routes: gift-claim, checkout, cart, and reset-password', () => {
+  it('DISALLOWED_PATHS includes sensitive routes: dashboard, gift-claim, checkout, cart, and reset-password', () => {
+    expect(DISALLOWED_PATHS).toContain('/dashboard');
     expect(DISALLOWED_PATHS).toContain('/gift/claim');
     expect(DISALLOWED_PATHS).toContain('/checkout');
     expect(DISALLOWED_PATHS).toContain('/cart');
@@ -19,6 +21,7 @@ describe('SEO & Robots Configuration', () => {
     const rules = Array.isArray(robotsConfig.rules) ? robotsConfig.rules[0] : robotsConfig.rules;
     const disallowList = Array.isArray(rules?.disallow) ? rules.disallow : [rules?.disallow];
 
+    expect(disallowList).toContain('/dashboard');
     expect(disallowList).toContain('/gift/claim');
     expect(disallowList).toContain('/checkout');
     expect(disallowList).toContain('/cart');
@@ -36,6 +39,7 @@ describe('SEO & Robots Configuration', () => {
   });
 
   it('route layouts for sensitive paths emit noindex robots metadata', () => {
+    expect(dashboardMetadata.robots).toMatchObject({ index: false });
     expect(checkoutMetadata.robots).toEqual({ index: false, follow: true });
     expect(cartMetadata.robots).toEqual({ index: false, follow: true });
     expect(resetPasswordMetadata.robots).toEqual({ index: false, follow: true });

@@ -11,7 +11,10 @@ vi.mock('@/lib/api/services', () => ({
 }));
 
 vi.mock('next/image', () => ({
-  default: ({ unoptimized: _unoptimized, ...props }: React.ImgHTMLAttributes<HTMLImageElement> & { unoptimized?: boolean }) => <img {...props} />,
+  default: ({ unoptimized: _unoptimized, ...props }: React.ImgHTMLAttributes<HTMLImageElement> & { unoptimized?: boolean }) => (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img {...props} alt={props.alt ?? ''} />
+  ),
 }));
 
 const submissions = [

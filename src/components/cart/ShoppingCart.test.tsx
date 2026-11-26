@@ -212,16 +212,18 @@ describe('ShoppingCart Integration Tests', () => {
       useCartStore.getState().addItem(mockCourse2); // $79.99
       rerender(<ShoppingCart />);
       
-      // Total should be $129.98
-      expect(screen.getByText('$129.98')).toBeInTheDocument();
+      // Total should be $129.98 - look in subtotal row
+      const subtotalRow = screen.getByText(/Subtotal \(2 courses\)/).closest('div');
+      expect(within(subtotalRow!).getByText('$129.98')).toBeInTheDocument();
       
       const removeButtons = screen.getAllByRole('button', { name: /remove.*from cart/i });
       await user.click(removeButtons[1]); // Remove course 2
       
       rerender(<ShoppingCart />);
       
-      // Total should now be $49.99
-      expect(screen.getByText('$49.99')).toBeInTheDocument();
+      // Total should now be $49.99 - look in subtotal row
+      const newSubtotalRow = screen.getByText(/Subtotal \(1 course\)/).closest('div');
+      expect(within(newSubtotalRow!).getByText('$49.99')).toBeInTheDocument();
     });
 
     it('shows empty cart when last item is removed', async () => {
@@ -277,8 +279,9 @@ describe('ShoppingCart Integration Tests', () => {
       // Check discount is shown (20% of $49.99 = $10.00)
       expect(screen.getByText(/saving \$10\.00/i)).toBeInTheDocument();
       
-      // Final price should be $39.99
-      expect(screen.getByText('$39.99')).toBeInTheDocument();
+      // Final price should be $39.99 - look in Total row
+      const totalRow = screen.getByText('Total').closest('div');
+      expect(within(totalRow!).getByText('$39.99')).toBeInTheDocument();
     });
 
     it('applies valid fixed-amount promo code', async () => {
@@ -308,8 +311,9 @@ describe('ShoppingCart Integration Tests', () => {
       // Check discount is shown
       expect(screen.getByText(/saving \$15\.00/i)).toBeInTheDocument();
       
-      // Final price should be $114.98 (129.98 - 15)
-      expect(screen.getByText('$114.98')).toBeInTheDocument();
+      // Final price should be $114.98 (129.98 - 15) - look in Total row
+      const totalRow = screen.getByText('Total').closest('div');
+      expect(within(totalRow!).getByText('$114.98')).toBeInTheDocument();
     });
 
     it('shows error message for invalid promo code', async () => {
@@ -333,8 +337,9 @@ describe('ShoppingCart Integration Tests', () => {
         expect(screen.getByText(/invalid promo code/i)).toBeInTheDocument();
       });
       
-      // Original price should still be shown
-      expect(screen.getByText('$49.99')).toBeInTheDocument();
+      // Original price should still be shown - look in subtotal
+      const subtotalRow = screen.getByText(/Subtotal \(1 course\)/).closest('div');
+      expect(within(subtotalRow!).getByText('$49.99')).toBeInTheDocument();
     });
 
     it('shows error when applying empty promo code', async () => {
@@ -376,9 +381,10 @@ describe('ShoppingCart Integration Tests', () => {
       
       rerender(<ShoppingCart />);
       
-      // Promo should be gone and original price restored
+      // Promo should be gone and original price restored - look in Total row
       expect(screen.queryByText(/promo applied/i)).not.toBeInTheDocument();
-      expect(screen.getByText('$49.99')).toBeInTheDocument();
+      const totalRow = screen.getByText('Total').closest('div');
+      expect(within(totalRow!).getByText('$49.99')).toBeInTheDocument();
     });
 
     it('converts promo code to uppercase', async () => {
@@ -430,7 +436,9 @@ describe('ShoppingCart Integration Tests', () => {
       rerender(<ShoppingCart />);
       
       expect(screen.getByText('Subtotal (1 course)')).toBeInTheDocument();
-      expect(screen.getByText('$49.99')).toBeInTheDocument();
+      // Look for subtotal in the summary section
+      const summarySection = screen.getByText('Subtotal (1 course)').closest('div');
+      expect(within(summarySection!).getByText('$49.99')).toBeInTheDocument();
     });
 
     it('displays correct subtotal for multiple courses', () => {
@@ -442,7 +450,9 @@ describe('ShoppingCart Integration Tests', () => {
       rerender(<ShoppingCart />);
       
       expect(screen.getByText('Subtotal (3 courses)')).toBeInTheDocument();
-      expect(screen.getByText('$159.97')).toBeInTheDocument();
+      // Look for subtotal in the summary section
+      const summarySection = screen.getByText('Subtotal (3 courses)').closest('div');
+      expect(within(summarySection!).getByText('$159.97')).toBeInTheDocument();
     });
 
     it('shows discount line when promo is applied', async () => {
@@ -465,7 +475,9 @@ describe('ShoppingCart Integration Tests', () => {
         expect(screen.getByText('Discount')).toBeInTheDocument();
       });
       
-      expect(screen.getByText('-$10.00')).toBeInTheDocument();
+      // Find discount in the summary section specifically
+      const discountRow = screen.getByText('Discount').closest('div');
+      expect(within(discountRow!).getByText('-$10.00')).toBeInTheDocument();
     });
 
     it('does not allow negative total price', async () => {
@@ -488,9 +500,9 @@ describe('ShoppingCart Integration Tests', () => {
         expect(screen.getByText(/promo applied/i)).toBeInTheDocument();
       });
       
-      // Total should be $0, not negative
-      const totalPrices = screen.getAllByText('$0.00');
-      expect(totalPrices.length).toBeGreaterThan(0);
+      // Total should be $0, not negative - look for it in the Total row
+      const totalRow = screen.getByText('Total').closest('div');
+      expect(within(totalRow!).getByText('$0.00')).toBeInTheDocument();
     });
   });
 

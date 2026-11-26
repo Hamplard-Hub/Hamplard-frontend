@@ -56,7 +56,7 @@ export function QnaFilterBar({
             aria-label="Clear search"
             className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-300 hover:text-ink-600"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         )}
       </div>

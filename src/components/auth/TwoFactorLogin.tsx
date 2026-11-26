@@ -78,7 +78,7 @@ export function TwoFactorLogin({ onVerify, onCancel, isLoading = false }: TwoFac
             value={code}
             onChange={(e) => handleCodeChange(e.target.value)}
             disabled={isSubmitting || isLoading}
-            className={`w-full rounded-xl border px-4 py-2.5 text-sm text-[#26215C] outline-none transition disabled:cursor-not-allowed disabled:opacity-60 ${
+            className={`w-full rounded-xl border px-4 py-2.5 text-sm text-[#26215C] outline-none focus-visible:ring-2 focus-visible:ring-[#7F77DD]/40 transition disabled:cursor-not-allowed disabled:opacity-60 ${
               error
                 ? 'border-red-400 bg-red-50/40'
                 : 'border-[#D3D0F2] focus:border-[#7F77DD]'

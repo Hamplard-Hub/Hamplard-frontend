@@ -231,7 +231,7 @@ describe('ProfileCompletion', () => {
       expect(screen.getByText('0 of 5 items completed')).toBeInTheDocument();
     });
 
-    it('links payout method to settings page', () => {
+    it('links payout method to payouts page', () => {
       const user = mockUser({
         role: 'INSTRUCTOR',
       });
@@ -239,10 +239,10 @@ describe('ProfileCompletion', () => {
 
       render(<ProfileCompletion variant="card" />);
 
-      const settingsLinks = screen.getAllByRole('link').filter((link) =>
-        link.getAttribute('href')?.includes('/dashboard/settings'),
+      const payoutsLinks = screen.getAllByRole('link').filter((link) =>
+        link.getAttribute('href')?.includes('/dashboard/instructor/payouts'),
       );
-      expect(settingsLinks.length).toBeGreaterThan(0);
+      expect(payoutsLinks.length).toBeGreaterThan(0);
     });
   });
 

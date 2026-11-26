@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 
 import React, { useState, useRef, useEffect, type ReactNode } from 'react';
 import { BookOpen, X, Info } from 'lucide-react';
@@ -166,12 +167,13 @@ export function GlossaryTerm({
 
           {/* Optional Image */}
           {imageUrl && (
-            <div className="mt-3 overflow-hidden rounded-xl border border-ink-100 bg-ink-50 aspect-video">
-              <img
+            <div className="relative mt-3 overflow-hidden rounded-xl border border-ink-100 bg-ink-50 aspect-video">
+              <Image
                 src={imageUrl}
                 alt={termName}
-                className="h-full w-full object-cover"
-                loading="lazy"
+                fill
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover"
               />
             </div>
           )}

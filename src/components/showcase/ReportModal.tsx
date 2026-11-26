@@ -69,7 +69,7 @@ export function ReportModal({ project, isOpen, onClose }: ReportModalProps) {
           className="absolute right-5 top-5 rounded-full p-1.5 text-ink-400 hover:bg-ink-100 hover:text-ink-600 transition-colors"
           aria-label="Close dialog"
         >
-          <X className="h-4 w-4" />
+          <X className="h-4 w-4" aria-hidden="true" />
         </button>
 
         {submitted ? (

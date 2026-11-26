@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
@@ -79,9 +80,11 @@ function InstructorHeader({ instructor }: { instructor: Awaited<ReturnType<typeo
         {/* ── Avatar ── */}
         <div className="-mt-12 mb-4">
           {instructor.avatarUrl ? (
-            <img
+            <Image
               src={instructor.avatarUrl}
               alt={`${instructor.name} avatar`}
+              width={96}
+              height={96}
               className="w-24 h-24 rounded-full object-cover ring-4 ring-white shadow-md"
             />
           ) : (

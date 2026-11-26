@@ -43,3 +43,7 @@ export { Switch } from './Switch';
 export type { SwitchProps } from './Switch';
 export { SmartImage } from './SmartImage';
 export type { SmartImageProps } from './SmartImage';
+export { DatePicker } from './DatePicker';
+export type { DatePickerProps } from './DatePicker';
+export { Drawer } from './Drawer';
+export type { DrawerProps, DrawerSide } from './Drawer';

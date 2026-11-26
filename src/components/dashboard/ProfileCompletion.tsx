@@ -95,11 +95,12 @@ function SidebarVariant({
               aria-valuemin={0}
               aria-valuemax={100}
               role="progressbar"
+              aria-label="Profile completion"
             />
           </div>
           <Link
             href="/dashboard/profile"
-            className="text-[10px] font-medium text-hamplard-primary hover:underline mt-2 inline-block"
+            className="mt-2 inline-flex min-h-11 items-center text-[10px] font-medium text-hamplard-primary hover:underline"
           >
             Complete profile →
           </Link>

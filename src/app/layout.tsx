@@ -1,10 +1,39 @@
 import type { Metadata } from 'next';
+import { DM_Sans, Playfair_Display, JetBrains_Mono } from 'next/font/google';
 import Script from 'next/script';
 import '@/styles/globals.css';
 import { Providers } from './providers';
 import { Footer } from '@/components/layout/Footer';
 import { siteConfig, siteUrl } from '@/lib/seo';
 import { WebVitalsReporter } from '@/components/WebVitalsReporter';
+
+// ── Font Configuration ─────────────────────────────────────────────────────
+// Self-hosted fonts via next/font to eliminate external requests and CLS
+
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  style: ['normal', 'italic'],
+  variable: '--font-sans',
+  display: 'swap',
+});
+
+const playfairDisplay = Playfair_Display({
+  subsets: ['latin'],
+  weight: ['400', '600', '700', '900'],
+  style: ['normal', 'italic'],
+  variable: '--font-display',
+  display: 'swap',
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-mono',
+  display: 'swap',
+});
+
+// ── Metadata ───────────────────────────────────────────────────────────────
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -57,7 +86,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html 
+      lang="en" 
+      suppressHydrationWarning
+      className={`${dmSans.variable} ${playfairDisplay.variable} ${jetBrainsMono.variable}`}
+    >
       <head>
         <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
         <link rel="manifest" href="/manifest.json" />

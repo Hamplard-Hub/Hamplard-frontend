@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Mail, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Mail, Clock, CheckCircle2 } from 'lucide-react';
 import { TopBar } from '@/components/layout/TopBar';
 import { useToastContext } from '@/components/ui/ToastProvider';
+import { FormField, Input, Select, Textarea } from '@/components/ui/form';
 import { contactApi } from '@/lib/api/services';
 import { contactFormSchema, type ContactFormData } from '@/lib/validations/contact';
 
@@ -136,20 +137,12 @@ export default function ContactPage() {
             ) : (
               <form className="space-y-6" onSubmit={onSubmit} noValidate>
                 {/* Name Field */}
-                <div>
-                  <label className="block text-sm font-medium text-[#26215C]" htmlFor="name">
-                    Full Name
-                  </label>
-                  <input
-                    id="name"
+                <FormField id="name" label="Full Name" error={errors.name} showErrorIcon labelClassName="mb-0">
+                  <Input
                     type="text"
                     value={values.name}
                     onChange={(e) => handleChange('name', e.target.value)}
-                    className={`mt-2 w-full rounded-xl border px-4 py-3 text-sm text-[#26215C] outline-none transition ${
-                      errors.name
-                        ? 'border-red-400 bg-red-50/40 focus:border-red-500'
-                        : 'border-[#D3D0F2] focus:border-[#7F77DD]'
-                    }`}
+                    className="mt-2 py-3"
                     placeholder="John Doe"
                     disabled={isSubmitting}
                     aria-invalid={!!errors.name}
@@ -162,22 +155,16 @@ export default function ContactPage() {
                     </p>
                   )}
                 </div>
+                  />
+                </FormField>
 
                 {/* Email Field */}
-                <div>
-                  <label className="block text-sm font-medium text-[#26215C]" htmlFor="email">
-                    Email Address
-                  </label>
-                  <input
-                    id="email"
+                <FormField id="email" label="Email Address" error={errors.email} showErrorIcon labelClassName="mb-0">
+                  <Input
                     type="email"
                     value={values.email}
                     onChange={(e) => handleChange('email', e.target.value)}
-                    className={`mt-2 w-full rounded-xl border px-4 py-3 text-sm text-[#26215C] outline-none transition ${
-                      errors.email
-                        ? 'border-red-400 bg-red-50/40 focus:border-red-500'
-                        : 'border-[#D3D0F2] focus:border-[#7F77DD]'
-                    }`}
+                    className="mt-2 py-3"
                     placeholder="you@example.com"
                     disabled={isSubmitting}
                     aria-invalid={!!errors.email}
@@ -190,21 +177,15 @@ export default function ContactPage() {
                     </p>
                   )}
                 </div>
+                  />
+                </FormField>
 
                 {/* Subject Field */}
-                <div>
-                  <label className="block text-sm font-medium text-[#26215C]" htmlFor="subject">
-                    Subject
-                  </label>
-                  <select
-                    id="subject"
+                <FormField id="subject" label="Subject" error={errors.subject} showErrorIcon labelClassName="mb-0">
+                  <Select
                     value={values.subject}
                     onChange={(e) => handleChange('subject', e.target.value)}
-                    className={`mt-2 w-full rounded-xl border px-4 py-3 text-sm text-[#26215C] outline-none transition ${
-                      errors.subject
-                        ? 'border-red-400 bg-red-50/40 focus:border-red-500'
-                        : 'border-[#D3D0F2] focus:border-[#7F77DD]'
-                    }`}
+                    className="mt-2 py-3"
                     disabled={isSubmitting}
                     aria-invalid={!!errors.subject}
                     aria-describedby={errors.subject ? 'subject-error' : undefined}
@@ -222,21 +203,15 @@ export default function ContactPage() {
                     </p>
                   )}
                 </div>
+                  </Select>
+                </FormField>
 
                 {/* Message Field */}
-                <div>
-                  <label className="block text-sm font-medium text-[#26215C]" htmlFor="message">
-                    Message
-                  </label>
-                  <textarea
-                    id="message"
+                <FormField id="message" label="Message" error={errors.message} showErrorIcon labelClassName="mb-0">
+                  <Textarea
                     value={values.message}
                     onChange={(e) => handleChange('message', e.target.value)}
-                    className={`mt-2 min-h-32 w-full rounded-xl border px-4 py-3 text-sm text-[#26215C] outline-none transition resize-none ${
-                      errors.message
-                        ? 'border-red-400 bg-red-50/40 focus:border-red-500'
-                        : 'border-[#D3D0F2] focus:border-[#7F77DD]'
-                    }`}
+                    className="mt-2 min-h-32 resize-none py-3"
                     placeholder="Tell us how we can help you..."
                     disabled={isSubmitting}
                     aria-invalid={!!errors.message}
@@ -249,6 +224,8 @@ export default function ContactPage() {
                     </p>
                   )}
                 </div>
+                  />
+                </FormField>
 
                 {/* Submit Button */}
                 <button
