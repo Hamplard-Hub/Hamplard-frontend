@@ -1352,3 +1352,44 @@ describe("usePersistentState", () => {
     expect(result.current[0]).toBe(false);
   });
 });
+import { isAxiosError } from "axios";
+
+// Inside your LearnPage component
+
+const handleMarkComplete = async (lessonId: string) => {
+  try {
+    await lessonsApi.markComplete(lessonId);
+
+    // Successful completion
+    // Keep your existing success-state and lesson-progress logic here.
+    
+  } catch (err: unknown) {
+    // Only queue requests that failed without receiving an HTTP response.
+    if (isAxiosError(err) && !err.response) {
+      try {
+        await queueProgressUpdate(lessonId);
+
+        setError(
+          "Could not reach the server. Your progress has been saved offline and will sync when you're back online."
+        );
+      } catch {
+        setError(
+          "Could not reach the server, and your progress could not be saved offline."
+        );
+      }
+
+      return;
+    }
+
+    // HTTP errors must never be queued.
+    const serverMessage = isAxiosError(err)
+      ? err.response?.data?.message
+      : undefined;
+
+    setError(
+      typeof serverMessage === "string"
+        ? serverMessage
+        : "Unable to mark this lesson as complete. Please try again."
+    );
+  }
+};
