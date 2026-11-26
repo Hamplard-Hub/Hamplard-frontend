@@ -370,7 +370,8 @@ describe("QuizComponent", () => {
       await user.click(screen.getByRole("button", { name: "See Results" }));
       await user.click(screen.getByRole("button", { name: "Review answers" }));
 
-      expect(screen.getByText("Question 1 of 1")).toBeInTheDocument();
+      expect(screen.getByText("Answer Review")).toBeInTheDocument();
+      expect(screen.getByText("What is 2 + 2?")).toBeInTheDocument();
     });
   });
 });
