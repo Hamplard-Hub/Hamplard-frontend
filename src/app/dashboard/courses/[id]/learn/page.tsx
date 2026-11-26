@@ -943,6 +943,415 @@ export default function LearnPage() {
   );
 }
 
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+
+export function usePersistentState<T>(
+  key: string,
+  defaultValue: T
+): [T, (value: T | ((previous: T) => T)) => void, boolean] {
+  const [value, setValue] = useState<T>(defaultValue);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Read localStorage only after mounting.
+  useEffect(() => {
+    try {
+      const storedValue = localStorage.getItem(key);
+
+      if (storedValue !== null) {
+        setValue(JSON.parse(storedValue) as T);
+      }
+    } catch (error) {
+      console.error(
+        `Unable to read persistent state for "${key}":`,
+        error
+      );
+    } finally {
+      setIsHydrated(true);
+    }
+  }, [key]);
+
+  // Update React state and persist the new value.
+  const updateValue = useCallback(
+    (nextValue: T | ((previous: T) => T)) => {
+      setValue((previous) => {
+        const resolvedValue =
+          typeof nextValue === "function"
+            ? (nextValue as (previous: T) => T)(previous)
+            : nextValue;
+
+        try {
+          localStorage.setItem(
+            key,
+            JSON.stringify(resolvedValue)
+          );
+        } catch (error) {
+          console.error(
+            `Unable to save persistent state for "${key}":`,
+            error
+          );
+        }
+
+        return resolvedValue;
+      });
+    },
+    [key]
+  );
+
+  return [value, updateValue, isHydrated];
+}
+
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+
+export function usePersistentState<T>(
+  key: string,
+  defaultValue: T
+): [T, (value: T | ((previous: T) => T)) => void, boolean] {
+  const [value, setValue] = useState<T>(defaultValue);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Read localStorage only after mounting.
+  useEffect(() => {
+    try {
+      const storedValue = localStorage.getItem(key);
+
+      if (storedValue !== null) {
+        setValue(JSON.parse(storedValue) as T);
+      }
+    } catch (error) {
+      console.error(
+        `Unable to read persistent state for "${key}":`,
+        error
+      );
+    } finally {
+      setIsHydrated(true);
+    }
+  }, [key]);
+
+  // Update React state and persist the new value.
+  const updateValue = useCallback(
+    (nextValue: T | ((previous: T) => T)) => {
+      setValue((previous) => {
+        const resolvedValue =
+          typeof nextValue === "function"
+            ? (nextValue as (previous: T) => T)(previous)
+            : nextValue;
+
+        try {
+          localStorage.setItem(
+            key,
+            JSON.stringify(resolvedValue)
+          );
+        } catch (error) {
+          console.error(
+            `Unable to save persistent state for "${key}":`,
+            error
+          );
+        }
+
+        return resolvedValue;
+      });
+    },
+    [key]
+  );
+
+  return [value, updateValue, isHydrated];
+}
+const [autoplay, setAutoplay] = useState(
+  () =>
+    typeof window === "undefined"
+      ? true
+      : localStorage.getItem("autoplay") !== "false"
+);
+const [focusMode, setFocusMode] = useState(
+  () =>
+    typeof window === "undefined"
+      ? false
+      : localStorage.getItem("focusMode") === "true"
+);
+
+import { renderHook, act, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
+import { usePersistentState } from "./usePersistentState";
+
+describe("usePersistentState", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("starts with the default value", () => {
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    expect(result.current[0]).toBe(false);
+  });
+
+  it("loads the stored preference after mounting", async () => {
+    localStorage.setItem("focusMode", "true");
+
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    await waitFor(() => {
+      expect(result.current[0]).toBe(true);
+    });
+  });
+
+  it("persists updated preferences", async () => {
+    const { result } = renderHook(() =>
+      usePersistentState("autoplay", true)
+    );
+
+    act(() => {
+      result.current[1](false);
+    });
+
+    expect(result.current[0]).toBe(false);
+    expect(localStorage.getItem("autoplay")).toBe("false");
+  });
+
+  it("supports functional updates", async () => {
+    const { result } = renderHook(() =>
+      usePersistentState("counter", 0)
+    );
+
+    act(() => {
+      result.current[1]((previous) => previous + 1);
+    });
+
+    expect(result.current[0]).toBe(1);
+    expect(localStorage.getItem("counter")).toBe("1");
+  });
+
+  it("handles invalid stored JSON safely", async () => {
+    localStorage.setItem("focusMode", "invalid-json");
+
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    await waitFor(() => {
+      expect(result.current[2]).toBe(true);
+    });
+
+    expect(result.current[0]).toBe(false);
+  });
+});
+
+import { renderHook, act, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
+import { usePersistentState } from "./usePersistentState";
+
+describe("usePersistentState", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("starts with the default value", () => {
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    expect(result.current[0]).toBe(false);
+  });
+
+  it("loads the stored preference after mounting", async () => {
+    localStorage.setItem("focusMode", "true");
+
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    await waitFor(() => {
+      expect(result.current[0]).toBe(true);
+    });
+  });
+
+  it("persists updated preferences", async () => {
+    const { result } = renderHook(() =>
+      usePersistentState("autoplay", true)
+    );
+
+    act(() => {
+      result.current[1](false);
+    });
+
+    expect(result.current[0]).toBe(false);
+    expect(localStorage.getItem("autoplay")).toBe("false");
+  });
+
+  it("supports functional updates", async () => {
+    const { result } = renderHook(() =>
+      usePersistentState("counter", 0)
+    );
+
+    act(() => {
+      result.current[1]((previous) => previous + 1);
+    });
+
+    expect(result.current[0]).toBe(1);
+    expect(localStorage.getItem("counter")).toBe("1");
+  });
+
+  it("handles invalid stored JSON safely", async () => {
+    localStorage.setItem("focusMode", "invalid-json");
+
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    await waitFor(() => {
+      expect(result.current[2]).toBe(true);
+    });
+
+    expect(result.current[0]).toBe(false);
+  });
+});
+
+import { renderHook, act, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
+import { usePersistentState } from "./usePersistentState";
+
+describe("usePersistentState", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("starts with the default value", () => {
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    expect(result.current[0]).toBe(false);
+  });
+
+  it("loads the stored preference after mounting", async () => {
+    localStorage.setItem("focusMode", "true");
+
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    await waitFor(() => {
+      expect(result.current[0]).toBe(true);
+    });
+  });
+
+  it("persists updated preferences", async () => {
+    const { result } = renderHook(() =>
+      usePersistentState("autoplay", true)
+    );
+
+    act(() => {
+      result.current[1](false);
+    });
+
+    expect(result.current[0]).toBe(false);
+    expect(localStorage.getItem("autoplay")).toBe("false");
+  });
+
+  it("supports functional updates", async () => {
+    const { result } = renderHook(() =>
+      usePersistentState("counter", 0)
+    );
+
+    act(() => {
+      result.current[1]((previous) => previous + 1);
+    });
+
+    expect(result.current[0]).toBe(1);
+    expect(localStorage.getItem("counter")).toBe("1");
+  });
+
+  it("handles invalid stored JSON safely", async () => {
+    localStorage.setItem("focusMode", "invalid-json");
+
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    await waitFor(() => {
+      expect(result.current[2]).toBe(true);
+    });
+
+    expect(result.current[0]).toBe(false);
+  });
+});
+
+import { renderHook, act, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
+import { usePersistentState } from "./usePersistentState";
+
+describe("usePersistentState", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("starts with the default value", () => {
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    expect(result.current[0]).toBe(false);
+  });
+
+  it("loads the stored preference after mounting", async () => {
+    localStorage.setItem("focusMode", "true");
+
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    await waitFor(() => {
+      expect(result.current[0]).toBe(true);
+    });
+  });
+
+  it("persists updated preferences", async () => {
+    const { result } = renderHook(() =>
+      usePersistentState("autoplay", true)
+    );
+
+    act(() => {
+      result.current[1](false);
+    });
+
+    expect(result.current[0]).toBe(false);
+    expect(localStorage.getItem("autoplay")).toBe("false");
+  });
+
+  it("supports functional updates", async () => {
+    const { result } = renderHook(() =>
+      usePersistentState("counter", 0)
+    );
+
+    act(() => {
+      result.current[1]((previous) => previous + 1);
+    });
+
+    expect(result.current[0]).toBe(1);
+    expect(localStorage.getItem("counter")).toBe("1");
+  });
+
+  it("handles invalid stored JSON safely", async () => {
+    localStorage.setItem("focusMode", "invalid-json");
+
+    const { result } = renderHook(() =>
+      usePersistentState("focusMode", false)
+    );
+
+    await waitFor(() => {
+      expect(result.current[2]).toBe(true);
+    });
+
+    expect(result.current[0]).toBe(false);
+  });
+});
 import { isAxiosError } from "axios";
 
 // Inside your LearnPage component
