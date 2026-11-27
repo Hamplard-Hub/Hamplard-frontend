@@ -58,6 +58,7 @@ export default defineConfig({
     url: 'http://localhost:3001/login',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
+    env: { NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: 'pk_test_e2e_placeholder' },
   },
 
   timeout: 30000,
